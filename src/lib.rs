@@ -1,5 +1,4 @@
 #![cfg_attr(not(any(test, feature = "std")), no_std)]
-#![allow(dead_code, incomplete_features)]
 #![allow(incomplete_features)]
 #![feature(
     const_index,
