@@ -688,7 +688,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub fn into_elems(self) -> array::IntoIter<T, { ROWS * COLS }> {
-        self.into_flattened().into_iter()
+        IntoIterator::into_iter(self.into_flattened())
     }
 
     #[must_use]
