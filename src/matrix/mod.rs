@@ -1,9 +1,3 @@
-use crate::{
-    point::Point3,
-    rotation::Rotation,
-    rotation::{angle::Angle, quaternion::Quaternion},
-    vector::{Vector, Vector3, Vector4},
-};
 use crate::utils::{
     flatten,
     num::{
@@ -11,6 +5,12 @@ use crate::utils::{
         checked::CheckedDiv,
     },
     shrink_to, shrink_to_copy, sum, zip_map,
+};
+use crate::{
+    point::Point3,
+    rotation::Rotation,
+    rotation::{angle::Angle, quaternion::Quaternion},
+    vector::{Vector, Vector3, Vector4},
 };
 use core::{
     array,
@@ -151,7 +151,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// # Examples
     ///
     /// ```
-    /// # use vectral::matrix::Matrix;
+    /// use vectral::matrix::Matrix;
     /// let matrix = Matrix::new([
     ///     [1, 2, 3],
     ///     [4, 5, 6],
@@ -165,15 +165,29 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         unsafe { slice::from_raw_parts(self.as_ptr(), ROWS * COLS) }
     }
 
+    /// Access the `Matrix` as flat array of all elements contained in the `Matrix`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let matrix = Matrix::new([
+    ///     [1, 2],
+    ///     [3, 4],
+    /// ]);
+    ///
+    /// let array: &'_ [i32; 4] = matrix.as_flattened_array();
+    ///
+    /// assert_eq!(array, &[1, 2, 3, 4]);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn as_flattened_array(&self) -> &[T; ROWS * COLS]
     where
         [T; ROWS * COLS]: Sized,
     {
-        unsafe {
-            &*(self as *const _ as *const [T; ROWS * COLS])
-        }
+        unsafe { &*(self as *const _ as *const [T; ROWS * COLS]) }
     }
 
     /// Returns a mutable reference to the inner array of the matrix as a flattened slice.
@@ -201,30 +215,110 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         unsafe { slice::from_raw_parts_mut(self.as_mut_ptr(), ROWS * COLS) }
     }
 
+    /// Access the `Matrix` mutably as flat array of all elements contained in the `Matrix`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let mut matrix = Matrix::new([
+    ///     [1, 2],
+    ///     [3, 4],
+    /// ]);
+    ///
+    /// let array: &'_ mut [i32; 4] = matrix.as_mut_flattened_array();
+    ///
+    /// assert_eq!(array, &[1, 2, 3, 4]);
+    /// array[2] = 5;
+    ///
+    /// assert_eq!(&matrix, &Matrix::new([
+    ///     [1, 2],
+    ///     [5, 4],
+    /// ]));
+    /// ```
     #[must_use]
     #[inline]
     pub const fn as_mut_flattened_array(&mut self) -> &mut [T; ROWS * COLS]
     where
         [T; ROWS * COLS]: Sized,
     {
-        unsafe {
-            &mut *(self as *mut _ as *mut [T; ROWS * COLS])
-        }
+        unsafe { &mut *(self as *mut _ as *mut [T; ROWS * COLS]) }
     }
 
-
+    /// Access the start of the `Matrix`'s element data as a pointer.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let matrix = Matrix::new([
+    ///     [5, 6, 4, 2],
+    ///     [1, 1, 3, 4],
+    ///     [2, 7, 9, 0],
+    /// ]);
+    ///
+    /// let ptr = matrix.as_ptr();
+    /// unsafe {
+    ///     assert_eq!(*ptr, 5);
+    /// }
+    /// ```
     #[must_use]
     #[inline]
     pub const fn as_ptr(&self) -> *const T {
         self.data.as_ptr().cast()
     }
 
+    /// Access the start of the `Matrix`'s element data as a mutable pointer.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let mut matrix = Matrix::new([
+    ///     [5, 6, 4, 2],
+    ///     [1, 1, 3, 4],
+    ///     [2, 7, 9, 0],
+    /// ]);
+    ///
+    /// let ptr = matrix.as_mut_ptr();
+    /// unsafe {
+    ///     assert_eq!(*ptr, 5);
+    ///     *ptr = 31;
+    /// }
+    ///
+    /// assert_eq!(matrix[0][0], 31);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn as_mut_ptr(&mut self) -> *mut T {
         self.data.as_mut_ptr().cast()
     }
 
+    /// Attempt to get a reference to the element at [`row`][`col`].
+    ///
+    /// This method returns `None` if either of the given indices are out of bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let matrix: Matrix<f32, _, _> = Matrix::new([
+    ///     [5.0, 6.0, 4.0, 2.0],
+    ///     [1.0, 1.0, 3.0, 4.0],
+    ///     [2.0, 7.0, 9.0, 0.0],
+    ///     [0.0, 0.0, 0.0, 1.0],
+    /// ]);
+    ///
+    /// let elem = matrix.get(1, 1);
+    /// assert_eq!(elem, Some(&1.0));
+    ///
+    /// let elem = matrix.get(6, 3);
+    /// assert_eq!(elem, None);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn get(&self, row: usize, col: usize) -> Option<&T> {
@@ -234,6 +328,33 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         }
     }
 
+    /// Attempt to get a mutable reference to the element at [`row`][`col`].
+    ///
+    /// This method returns `None` if either of the given indices are out of bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let mut matrix: Matrix<f32, _, _> = Matrix::new([
+    ///     [5.0, 6.0, 4.0, 2.0],
+    ///     [1.0, 1.0, 3.0, 4.0],
+    ///     [2.0, 7.0, 9.0, 0.0],
+    ///     [0.0, 0.0, 0.0, 1.0],
+    /// ]);
+    ///
+    /// let elem = matrix.get_mut(1, 1);
+    /// elem.map(|el| {
+    ///     assert_eq!(*el, 1.0);
+    ///     *el = 18.0
+    /// });
+    ///
+    /// assert_eq!(matrix[1][1], 18.0);
+    ///
+    /// let elem = matrix.get_mut(6, 3);
+    /// assert_eq!(elem, None);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn get_mut(&mut self, row: usize, col: usize) -> Option<&mut T> {
@@ -243,18 +364,57 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         }
     }
 
+    /// Get a reference to the element at index `row` and `col` without performing any bounds checks.
+    ///
+    /// # Safety
+    ///
+    /// You must ensure that `row` and `col` are within the bounds of the `Matrix`,
+    /// otherwise this method will cause undefined behavior.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let matrix = Matrix::new([[1]]);
+    ///
+    /// let data = unsafe { matrix.get_unchecked(0, 0) };
+    /// assert_eq!(*data, 1);
+    /// ```
     #[must_use]
     #[inline]
     pub const unsafe fn get_unchecked(&self, row: usize, col: usize) -> &T {
         unsafe { self.data.get_unchecked(row).get_unchecked(col) }
     }
 
+    /// Get a mutable reference to the element at index `row` and `col` without performing
+    /// any bounds checks.
+    ///
+    /// # Safety
+    ///
+    /// You must ensure that `row` and `col` are within the bounds of the `Matrix`,
+    /// otherwise this method will cause undefined behavior.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let mut matrix = Matrix::new([[1, 2, 3]]);
+    ///
+    /// let data = unsafe { matrix.get_unchecked_mut(0, 2) };
+    /// assert_eq!(*data, 3);
+    /// *data = 5;
+    ///
+    /// assert_eq!(matrix.as_slice(), &[1, 2, 5]);
+    /// ```
     #[must_use]
     #[inline]
     pub const unsafe fn get_unchecked_mut(&mut self, row: usize, col: usize) -> &mut T {
         unsafe { self.data.get_unchecked_mut(row).get_unchecked_mut(col) }
     }
 
+    /// Sets the column of the `Matrix` at `col_idx` to the given `col`.
     #[track_caller]
     #[inline]
     pub fn set_col(&mut self, col_idx: usize, col: [T; ROWS]) {
@@ -298,6 +458,25 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         Ok(())
     }
 
+    /// Returns a new `Matrix` where each element is a reference to the corresponding element
+    /// in the original matrix.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let matrix = Matrix::new([
+    ///     [1, 2, 3],
+    ///     [4, 5, 6],
+    /// ]);
+    ///
+    /// let matrix_ref = matrix.each_ref();
+    ///
+    /// for (elem, ref_elem) in matrix.as_slice().iter().zip(matrix_ref.as_slice()) {
+    ///     assert_eq!(*elem, **ref_elem);
+    /// }
+    /// ```
     #[must_use]
     #[inline]
     pub const fn each_ref(&self) -> Matrix<&T, ROWS, COLS> {
@@ -322,6 +501,26 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         unsafe { Matrix::assume_init(matrix) }
     }
 
+    /// Returns a new `Matrix` where each element is a mutable reference to the corresponding element
+    /// in the original matrix.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let mut matrix = Matrix::new([
+    ///     [1, 2, 3, 4],
+    /// ]);
+    ///
+    /// let mut matrix_mut = matrix.each_mut();
+    ///
+    /// for (i, elem) in matrix_mut.as_mut_slice().iter_mut().enumerate() {
+    ///     **elem = i;
+    /// }
+    ///
+    /// assert_eq!(matrix.as_slice(), [0, 1, 2, 3]);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn each_mut(&mut self) -> Matrix<&mut T, ROWS, COLS> {
