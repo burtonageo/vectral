@@ -1319,6 +1319,21 @@ impl<T, const ROWS: usize, const COLS: usize> IndexMut<usize> for Matrix<T, ROWS
     }
 }
 
+impl<T, const ROWS: usize, const COLS: usize> Index<(usize, usize)> for Matrix<T, ROWS, COLS> {
+    type Output = T;
+    #[inline]
+    fn index(&self, (row, col): (usize, usize)) -> &Self::Output {
+        &self.data[row][col]
+    }
+}
+
+impl<T, const ROWS: usize, const COLS: usize> IndexMut<(usize, usize)> for Matrix<T, ROWS, COLS> {
+    #[inline]
+    fn index_mut(&mut self, (row, col): (usize, usize)) -> &mut Self::Output {
+        &mut self.data[row][col]
+    }
+}
+
 impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// Returns the cofactor of this matrix.
     ///
