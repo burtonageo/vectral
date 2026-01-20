@@ -258,19 +258,44 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[track_caller]
     #[inline]
     pub fn set_col(&mut self, col_idx: usize, col: [T; ROWS]) {
-        assert!(col_idx < COLS, "Column index out of bounds");
+        match self.try_set_col(col_idx, col) {
+            Ok(_) => (),
+            Err(_) => panic!("Column index out of bounds"),
+        }
+    }
+
+    #[inline]
+    pub fn try_set_col(&mut self, col_idx: usize, col: [T; ROWS]) -> Result<(), [T; ROWS]> {
+        if col_idx >= COLS {
+            return Err(col);
+        }
+
         let col = ManuallyDrop::new(col);
         for i in 0..COLS {
             unsafe {
                 *self.get_unchecked_mut(i, col_idx) = ptr::read(col.get_unchecked(i));
             }
         }
+
+        Ok(())
     }
 
     #[track_caller]
     #[inline]
     pub fn set_row(&mut self, row_idx: usize, row: [T; COLS]) {
         self.data[row_idx] = row;
+    }
+
+    #[inline]
+    pub fn try_set_row(&mut self, row_idx: usize, mut row: [T; COLS]) -> Result<(), [T; COLS]> {
+        if row_idx >= ROWS {
+            return Err(row);
+        }
+
+        let matrix_row = unsafe { self.data.get_unchecked_mut(row_idx) };
+        mem::swap(&mut row, matrix_row);
+
+        Ok(())
     }
 
     #[must_use]
