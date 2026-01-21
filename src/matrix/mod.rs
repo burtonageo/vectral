@@ -297,7 +297,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         self.data.as_mut_ptr().cast()
     }
 
-    /// Attempt to get a reference to the element at [`row`][`col`].
+    /// Attempt to get a reference to the element at `Matrix[row][col]`.
     ///
     /// This method returns `None` if either of the given indices are out of bounds.
     ///
@@ -328,7 +328,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         }
     }
 
-    /// Attempt to get a mutable reference to the element at [`row`][`col`].
+    /// Attempt to get a mutable reference to the element at `Matrix[row][col]`.
     ///
     /// This method returns `None` if either of the given indices are out of bounds.
     ///
