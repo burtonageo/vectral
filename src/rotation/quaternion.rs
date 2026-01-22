@@ -262,13 +262,25 @@ where
             let mut diag =
                 shrink_to::<3, _, _>(zip(m.rightwards_diagonal(), array::from_fn(identity)));
 
-            fn compare<T: PartialOrd>((lhs, _): &(T, usize), (rhs, _): &(T, usize)) -> Ordering {
-                lhs.partial_cmp(rhs)
-                    .map(Ordering::reverse)
-                    .unwrap_or(Ordering::Less)
-            }
+            // Sort by value
+            {
+                #[inline(always)]
+                fn compare<T: PartialOrd>(lhs: &T, rhs: &T) -> Ordering {
+                    lhs.partial_cmp(rhs).unwrap_or(Ordering::Less)
+                }
 
-            diag.sort_by(compare);
+                if compare(&diag[0].0, &diag[1].0) == Ordering::Less {
+                    diag.swap(0, 1);
+                }
+
+                if compare(&diag[1].0, &diag[2].0) == Ordering::Less {
+                    diag.swap(1, 2);
+                }
+
+                if compare(&diag[0].0, &diag[2].0) == Ordering::Less {
+                    diag.swap(0, 2);
+                }
+            }
 
             let [(mut qi, i), (mut qj, j), (mut qk, k)] = diag;
 

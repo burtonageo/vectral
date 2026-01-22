@@ -3,8 +3,6 @@
 #![feature(maybe_uninit_array_assume_init, generic_const_exprs)]
 #![cfg_attr(feature = "nightly", feature(f16, f128))]
 
-extern crate alloc;
-
 macro_rules! nz {
     ($num:expr) => {
         const {
