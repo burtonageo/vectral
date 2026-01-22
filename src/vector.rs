@@ -3,15 +3,15 @@ use crate::{
     matrix::{Matrix, TransformHomogeneous},
     point::Point,
     transform::{Transform, Translate},
-};
-use crate::utils::{
-    assertions::AssertLarger,
-    concat, expand, expand_to,
-    num::{
-        ClosedAdd, ClosedMul, ClosedSub, One, Sqrt, Zero,
-        checked::{CheckedDiv, CheckedMul},
+    utils::{
+        assertions::AssertLarger,
+        concat, expand, expand_to,
+        num::{
+            ClosedAdd, ClosedMul, ClosedSub, One, Sqrt, Zero,
+            checked::{CheckedDiv, CheckedMul},
+        },
+        shrink, shrink_to, split, sum, zip_map,
     },
-    shrink, shrink_to, split, sum, zip_map,
 };
 use core::{
     array::{self, IntoIter},
@@ -189,6 +189,13 @@ impl<T, const N: usize> Vector<T, N> {
         }
     }
 
+    #[inline]
+    pub fn zip_map<U, Ret, F: FnMut(T, U) -> Ret>(self, rhs: Vector<U, N>, f: F) -> Vector<Ret, N> {
+        Vector {
+            data: zip_map(self.data, rhs.data, f),
+        }
+    }
+
     #[must_use]
     #[inline]
     pub fn dot<U>(self, rhs: Vector<U, N>) -> T::Output
@@ -205,7 +212,7 @@ impl<T, const N: usize> Vector<T, N> {
     where
         T: Mul<U>,
     {
-        Vector::new(zip_map(self.data, rhs.data, Mul::mul))
+        self.zip_map(rhs, Mul::mul)
     }
 
     #[must_use]
@@ -214,7 +221,7 @@ impl<T, const N: usize> Vector<T, N> {
     where
         T: Div<U>,
     {
-        Vector::new(zip_map(self.data, rhs.data, Div::div))
+        self.zip_map(rhs, Div::div)
     }
 
     #[must_use]
@@ -223,7 +230,7 @@ impl<T, const N: usize> Vector<T, N> {
     where
         T: Add<U>,
     {
-        Vector::new(zip_map(self.data, rhs.data, Add::add))
+        self.zip_map(rhs, Add::add)
     }
 
     #[must_use]
@@ -232,7 +239,7 @@ impl<T, const N: usize> Vector<T, N> {
     where
         T: Sub<U>,
     {
-        Vector::new(zip_map(self.data, rhs.data, Sub::sub))
+        self.zip_map(rhs, Sub::sub)
     }
 
     #[must_use]
@@ -681,9 +688,7 @@ impl<T: Add<U>, U, const N: usize> Add<Vector<U, N>> for Vector<T, N> {
     type Output = Vector<T::Output, N>;
     #[inline]
     fn add(self, rhs: Vector<U, N>) -> Self::Output {
-        Vector {
-            data: zip_map(self.data, rhs.data, |a, b| a + b),
-        }
+        self.zip_map(rhs, Add::add)
     }
 }
 
@@ -700,9 +705,7 @@ impl<T: Sub<U>, U, const N: usize> Sub<Vector<U, N>> for Vector<T, N> {
     type Output = Vector<T::Output, N>;
     #[inline]
     fn sub(self, rhs: Vector<U, N>) -> Self::Output {
-        Vector {
-            data: zip_map(self.data, rhs.data, |a, b| a - b),
-        }
+        self.zip_map(rhs, Sub::sub)
     }
 }
 

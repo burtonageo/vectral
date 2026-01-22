@@ -1,15 +1,15 @@
-use crate::utils::{
-    flatten,
-    num::{
-        Abs, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
-        checked::CheckedDiv,
-    },
-    shrink_to, shrink_to_copy, sum, zip_map,
-};
 use crate::{
     point::Point3,
     rotation::Rotation,
     rotation::{angle::Angle, quaternion::Quaternion},
+    utils::{
+        flatten,
+        num::{
+            Abs, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
+            checked::CheckedDiv,
+        },
+        shrink_to, shrink_to_copy, sum, zip_map,
+    },
     vector::{Vector, Vector3, Vector4},
 };
 use core::{
@@ -545,6 +545,17 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         unsafe { Matrix::assume_init(matrix) }
     }
 
+    #[inline]
+    pub fn zip_map<U, Ret, F: FnMut(T, U) -> Ret>(
+        self,
+        rhs: Matrix<U, ROWS, COLS>,
+        mut f: F,
+    ) -> Matrix<Ret, ROWS, COLS> {
+        Matrix {
+            data: zip_map(self.data, rhs.data, |lhs, rhs| zip_map(lhs, rhs, &mut f)),
+        }
+    }
+
     #[track_caller]
     #[must_use]
     #[inline]
@@ -933,11 +944,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     where
         T: Add<U>,
     {
-        Matrix {
-            data: zip_map(self.data, matrix.data, |lhs, rhs| {
-                zip_map(lhs, rhs, Add::add)
-            }),
-        }
+        self.zip_map(matrix, Add::add)
     }
 
     #[must_use]
@@ -946,11 +953,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     where
         T: Sub<U>,
     {
-        Matrix {
-            data: zip_map(self.data, matrix.data, |lhs, rhs| {
-                zip_map(lhs, rhs, Sub::sub)
-            }),
-        }
+        self.zip_map(matrix, Sub::sub)
     }
 
     #[must_use]
@@ -959,11 +962,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     where
         T: Mul<U>,
     {
-        Matrix {
-            data: zip_map(self.data, matrix.data, |lhs, rhs| {
-                zip_map(lhs, rhs, Mul::mul)
-            }),
-        }
+        self.zip_map(matrix, Mul::mul)
     }
 
     #[must_use]
@@ -972,11 +971,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     where
         T: Div<U>,
     {
-        Matrix {
-            data: zip_map(self.data, matrix.data, |lhs, rhs| {
-                zip_map(lhs, rhs, Div::div)
-            }),
-        }
+        self.zip_map(matrix, Div::div)
     }
 
     /// Creates a new cofactor matrix, where the given `removed_row`. and `removed_col`
@@ -1711,18 +1706,22 @@ where
     type Output = Matrix<T, A, C>;
     #[inline]
     fn mul(self, rhs: Matrix<T, B, C>) -> Self::Output {
-        let mut out_matrix: Matrix<T, A, C> = Zero::ZERO;
+        let mut out_matrix: Matrix<_, A, C> = Matrix::uninit();
 
         for row in 0..A {
             for col in 0..C {
                 let x = self.row(row);
                 let y = rhs.col(col);
 
-                out_matrix[row][col] = sum(zip_map(x, y, Mul::mul));
+                unsafe {
+                    out_matrix
+                        .get_unchecked_mut(row, col)
+                        .write(sum(zip_map(x, y, Mul::mul)));
+                }
             }
         }
 
-        out_matrix
+        unsafe { Matrix::assume_init(out_matrix) }
     }
 }
 
@@ -1785,9 +1784,7 @@ impl<T: Add<U>, U: Copy, const ROWS: usize, const COLS: usize> Add<Matrix<U, ROW
     type Output = Matrix<T::Output, ROWS, COLS>;
     #[inline]
     fn add(self, rhs: Matrix<U, ROWS, COLS>) -> Self::Output {
-        Matrix {
-            data: zip_map(self.data, rhs.data, |lhs, rhs| zip_map(lhs, rhs, Add::add)),
-        }
+        self.zip_map(rhs, Add::add)
     }
 }
 
@@ -1796,11 +1793,7 @@ impl<T: AddAssign<U>, U, const ROWS: usize, const COLS: usize> AddAssign<Matrix<
 {
     #[inline]
     fn add_assign(&mut self, rhs: Matrix<U, ROWS, COLS>) {
-        for (l_row, r_row) in self.data.iter_mut().zip(rhs.data.into_iter()) {
-            for (lhs, rhs) in l_row.iter_mut().zip(r_row.into_iter()) {
-                lhs.add_assign(rhs);
-            }
-        }
+        self.each_mut().zip_map(rhs, |x, y| x.add_assign(y));
     }
 }
 
@@ -1810,9 +1803,7 @@ impl<T: Sub<U>, U, const ROWS: usize, const COLS: usize> Sub<Matrix<U, ROWS, COL
     type Output = Matrix<T::Output, ROWS, COLS>;
     #[inline]
     fn sub(self, rhs: Matrix<U, ROWS, COLS>) -> Self::Output {
-        Matrix {
-            data: zip_map(self.data, rhs.data, |lhs, rhs| zip_map(lhs, rhs, Sub::sub)),
-        }
+        self.zip_map(rhs, Sub::sub)
     }
 }
 
@@ -1821,11 +1812,7 @@ impl<T: SubAssign<U>, U, const ROWS: usize, const COLS: usize> SubAssign<Matrix<
 {
     #[inline]
     fn sub_assign(&mut self, rhs: Matrix<U, ROWS, COLS>) {
-        for (l_row, r_row) in self.data.iter_mut().zip(rhs.data.into_iter()) {
-            for (lhs, rhs) in l_row.iter_mut().zip(r_row.into_iter()) {
-                lhs.sub_assign(rhs);
-            }
-        }
+        self.each_mut().zip_map(rhs, |x, y| x.sub_assign(y));
     }
 }
 
