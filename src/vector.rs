@@ -4,6 +4,7 @@ use crate::{
     point::Point,
     transform::{Transform, Translate},
     utils::{
+        array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
         assertions::AssertLarger,
         concat, expand, expand_to,
         num::{
@@ -245,25 +246,25 @@ impl<T, const N: usize> Vector<T, N> {
     #[must_use]
     #[inline]
     pub const fn get(&self, index: usize) -> Option<&T> {
-        self.data.get(index)
+        array_get_checked(&self.data, index)
     }
 
     #[must_use]
     #[inline]
     pub const fn get_mut(&mut self, index: usize) -> Option<&mut T> {
-        self.data.get_mut(index)
+        array_get_mut_checked(&mut self.data, index)
     }
 
     #[must_use]
     #[inline]
     pub const unsafe fn get_unchecked(&self, index: usize) -> &T {
-        unsafe { self.data.get_unchecked(index) }
+        unsafe { array_get_unchecked(&self.data, index) }
     }
 
     #[must_use]
     #[inline]
     pub const unsafe fn get_unchecked_mut(&mut self, index: usize) -> &mut T {
-        unsafe { self.data.get_unchecked_mut(index) }
+        unsafe { array_get_unchecked_mut(&mut self.data, index) }
     }
 
     #[must_use]
@@ -536,7 +537,7 @@ impl<T: Copy, const N: usize> Vector<T, N> {
         let mut i = 0;
         while i < N1 {
             unsafe {
-                let swizzle_idx = *swizzle_vec.get_unchecked(i);
+                let swizzle_idx = *swizzle_vec.as_ptr().add(i);
                 if swizzle_idx >= N {
                     return None;
                 }

@@ -175,34 +175,39 @@ pub trait Trig: Copy {
 }
 
 macro_rules! fragments {
-    ( $( $num_ty:ty $(;)? )? ) => {};
+    ( $( $( #[ $meta:meta] )* $num_ty:ty $(;)? )? ) => {};
 
-    ( $num_ty:ty ; zero = $zero:expr $(, $($rest:tt)* )? ) => {
+    ( $( #[ $meta:meta] )* $num_ty:ty ; zero = $zero:expr $(, $($rest:tt)* )? ) => {
+
+        $( #[ $meta] )*
         impl Zero for $num_ty {
             const ZERO: Self = $zero;
         }
 
-        fragments! { $num_ty ; $( $($rest)* )? }
+        fragments! { $( #[ $meta] )* $num_ty ; $( $($rest)* )? }
     };
 
-    ( $num_ty:ty ; one = $one:expr $(, $($rest:tt)* )? ) => {
+    ( $( #[ $meta:meta] )* $num_ty:ty ; one = $one:expr $(, $($rest:tt)* )? ) => {
+        $( #[ $meta] )*
         impl One for $num_ty {
             const ONE: Self = $one;
         }
 
-        fragments! { $num_ty ; $( $($rest)* )? }
+        fragments! { $( #[ $meta] )* $num_ty ; $( $($rest)* )? }
     };
 }
 
 macro_rules! impl_nums {
     (
         $(
+            $( #[ $meta:meta] )*
             $num_ty:ty => ( $( $inits:tt )* )
         ),* $(,)?
     ) => {
         $(
-            fragments! { $num_ty ; $($inits)* }
+            fragments! { $( #[ $meta ] )* $num_ty ; $($inits)* }
 
+            $( #[ $meta] )*
             impl Bounded for $num_ty {
                 const MIN: Self = <$num_ty>::MIN;
                 const MAX: Self = <$num_ty>::MAX;
@@ -224,9 +229,11 @@ impl_nums! {
     i64 => (zero = 0, one = 1),
     i128 => (zero = 0, one = 1),
 
+    #[cfg(feature = "nightly")]
     f16 => (zero = 0.0, one = 1.0),
     f32 => (zero = 0.0, one = 1.0),
     f64 => (zero = 0.0, one = 1.0),
+    #[cfg(feature = "nightly")]
     f128 => (zero = 0.0, one = 1.0),
 
     NonZeroI8 => ( one = NonZeroI8::new(1).unwrap() ),
@@ -495,9 +502,9 @@ macro_rules! impl_float_traits {
             }
 
 
-            #[cfg(all(feature = "std", not(feature = "libm")))]
+            #[cfg(all(feature = "std", feature = "nightly", not(feature = "libm")))]
             impl_from_float_type!($type, f16);
-            #[cfg(all(feature = "std", not(feature = "libm")))]
+            #[cfg(all(feature = "std", feature = "nightly", not(feature = "libm")))]
             impl_from_float_type!($type, f128);
 
             impl_from_float_type!($type, f32);
@@ -510,7 +517,7 @@ impl_float_traits! {
     f32, f64,
 }
 
-#[cfg(all(feature = "std", not(feature = "libm")))]
+#[cfg(all(feature = "std", feature = "nightly", not(feature = "libm")))]
 impl_float_traits! {
     f16, f128,
 }
@@ -537,7 +544,12 @@ macro_rules! impl_abs_for_signed_types {
 
 impl_abs_for_signed_types! {
     i8, i16, i32, i64, i128, isize,
-    f16, f32, f64, f128,
+    f32, f64,
+}
+
+#[cfg(feature = "nightly")]
+impl_abs_for_signed_types! {
+    f16, f128,
 }
 
 macro_rules! impl_abs_for_unsigned_types {

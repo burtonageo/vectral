@@ -314,5 +314,10 @@ macro_rules! impl_checked_float_ops {
 }
 
 impl_checked_float_ops! {
-    f16, f32, f64, f128,
+    f32, f64,
+}
+
+#[cfg(feature = "nightly")]
+impl_checked_float_ops! {
+    f16,  f128,
 }

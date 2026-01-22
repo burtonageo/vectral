@@ -1,4 +1,7 @@
-use crate::{utils::num::{ClosedAdd, ClosedMul, One, Zero}, const_assert_smaller, const_assert_larger};
+use crate::{
+    const_assert_larger, const_assert_smaller,
+    utils::num::{ClosedAdd, ClosedMul, One, Zero},
+};
 use core::{
     mem::{self, ManuallyDrop, MaybeUninit},
     ops::{Add, Mul},
@@ -131,9 +134,9 @@ pub const fn zip<T, U, const N: usize>(lhs: [T; N], rhs: [U; N]) -> [(T, U); N] 
     let mut i = 0;
     while i < N {
         unsafe {
-            let slot = zipped.get_unchecked_mut(i);
-            let lhs = ptr::read(lhs.get_unchecked(i));
-            let rhs = ptr::read(rhs.get_unchecked(i));
+            let slot = array_get_unchecked_mut(&mut zipped, i);
+            let lhs = ptr::read(array_get_unchecked(&lhs, i));
+            let rhs = ptr::read(array_get_unchecked(&rhs, i));
 
             slot.write((lhs, rhs));
         }
@@ -149,16 +152,16 @@ pub const fn zip<T, U, const N: usize>(lhs: [T; N], rhs: [U; N]) -> [(T, U); N] 
 #[inline(always)]
 pub const fn unzip<T, U, const N: usize>(array: [(T, U); N]) -> ([T; N], [U; N]) {
     let (mut lhs, mut rhs) = (
-        [const { MaybeUninit::<T>::uninit() }; N], 
+        [const { MaybeUninit::<T>::uninit() }; N],
         [const { MaybeUninit::<U>::uninit() }; N],
     );
 
     let mut i = 0;
     while i < N {
         unsafe {
-            let slot = array.get_unchecked(i);
-            lhs.get_unchecked_mut(i).write(ptr::read(&slot.0));
-            rhs.get_unchecked_mut(i).write(ptr::read(&slot.1));
+            let slot = array_get_unchecked(&array, i);
+            array_get_unchecked_mut(&mut lhs, i).write(ptr::read(&slot.0));
+            array_get_unchecked_mut(&mut rhs, i).write(ptr::read(&slot.1));
         }
 
         i += 1;
@@ -317,8 +320,10 @@ pub const fn copied<T: Copy, const N: usize>(array: [&'_ T; N]) -> [T; N] {
     while i < N {
         unsafe {
             result
-                .get_unchecked_mut(i)
-                .write(**array.get_unchecked(i));
+                .as_mut_ptr()
+                .cast::<T>()
+                .add(i)
+                .write(**array.as_ptr().add(i));
         }
         i += 1;
     }
@@ -370,6 +375,38 @@ pub const fn split<const IDX: usize, T, const SIZE: usize>(
             MaybeUninit::array_assume_init(rhs),
         )
     }
+}
+
+#[must_use]
+#[inline]
+pub(crate) const fn array_get_checked<T>(array: &[T], index: usize) -> Option<&T> {
+    if index < array.len() {
+        unsafe { Some(array_get_unchecked(array, index)) }
+    } else {
+        None
+    }
+}
+
+#[must_use]
+#[inline]
+pub(crate) const fn array_get_mut_checked<T>(array: &mut [T], index: usize) -> Option<&mut T> {
+    if index < array.len() {
+        unsafe { Some(array_get_unchecked_mut(array, index)) }
+    } else {
+        None
+    }
+}
+
+#[must_use]
+#[inline]
+pub(crate) const unsafe fn array_get_unchecked<T>(array: &[T], index: usize) -> &T {
+    unsafe { &*array.as_ptr().add(index) }
+}
+
+#[must_use]
+#[inline]
+pub(crate) const unsafe fn array_get_unchecked_mut<T>(array: &mut [T], index: usize) -> &mut T {
+    unsafe { &mut *array.as_mut_ptr().add(index) }
 }
 
 #[cfg(test)]

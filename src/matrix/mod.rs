@@ -1,8 +1,8 @@
 use crate::{
     point::Point3,
-    rotation::Rotation,
-    rotation::{angle::Angle, quaternion::Quaternion},
+    rotation::{Rotation, angle::Angle, quaternion::Quaternion},
     utils::{
+        array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
         flatten,
         num::{
             Abs, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
@@ -90,9 +90,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const fn uninit() -> Matrix<MaybeUninit<T>, ROWS, COLS> {
-        Matrix {
-            data: [const { MaybeUninit::uninit().transpose() }; _],
-        }
+        unsafe { mem::transmute_copy(&MaybeUninit::<Matrix<T, ROWS, COLS>>::uninit()) }
     }
 
     /// Returns a reference to the inner array of the matrix.
@@ -322,8 +320,8 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const fn get(&self, row: usize, col: usize) -> Option<&T> {
-        match self.data.get(row) {
-            Some(row) => row.get(col),
+        match array_get_checked(&self.data, row) {
+            Some(row) => array_get_checked(row, col),
             None => None,
         }
     }
@@ -358,8 +356,8 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const fn get_mut(&mut self, row: usize, col: usize) -> Option<&mut T> {
-        match self.data.get_mut(row) {
-            Some(row) => row.get_mut(col),
+        match array_get_mut_checked(&mut self.data, row) {
+            Some(row_data) => array_get_mut_checked(row_data.as_mut_slice(), col),
             None => None,
         }
     }
@@ -384,7 +382,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const unsafe fn get_unchecked(&self, row: usize, col: usize) -> &T {
-        unsafe { self.data.get_unchecked(row).get_unchecked(col) }
+        unsafe { array_get_unchecked(array_get_unchecked(&self.data, row).as_slice(), col) }
     }
 
     /// Get a mutable reference to the element at index `row` and `col` without performing
@@ -411,7 +409,12 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const unsafe fn get_unchecked_mut(&mut self, row: usize, col: usize) -> &mut T {
-        unsafe { self.data.get_unchecked_mut(row).get_unchecked_mut(col) }
+        unsafe {
+            array_get_unchecked_mut(
+                array_get_unchecked_mut(&mut self.data, row).as_mut_slice(),
+                col,
+            )
+        }
     }
 
     /// Sets the column of the `Matrix` at `col_idx` to the given `col`.
@@ -560,7 +563,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const fn row_ref(&self, n: usize) -> [&T; COLS] {
-        match self.data.get(n) {
+        match array_get_checked(&self.data, n) {
             Some(row) => row.each_ref(),
             None => panic!("row index out of bounds"),
         }
@@ -570,7 +573,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const fn row_mut(&mut self, n: usize) -> [&mut T; COLS] {
-        match self.data.get_mut(n) {
+        match array_get_mut_checked(&mut self.data, n) {
             Some(row) => row.each_mut(),
             None => panic!("row index out of bounds"),
         }
@@ -582,17 +585,17 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     pub const fn col_ref(&self, n: usize) -> [&T; ROWS] {
         assert!(n < COLS, "column index out of bounds");
 
-        let mut col = [const { MaybeUninit::uninit() }; _];
+        let mut col = [const { MaybeUninit::uninit() }; ROWS];
 
         let mut row = 0;
         while row < ROWS {
             unsafe {
-                col.get_unchecked_mut(row).write(self.get_unchecked(row, n));
+                array_get_unchecked_mut(&mut col, row).write(self.get_unchecked(row, n));
             }
             row += 1;
         }
 
-        unsafe { MaybeUninit::assume_init(col.transpose()) }
+        unsafe { MaybeUninit::assume_init(mem::transmute_copy(&col)) }
     }
 
     #[track_caller]
@@ -607,8 +610,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         let ptr = self.as_mut_ptr();
         while row < ROWS {
             unsafe {
-                col.get_unchecked_mut(row)
-                    .write(&mut *ptr.add(row * ROWS + n));
+                array_get_unchecked_mut(&mut col, row).write(&mut *ptr.add(row * ROWS + n));
             }
             row += 1;
         }
@@ -679,10 +681,8 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             while col < COLS {
                 unsafe {
                     let write_slot = {
-                        transposed
-                            .data
-                            .get_unchecked_mut(col)
-                            .get_unchecked_mut(row)
+                        let c = array_get_unchecked_mut(&mut transposed.data, col);
+                        array_get_unchecked_mut(c, row)
                     };
 
                     let read_slot = self.get_unchecked(row, col);
@@ -820,16 +820,12 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         let mut row = 0;
         while row < ROWS {
             unsafe {
-                let src_row = self.data.get_unchecked(row).as_ptr();
-                let dst_row = concat_matrix
-                    .data
-                    .get_unchecked_mut(row)
-                    .as_mut_ptr()
-                    .cast::<T>();
+                let src_row = { array_get_unchecked(&self.data, row).as_ptr() };
+                let dst_row = concat_matrix.data.as_mut_ptr().add(row).cast::<T>();
 
                 ptr::copy(src_row, dst_row, COLS);
 
-                let src_row = matrix.data.get_unchecked(row).as_ptr();
+                let src_row = array_get_unchecked(&matrix.data, row).as_ptr();
                 let dst_row = dst_row.add(COLS);
 
                 ptr::copy(src_row, dst_row, NEW_COLS);
@@ -887,12 +883,12 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         let mut row = 0;
         while row < ROWS {
             unsafe {
-                let src = self.data.get_unchecked(row).as_ptr();
-                let dst = concat_matrix
-                    .data
-                    .get_unchecked_mut(row)
-                    .as_mut_ptr()
-                    .cast::<T>();
+                let src = { array_get_unchecked(&self.data, row).as_ptr() };
+                let dst = {
+                    array_get_unchecked_mut(&mut concat_matrix.data, row)
+                        .as_mut_ptr()
+                        .cast::<T>()
+                };
                 ptr::copy(src, dst, COLS);
             }
 
@@ -902,12 +898,12 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         while row < ROWS + NEW_ROWS {
             unsafe {
                 let idx = row - ROWS;
-                let src = matrix.data.get_unchecked(idx).as_ptr();
-                let dst = concat_matrix
-                    .data
-                    .get_unchecked_mut(row)
-                    .as_mut_ptr()
-                    .cast::<T>();
+                let src = array_get_unchecked(&matrix.data, idx).as_ptr();
+                let dst = {
+                    array_get_unchecked_mut(&mut concat_matrix.data, row)
+                        .as_mut_ptr()
+                        .cast::<T>()
+                };
                 ptr::copy(src, dst, COLS);
             }
 
@@ -1194,7 +1190,7 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
 
         unsafe {
             ptr::copy(
-                self.data.get_unchecked(n).as_ptr().cast::<T>(),
+                self.data.as_ptr().add(n).cast::<T>(),
                 row.as_mut_ptr().cast(),
                 COLS,
             );
@@ -1215,8 +1211,10 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         while row < ROWS2 {
             let mut col = 0;
             while col < COLS2 {
-                let (swizzle_row_idx, swizzle_col_idx) =
-                    unsafe { *swizzle_matrix.get_unchecked(row).get_unchecked(col) };
+                let (swizzle_row_idx, swizzle_col_idx) = unsafe {
+                    let swizz_row = array_get_unchecked(swizzle_matrix, row);
+                    *array_get_unchecked(swizz_row, col)
+                };
 
                 if swizzle_row_idx >= ROWS || swizzle_col_idx >= COLS {
                     return None;
@@ -1305,9 +1303,7 @@ impl<T, const N: usize> Matrix<T, N, N> {
         let mut i = 0;
         while i < N {
             unsafe {
-                diagonal
-                    .get_unchecked_mut(i)
-                    .write(self.get_unchecked(i, i));
+                array_get_unchecked_mut(&mut diagonal, i).write(self.get_unchecked(i, i));
             }
             i += 1;
         }
@@ -1324,9 +1320,7 @@ impl<T, const N: usize> Matrix<T, N, N> {
         let (mut row, mut col) = (0, N - 1);
         while row < N {
             unsafe {
-                diagonal
-                    .get_unchecked_mut(row)
-                    .write(self.get_unchecked(row, col));
+                array_get_unchecked_mut(&mut diagonal, row).write(self.get_unchecked(row, col));
             }
             row += 1;
             col = col.saturating_sub(1);
@@ -1345,9 +1339,7 @@ impl<T, const N: usize> Matrix<T, N, N> {
         let ptr = self.as_mut_ptr();
         while i < N {
             unsafe {
-                diagonal
-                    .get_unchecked_mut(i)
-                    .write(&mut *ptr.add(i * N + i));
+                array_get_unchecked_mut(&mut diagonal, i).write(&mut *ptr.add(i * N + i));
             }
             i += 1;
         }
@@ -1363,9 +1355,7 @@ impl<T, const N: usize> Matrix<T, N, N> {
         let ptr = self.as_mut_ptr();
         while row < N {
             unsafe {
-                diagonal
-                    .get_unchecked_mut(row)
-                    .write(&mut *ptr.add(row * N + col));
+                array_get_unchecked_mut(&mut diagonal, row).write(&mut *ptr.add(row * N + col));
             }
             row += 1;
             col = col.saturating_sub(1);
@@ -1462,8 +1452,7 @@ impl<T: Copy, const N: usize> Matrix<T, N, N> {
         let mut i = 0;
         while i < N {
             unsafe {
-                diagonal
-                    .get_unchecked_mut(i)
+                array_get_unchecked_mut(&mut diagonal, i)
                     .write(ptr::read(self.get_unchecked(i, i)));
             }
             i += 1;
@@ -1479,8 +1468,7 @@ impl<T: Copy, const N: usize> Matrix<T, N, N> {
         let (mut row, mut col) = (0, N - 1);
         while row < N {
             unsafe {
-                diagonal
-                    .get_unchecked_mut(row)
+                array_get_unchecked_mut(&mut diagonal, row)
                     .write(ptr::read(self.get_unchecked(row, col)));
             }
             row += 1;

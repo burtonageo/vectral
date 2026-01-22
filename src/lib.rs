@@ -1,14 +1,7 @@
 #![cfg_attr(not(any(test, feature = "std")), no_std)]
 #![allow(incomplete_features)]
-#![feature(
-    const_index,
-    const_trait_impl,
-    maybe_uninit_array_assume_init,
-    maybe_uninit_uninit_array_transpose,
-    generic_const_exprs,
-    f16,
-    f128
-)]
+#![feature(maybe_uninit_array_assume_init, generic_const_exprs)]
+#![cfg_attr(feature = "nightly", feature(f16, f128))]
 
 extern crate alloc;
 

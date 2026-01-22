@@ -1,5 +1,5 @@
 use crate::{
-    matrix::{Matrix, TransformHomogeneous}, transform::{Transform, Translate}, vector::Vector
+    matrix::{Matrix, TransformHomogeneous}, transform::{Transform, Translate}, utils::{array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut}, vector::Vector
 };
 use crate::utils::{
     expand, expand_to,
@@ -127,25 +127,25 @@ impl<T, const N: usize> Point<T, N> {
     #[must_use]
     #[inline]
     pub const fn get(&self, index: usize) -> Option<&T> {
-        self.data.get(index)
+        array_get_checked(&self.data, index)
     }
 
     #[must_use]
     #[inline]
     pub const fn get_mut(&mut self, index: usize) -> Option<&mut T> {
-        self.data.get_mut(index)
+        array_get_mut_checked(&mut self.data, index)
     }
 
     #[must_use]
     #[inline]
     pub const unsafe fn get_unchecked(&self, index: usize) -> &T {
-        unsafe { self.data.get_unchecked(index) }
+        unsafe { array_get_unchecked(&self.data, index) }
     }
 
     #[must_use]
     #[inline]
     pub const unsafe fn get_unchecked_mut(&mut self, index: usize) -> &mut T {
-        unsafe { self.data.get_unchecked_mut(index) }
+        unsafe { array_get_unchecked_mut(&mut self.data, index) }
     }
 
     #[must_use]
