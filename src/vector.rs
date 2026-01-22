@@ -1150,4 +1150,20 @@ mod tests {
 
         assert!(vector.try_swizzle(&[421]).is_none());
     }
+
+    #[cfg(feature = "simd")]
+    #[test]
+    fn test_simd() {
+        let vector_1 = Vector::new([1, 2, 4, 5]);
+        let vector_2 = Vector::new([2, 5, 5, 3]);
+
+        let result = vector_1.simd_elementwise_add(vector_2);
+        assert_eq!(result.as_slice(), &[3, 7, 9, 8]);
+
+        let result = vector_1.simd_elementwise_sub(vector_2);
+        assert_eq!(result.as_slice(), &[-1, -3, -1, 2]);
+
+        let result = vector_1.simd_scalar_mul(2);
+        assert_eq!(result.as_slice(), &[2, 4, 8, 10]);
+    }
 }
