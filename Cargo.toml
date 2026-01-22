@@ -30,6 +30,7 @@ optional = true
 [features]
 default = ["std"]
 nightly = []
+simd = ["nightly"]
 libm = ["dep:libm"]
 approx = ["dep:approx"]
 bytemuck = ["dep:bytemuck"]
