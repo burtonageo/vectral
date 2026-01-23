@@ -284,7 +284,7 @@ impl<T: Serialize> Serialize for Angle<T> {
                 serializer.serialize_newtype_variant("Angle", 0, "Degrees", degs)
             }
             Self::Radians(ref rads) => {
-                serializer.serialize_newtype_variant("Angle", 0, "Radians", rads)
+                serializer.serialize_newtype_variant("Angle", 1, "Radians", rads)
             }
         }
     }
@@ -333,6 +333,30 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Angle<T> {
                                     _ => {
                                         Err(de::Error::invalid_value(de::Unexpected::Str(v), &self))
                                     }
+                                }
+                            }
+
+                            #[inline]
+                            fn visit_i64<E: de::Error>(self, v: i64) -> Result<Self::Value, E> {
+                                match v {
+                                    0 => Ok(AngleUnit::Degrees),
+                                    1 => Ok(AngleUnit::Radians),
+                                    _ => Err(de::Error::invalid_value(
+                                        de::Unexpected::Signed(v),
+                                        &self,
+                                    )),
+                                }
+                            }
+
+                            #[inline]
+                            fn visit_u64<E: de::Error>(self, v: u64) -> Result<Self::Value, E> {
+                                match v {
+                                    0 => Ok(AngleUnit::Degrees),
+                                    1 => Ok(AngleUnit::Radians),
+                                    _ => Err(de::Error::invalid_value(
+                                        de::Unexpected::Unsigned(v),
+                                        &self,
+                                    )),
                                 }
                             }
                         }
