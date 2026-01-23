@@ -13,6 +13,8 @@ use crate::{
     rotation::angle::Angle,
     vector::{Vector, Vector3, Vector4},
 };
+#[cfg(feature = "serde")]
+use core::marker::PhantomData;
 use core::{
     array,
     cmp::{self, Ordering},
@@ -20,6 +22,11 @@ use core::{
     mem::{ManuallyDrop, MaybeUninit},
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
     ptr,
+};
+#[cfg(feature = "serde")]
+use serde_core::{
+    de::{self, Deserialize, Deserializer},
+    ser::{Serialize, Serializer},
 };
 
 #[repr(C)]
@@ -662,6 +669,136 @@ where
     #[inline]
     fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
         self.v.ulps_eq(&other.v, epsilon, max_ulps) && self.w.ulps_eq(&other.w, epsilon, max_ulps)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<T: Serialize> Serialize for Quaternion<T> {
+    #[inline]
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde_core::ser::SerializeStruct;
+
+        let mut s = serializer.serialize_struct("Quaternion", 4)?;
+        s.serialize_field("x", &self.v.x)?;
+        s.serialize_field("y", &self.v.y)?;
+        s.serialize_field("z", &self.v.z)?;
+        s.serialize_field("w", &self.w)?;
+        s.end()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for Quaternion<T> {
+    #[inline]
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        enum Field {
+            X,
+            Y,
+            Z,
+            W,
+        }
+
+        impl<'de> Deserialize<'de> for Field {
+            #[inline]
+            fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+                struct FieldVisitor;
+
+                impl de::Visitor<'_> for FieldVisitor {
+                    type Value = Field;
+
+                    #[inline]
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                        formatter.write_str("`x`, `y`, `z`, or `w`")
+                    }
+
+                    #[inline]
+                    fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                        match v {
+                            "x" => Ok(Field::X),
+                            "y" => Ok(Field::Y),
+                            "z" => Ok(Field::Z),
+                            "w" => Ok(Field::W),
+                            _ => return Err(de::Error::unknown_field(v, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        struct Visitor<T>(PhantomData<Quaternion<T>>);
+
+        impl<'de, T: Deserialize<'de>> de::Visitor<'de> for Visitor<T> {
+            type Value = Quaternion<T>;
+            #[inline]
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("struct Quaternion")
+            }
+
+            #[inline]
+            fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+                let x = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let y = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let z = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(2, &self))?;
+                let w = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(3, &self))?;
+
+                Ok(Quaternion::new(x, y, z, w))
+            }
+
+            #[inline]
+            fn visit_map<A: de::MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+                let mut fields = [None, None, None, None];
+
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::X => {
+                            if fields[0].is_some() {
+                                return Err(de::Error::duplicate_field("x"));
+                            }
+                            fields[0] = Some(map.next_value::<T>()?);
+                        }
+                        Field::Y => {
+                            if fields[1].is_some() {
+                                return Err(de::Error::duplicate_field("y"));
+                            }
+                            fields[1] = Some(map.next_value::<T>()?);
+                        }
+                        Field::Z => {
+                            if fields[2].is_some() {
+                                return Err(de::Error::duplicate_field("z"));
+                            }
+                            fields[2] = Some(map.next_value::<T>()?);
+                        }
+                        Field::W => {
+                            if fields[3].is_some() {
+                                return Err(de::Error::duplicate_field("w"));
+                            }
+                            fields[3] = Some(map.next_value::<T>()?);
+                        }
+                    }
+                }
+
+                let [x, y, z, w] = fields;
+                let x = x.ok_or_else(|| de::Error::missing_field("x"))?;
+                let y = y.ok_or_else(|| de::Error::missing_field("y"))?;
+                let z = z.ok_or_else(|| de::Error::missing_field("z"))?;
+                let w = w.ok_or_else(|| de::Error::missing_field("w"))?;
+
+                Ok(Quaternion::new(x, y, z, w))
+            }
+        }
+
+        const FIELDS: &'static [&'static str] = &["x", "y", "z", "w"];
+        deserializer.deserialize_struct("Quaternion", FIELDS, Visitor::<T>(PhantomData))
     }
 }
 
