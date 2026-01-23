@@ -100,8 +100,8 @@ where
 
         let delta = delta.expand(T::ONE);
 
-        matrix.set_col(DIM - 1, delta.into_array());
-        inverse.set_col(DIM - 1, delta.neg().into_array());
+        matrix.set_col(DIM - 1, delta.to_array());
+        inverse.set_col(DIM - 1, delta.neg().to_array());
 
         Self { matrix, inverse }
     }
@@ -119,8 +119,8 @@ where
 
         let scale: Vector<T, _> = scale.expand(T::ONE);
 
-        matrix.set_rightwards_diagonal(scale.into_array());
-        inverse.set_rightwards_diagonal(scale.map(|elem| T::ONE / elem).into_array());
+        matrix.set_rightwards_diagonal(scale.to_array());
+        inverse.set_rightwards_diagonal(scale.map(|elem| T::ONE / elem).to_array());
 
         Self { matrix, inverse }
     }

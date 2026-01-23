@@ -305,9 +305,18 @@ impl<T, const N: usize> Vector<T, N> {
         unsafe { slice::from_raw_parts_mut(self.as_mut_ptr(), N) }
     }
 
+    #[deprecated(note = "use Vector::to_array instead")]
     #[must_use]
     #[inline]
     pub const fn into_array(self) -> [T; N] {
+        let array = unsafe { ptr::read(&self.data) };
+        let _this = ManuallyDrop::new(self);
+        array
+    }
+
+    #[must_use]
+    #[inline]
+    pub const fn to_array(self) -> [T; N] {
         let array = unsafe { ptr::read(&self.data) };
         let _this = ManuallyDrop::new(self);
         array
@@ -399,8 +408,8 @@ where
     where
         Simd<T, N>: Sub<Output = Simd<T, N>>,
     {
-        let lhs = Simd::from_array(self.into_array());
-        let rhs = Simd::from_array(rhs.into_array());
+        let lhs = Simd::from_array(self.to_array());
+        let rhs = Simd::from_array(rhs.to_array());
         let res = lhs - rhs;
         Self::new(res.to_array())
     }
@@ -411,8 +420,8 @@ where
     where
         Simd<T, N>: Add<Output = Simd<T, N>>,
     {
-        let lhs = Simd::from_array(self.into_array());
-        let rhs = Simd::from_array(rhs.into_array());
+        let lhs = Simd::from_array(self.to_array());
+        let rhs = Simd::from_array(rhs.to_array());
         let res = lhs + rhs;
         Self::new(res.to_array())
     }
@@ -423,8 +432,8 @@ where
     where
         Simd<T, N>: Mul<Output = Simd<T, N>>,
     {
-        let lhs = Simd::from_array(self.into_array());
-        let rhs = Simd::from_array(rhs.into_array());
+        let lhs = Simd::from_array(self.to_array());
+        let rhs = Simd::from_array(rhs.to_array());
         let res = lhs * rhs;
         Self::new(res.to_array())
     }
@@ -435,8 +444,8 @@ where
     where
         Simd<T, N>: Div<Output = Simd<T, N>>,
     {
-        let lhs = Simd::from_array(self.into_array());
-        let rhs = Simd::from_array(rhs.into_array());
+        let lhs = Simd::from_array(self.to_array());
+        let rhs = Simd::from_array(rhs.to_array());
         let res = lhs / rhs;
         Self::new(res.to_array())
     }
@@ -447,7 +456,7 @@ where
     where
         Simd<T, N>: Add<Output = Simd<T, N>>,
     {
-        let lhs = Simd::from_array(self.into_array());
+        let lhs = Simd::from_array(self.to_array());
         let rhs = Simd::splat(rhs);
         let res = lhs + rhs;
         Self::new(res.to_array())
@@ -459,7 +468,7 @@ where
     where
         Simd<T, N>: Sub<Output = Simd<T, N>>,
     {
-        let lhs = Simd::from_array(self.into_array());
+        let lhs = Simd::from_array(self.to_array());
         let rhs = Simd::splat(rhs);
         let res = lhs - rhs;
         Self::new(res.to_array())
@@ -471,7 +480,7 @@ where
     where
         Simd<T, N>: Mul<Output = Simd<T, N>>,
     {
-        let lhs = Simd::from_array(self.into_array());
+        let lhs = Simd::from_array(self.to_array());
         let rhs = Simd::splat(rhs);
         let res = lhs * rhs;
         Self::new(res.to_array())
@@ -483,7 +492,7 @@ where
     where
         Simd<T, N>: Div<Output = Simd<T, N>>,
     {
-        let lhs = Simd::from_array(self.into_array());
+        let lhs = Simd::from_array(self.to_array());
         let rhs = Simd::splat(rhs);
         let res = lhs / rhs;
         Self::new(res.to_array())
@@ -948,8 +957,18 @@ impl<T, const N: usize> From<Point<T, N>> for Vector<T, N> {
     #[inline]
     fn from(value: Point<T, N>) -> Self {
         Self {
-            data: value.into_array(),
+            data: value.to_array(),
         }
+    }
+}
+
+impl<T: SimdElement, const N: usize> From<Simd<T, N>> for Vector<T, N>
+where
+    LaneCount<N>: SupportedLaneCount,
+{
+    #[inline]
+    fn from(value: Simd<T, N>) -> Self {
+        Self::new(value.to_array())
     }
 }
 
@@ -1009,7 +1028,7 @@ impl<T> From<mint::Vector2<T>> for Vector<T, 2> {
 impl<T> From<Vector<T, 2>> for mint::Vector2<T> {
     #[inline]
     fn from(value: Vector<T, 2>) -> Self {
-        From::from(value.into_array())
+        From::from(value.to_array())
     }
 }
 
@@ -1030,7 +1049,7 @@ impl<T> From<mint::Vector3<T>> for Vector<T, 3> {
 impl<T> From<Vector<T, 3>> for mint::Vector3<T> {
     #[inline]
     fn from(value: Vector<T, 3>) -> Self {
-        From::from(value.into_array())
+        From::from(value.to_array())
     }
 }
 
@@ -1051,7 +1070,7 @@ impl<T> From<mint::Vector4<T>> for Vector<T, 4> {
 impl<T> From<Vector<T, 4>> for mint::Vector4<T> {
     #[inline]
     fn from(value: Vector<T, 4>) -> Self {
-        From::from(value.into_array())
+        From::from(value.to_array())
     }
 }
 
@@ -1146,7 +1165,7 @@ mod tests {
     fn test_swizzle() {
         let vector = Vector::new([1, 2, 8, 9, 3, 1, 4]);
         let swizzled = vector.swizzle(&[1, 4, 0, 0]);
-        assert_eq!(swizzled.into_array(), [2, 3, 1, 1]);
+        assert_eq!(swizzled.to_array(), [2, 3, 1, 1]);
 
         assert!(vector.try_swizzle(&[421]).is_none());
     }

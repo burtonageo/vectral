@@ -172,11 +172,20 @@ impl<T, const N: usize> Point<T, N> {
         unsafe { slice::from_raw_parts_mut(self.as_mut_ptr(), N) }
     }
 
+    #[deprecated(note = "use Vector::to_array instead")]
     #[must_use]
     #[inline]
     pub const fn into_array(self) -> [T; N] {
         let array = unsafe { ptr::read(&self.data) };
         let _self = ManuallyDrop::new(self);
+        array
+    }
+
+    #[must_use]
+    #[inline]
+    pub const fn to_array(self) -> [T; N] {
+        let array = unsafe { ptr::read(&self.data) };
+        let _this = ManuallyDrop::new(self);
         array
     }
 
@@ -207,7 +216,7 @@ impl<T, const N: usize> Point<T, N> {
     #[must_use]
     #[inline]
     pub const fn into_vector(self) -> Vector<T, N> {
-        Vector::new(self.into_array())
+        Vector::new(self.to_array())
     }
 
     #[must_use]
@@ -300,7 +309,7 @@ impl<T, const N: usize> From<Vector<T, N>> for Point<T, N> {
     #[inline]
     fn from(value: Vector<T, N>) -> Self {
         Self {
-            data: value.into_array(),
+            data: value.to_array(),
         }
     }
 }
@@ -375,7 +384,7 @@ impl<T: Add<U>, U, const N: usize> Add<Vector<U, N>> for Point<T, N> {
     type Output = Point<T::Output, N>;
     #[inline]
     fn add(self, rhs: Vector<U, N>) -> Self::Output {
-        Point::new(zip_map(self.data, rhs.into_array(), Add::add))
+        Point::new(zip_map(self.data, rhs.to_array(), Add::add))
     }
 }
 
@@ -392,7 +401,7 @@ impl<T: Sub<U>, U, const N: usize> Sub<Vector<U, N>> for Point<T, N> {
     type Output = Point<T::Output, N>;
     #[inline]
     fn sub(self, rhs: Vector<U, N>) -> Self::Output {
-        Point::new(zip_map(self.data, rhs.into_array(), Sub::sub))
+        Point::new(zip_map(self.data, rhs.to_array(), Sub::sub))
     }
 }
 
@@ -409,7 +418,7 @@ impl<T: Sub<U>, U, const N: usize> Sub<Point<U, N>> for Point<T, N> {
     type Output = Vector<T::Output, N>;
     #[inline]
     fn sub(self, rhs: Point<U, N>) -> Self::Output {
-        Vector::new(zip_map(self.data, rhs.into_array(), Sub::sub))
+        Vector::new(zip_map(self.data, rhs.to_array(), Sub::sub))
     }
 }
 
@@ -530,7 +539,7 @@ impl<T> From<mint::Point2<T>> for Point<T, 2> {
 impl<T> From<Point<T, 2>> for mint::Point2<T> {
     #[inline]
     fn from(value: Point<T, 2>) -> Self {
-        From::from(value.into_array())
+        From::from(value.to_array())
     }
 }
 
@@ -551,7 +560,7 @@ impl<T> From<mint::Point3<T>> for Point<T, 3> {
 impl<T> From<Point<T, 3>> for mint::Point3<T> {
     #[inline]
     fn from(value: Point<T, 3>) -> Self {
-        From::from(value.into_array())
+        From::from(value.to_array())
     }
 }
 

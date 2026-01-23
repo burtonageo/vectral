@@ -67,7 +67,7 @@ fn test_concat() {
     let v1 = Vector::new([1, 2, 3, 4]);
     let v2 = Vector::new([5, 6, 7]);
 
-    assert_eq!(v1.concat(v2).into_array(), [1, 2, 3, 4, 5, 6, 7]);
+    assert_eq!(v1.concat(v2).to_array(), [1, 2, 3, 4, 5, 6, 7]);
 
     #[rustfmt::skip]
     let m1 = Matrix::new([

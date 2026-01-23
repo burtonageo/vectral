@@ -1074,7 +1074,7 @@ impl<T, const COLS: usize> Matrix<T, 1, COLS> {
     #[must_use]
     #[inline]
     pub const fn from_row_vector(vector: Vector<T, COLS>) -> Self {
-        Self::new([vector.into_array()])
+        Self::new([vector.to_array()])
     }
 
     /// Converts the matrix into a row vector of `COLS` elements.
@@ -2048,7 +2048,7 @@ where
         let mut mat = Matrix::identity();
         let col = mat.col_mut(N - 1);
 
-        for (mat_elem, v_elem) in col.into_iter().zip(offset.into_array()) {
+        for (mat_elem, v_elem) in col.into_iter().zip(offset.to_array()) {
             *mat_elem = v_elem;
         }
 
@@ -2073,7 +2073,7 @@ where
         let mut mat = Matrix::identity();
         let diag = mat.rightwards_diagonal_mut();
 
-        for (mat_elem, v_elem) in diag.into_iter().zip(scale.into_array()) {
+        for (mat_elem, v_elem) in diag.into_iter().zip(scale.to_array()) {
             *mat_elem = v_elem;
         }
 
@@ -2196,9 +2196,9 @@ impl<T: ClosedAdd + ClosedMul + CheckedDiv<Output = T> + ClosedSub + Sqrt + One 
         let left = Vector::cross(up.normalized(), dir);
         let new_up = Vector::cross(dir, left);
 
-        cam_to_world.set_col(0, left.expand(T::ZERO).into_array());
-        cam_to_world.set_col(1, new_up.expand(T::ZERO).into_array());
-        cam_to_world.set_col(2, dir.expand(T::ZERO).into_array());
+        cam_to_world.set_col(0, left.expand(T::ZERO).to_array());
+        cam_to_world.set_col(1, new_up.expand(T::ZERO).to_array());
+        cam_to_world.set_col(2, dir.expand(T::ZERO).to_array());
 
         cam_to_world
     }
@@ -2327,7 +2327,7 @@ where
         let w = self[3][3];
 
         // Remove the translation part from the matrix.
-        self.set_col(3, Vector4::unit_n::<3>().into_array());
+        self.set_col(3, Vector4::unit_n::<3>().to_array());
 
         // Polar decompose the matrix.
         let mut count = 0usize;
@@ -2379,7 +2379,7 @@ where
     fn mul(self, rhs: Vector<T, COLS>) -> Self::Output {
         let result = self
             .data
-            .map(|row| sum(zip_map(row, rhs.into_array(), Mul::mul)));
+            .map(|row| sum(zip_map(row, rhs.to_array(), Mul::mul)));
         Vector::from(result)
     }
 }
