@@ -8,10 +8,9 @@ use core::{
     num::NonZeroUsize,
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
-use serde_core::de::VariantAccess;
 #[cfg(feature = "serde")]
 use serde_core::{
-    de::{self, Deserialize, Deserializer},
+    de::{self, Deserialize, Deserializer, VariantAccess},
     ser::{Serialize, Serializer},
 };
 
@@ -290,6 +289,7 @@ impl<T: Serialize> Serialize for Angle<T> {
     }
 }
 
+#[cfg(feature = "serde")]
 impl<'de, T: Deserialize<'de>> Deserialize<'de> for Angle<T> {
     #[inline]
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
