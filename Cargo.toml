@@ -27,6 +27,10 @@ optional = true
 version = "0.2"
 optional = true
 
+[dependencies.serde_core]
+version = "1"
+optional = true
+
 [features]
 default = ["std"]
 nightly = []
@@ -36,6 +40,7 @@ approx = ["dep:approx"]
 bytemuck = ["dep:bytemuck"]
 matrixcompare = ["dep:matrixcompare-core"]
 mint = ["dep:mint"]
+serde = ["dep:serde_core"]
 std = []
 
 [dev-dependencies]

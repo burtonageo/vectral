@@ -14,6 +14,8 @@ use crate::{
         shrink, shrink_to, split, sum, zip_map,
     },
 };
+#[cfg(feature = "serde")]
+use core::marker::PhantomData;
 #[cfg(feature = "simd")]
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{
@@ -24,6 +26,11 @@ use core::{
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
     ptr,
     slice::{self, Iter, IterMut},
+};
+#[cfg(feature = "serde")]
+use serde_core::{
+    de::{self, Deserialize, Deserializer, Error, Expected, SeqAccess},
+    ser::{Serialize, SerializeTupleStruct, Serializer},
 };
 
 #[repr(C)]
@@ -1156,6 +1163,76 @@ impl_eq_mint! {
     (Vector2, Vector<2>),
     (Vector3, Vector<3>),
     (Vector4, Vector<4>),
+}
+
+#[cfg(feature = "serde")]
+impl<T: Serialize, const N: usize> Serialize for Vector<T, N> {
+    #[inline]
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        if serializer.is_human_readable() {
+            let mut struct_serializer = serializer.serialize_tuple_struct("Vector", N)?;
+            for elem in self.as_slice() {
+                struct_serializer.serialize_field(elem)?;
+            }
+            struct_serializer.end()
+        } else {
+            serializer.collect_seq(self.iter())
+        }
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T: Deserialize<'de>, const N: usize> Deserialize<'de> for Vector<T, N> {
+    #[inline]
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct ExpectedVectorData<const N: usize>;
+
+        impl<const N: usize> de::Expected for ExpectedVectorData<N> {
+            #[inline]
+            fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(formatter, "An array of {} elements", N)
+            }
+        }
+
+        struct Visitor<T, const N: usize>(PhantomData<Vector<T, N>>);
+
+        impl<'de, T: Deserialize<'de>, const N: usize> de::Visitor<'de> for Visitor<T, N> {
+            type Value = Vector<T, N>;
+
+            #[inline]
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                ExpectedVectorData::<N>.fmt(formatter)
+            }
+
+            #[inline]
+            fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+                let mut ret_val = Vector::<T, N>::uninit();
+
+                let mut i = 0;
+                while let Some(item) = seq.next_element::<T>()? {
+                    let slot = match ret_val.get_mut(i) {
+                        Some(slot) => slot,
+                        None => return Err(A::Error::invalid_length(i, &ExpectedVectorData::<N>)),
+                    };
+
+                    slot.write(item);
+                    i += 1;
+                }
+
+                if i < N {
+                    return Err(A::Error::invalid_length(i, &ExpectedVectorData::<N>));
+                }
+
+                unsafe { Ok(Vector::assume_init(ret_val)) }
+            }
+        }
+
+        if deserializer.is_human_readable() {
+            deserializer.deserialize_tuple_struct("Vector", 1, Visitor::<T, N>(PhantomData))
+        } else {
+            deserializer.deserialize_seq(Visitor::<T, N>(PhantomData))
+        }
+    }
 }
 
 #[cfg(test)]

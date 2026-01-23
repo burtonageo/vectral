@@ -1,6 +1,3 @@
-use crate::{
-    matrix::{Matrix, TransformHomogeneous}, transform::{Transform, Translate}, utils::{array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut}, vector::Vector
-};
 use crate::utils::{
     expand, expand_to,
     num::{
@@ -9,6 +6,16 @@ use crate::utils::{
     },
     shrink, shrink_to, zip_map,
 };
+use crate::{
+    matrix::{Matrix, TransformHomogeneous},
+    transform::{Transform, Translate},
+    utils::{
+        array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
+    },
+    vector::Vector,
+};
+#[cfg(feature = "serde")]
+use core::marker::PhantomData;
 use core::{
     array::{self, IntoIter},
     borrow::{Borrow, BorrowMut},
@@ -17,6 +24,11 @@ use core::{
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign},
     ptr,
     slice::{self, Iter, IterMut},
+};
+#[cfg(feature = "serde")]
+use serde_core::{
+    de::{self, Deserialize, Deserializer, Error, Expected, SeqAccess},
+    ser::{Serialize, SerializeTupleStruct, Serializer},
 };
 
 #[repr(C)]
@@ -633,6 +645,76 @@ where
 impl_eq_mint! {
     (Point2, Point<2>),
     (Point3, Point<3>),
+}
+
+#[cfg(feature = "serde")]
+impl<T: Serialize, const N: usize> Serialize for Point<T, N> {
+    #[inline]
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        if serializer.is_human_readable() {
+            let mut struct_serializer = serializer.serialize_tuple_struct("Point", N)?;
+            for elem in self.as_slice() {
+                struct_serializer.serialize_field(elem)?;
+            }
+            struct_serializer.end()
+        } else {
+            serializer.collect_seq(self.iter())
+        }
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T: Deserialize<'de>, const N: usize> Deserialize<'de> for Point<T, N> {
+    #[inline]
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct ExpectedPointData<const N: usize>;
+
+        impl<const N: usize> de::Expected for ExpectedPointData<N> {
+            #[inline]
+            fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(formatter, "An array of {} elements", N)
+            }
+        }
+
+        struct Visitor<T, const N: usize>(PhantomData<Point<T, N>>);
+
+        impl<'de, T: Deserialize<'de>, const N: usize> de::Visitor<'de> for Visitor<T, N> {
+            type Value = Point<T, N>;
+
+            #[inline]
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                ExpectedPointData::<N>.fmt(formatter)
+            }
+
+            #[inline]
+            fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+                let mut ret_val = Point::<T, N>::uninit();
+
+                let mut i = 0;
+                while let Some(item) = seq.next_element::<T>()? {
+                    let slot = match ret_val.get_mut(i) {
+                        Some(slot) => slot,
+                        None => return Err(A::Error::invalid_length(i, &ExpectedPointData::<N>)),
+                    };
+
+                    slot.write(item);
+                    i += 1;
+                }
+
+                if i < N {
+                    return Err(A::Error::invalid_length(i, &ExpectedPointData::<N>));
+                }
+
+                unsafe { Ok(Point::assume_init(ret_val)) }
+            }
+        }
+
+        if deserializer.is_human_readable() {
+            deserializer.deserialize_tuple_struct("Point", 1, Visitor::<T, N>(PhantomData))
+        } else {
+            deserializer.deserialize_seq(Visitor::<T, N>(PhantomData))
+        }
+    }
 }
 
 #[cfg(test)]
