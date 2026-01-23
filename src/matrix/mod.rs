@@ -5,8 +5,10 @@ use crate::{
         array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
         flatten,
         num::{
-            Abs, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
-            checked::CheckedDiv,
+            Abs, Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig,
+            Zero,
+            checked::{CheckedAddAssign, CheckedDiv},
+            n,
         },
         shrink_to, shrink_to_copy, sum, zip_map,
     },
@@ -2239,6 +2241,45 @@ where
         ortho.set_col(3, col);
 
         ortho
+    }
+}
+
+impl<T> Matrix4<T>
+where
+    T: Trig
+        + One
+        + Zero
+        + Bounded
+        + CheckedAddAssign
+        + ClosedAdd
+        + ClosedNeg
+        + ClosedDiv
+        + ClosedSub
+        + ClosedMul,
+{
+    #[must_use]
+    #[inline]
+    pub fn perspective_3d(fov: Angle<T>, aspect: T, near: T, far: T) -> Self {
+        // Taken from https://www.mauriciopoppe.com/notes/computer-graphics/viewing/projection-transform/
+        let two = n::<T>(nz!(2));
+        let fov = fov.in_radians();
+
+        let top = near * Trig::tan(fov / two);
+        let right = aspect * near * Trig::tan(fov / two);
+
+        let z = T::ZERO;
+
+        Matrix::new([
+            [T::ONE / right, z, z, z],
+            [z, T::ONE / top, z, z],
+            [
+                z,
+                z,
+                ((far + near) / (far - near)).neg(),
+                (two.neg() * far * near) / (far - near),
+            ],
+            [z, z, T::ONE.neg(), z],
+        ])
     }
 }
 
