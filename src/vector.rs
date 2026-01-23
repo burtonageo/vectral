@@ -962,6 +962,7 @@ impl<T, const N: usize> From<Point<T, N>> for Vector<T, N> {
     }
 }
 
+#[cfg(feature = "simd")]
 impl<T: SimdElement, const N: usize> From<Simd<T, N>> for Vector<T, N>
 where
     LaneCount<N>: SupportedLaneCount,
