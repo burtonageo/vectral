@@ -1,10 +1,18 @@
 use crate::utils::num::{
     Bounded, ClosedAdd, ClosedSub, One, Trig, Zero, checked::CheckedAddAssign, n,
 };
+#[cfg(feature = "serde")]
+use core::marker::PhantomData;
 use core::{
     cmp::{self, PartialOrd},
     num::NonZeroUsize,
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
+};
+use serde_core::de::VariantAccess;
+#[cfg(feature = "serde")]
+use serde_core::{
+    de::{self, Deserialize, Deserializer},
+    ser::{Serialize, Serializer},
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -264,5 +272,85 @@ impl<T: Trig> Trig for Angle<T> {
     #[inline]
     fn to_degrees(self) -> Self {
         Self::Degrees(self.in_degrees())
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<T: Serialize> Serialize for Angle<T> {
+    #[inline]
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match *self {
+            Self::Degrees(ref degs) => {
+                serializer.serialize_newtype_variant("Angle", 0, "Degrees", degs)
+            }
+            Self::Radians(ref rads) => {
+                serializer.serialize_newtype_variant("Angle", 0, "Radians", rads)
+            }
+        }
+    }
+}
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for Angle<T> {
+    #[inline]
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct AngleVisitor<T>(PhantomData<Angle<T>>);
+
+        impl<'de, T: Deserialize<'de>> de::Visitor<'de> for AngleVisitor<T> {
+            type Value = Angle<T>;
+            #[inline]
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("angle of Degrees or Radians")
+            }
+
+            #[inline]
+            fn visit_enum<A: de::EnumAccess<'de>>(self, data: A) -> Result<Self::Value, A::Error> {
+                enum AngleUnit {
+                    Degrees,
+                    Radians,
+                }
+
+                impl<'de> Deserialize<'de> for AngleUnit {
+                    #[inline]
+                    fn deserialize<D: Deserializer<'de>>(
+                        deserializer: D,
+                    ) -> Result<Self, D::Error> {
+                        struct Visitor;
+                        impl<'de> de::Visitor<'de> for Visitor {
+                            type Value = AngleUnit;
+                            #[inline]
+                            fn expecting(
+                                &self,
+                                formatter: &mut std::fmt::Formatter,
+                            ) -> std::fmt::Result {
+                                formatter.write_str("`Degrees` or `Angles`")
+                            }
+
+                            #[inline]
+                            fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                                match v {
+                                    "Degrees" => Ok(AngleUnit::Degrees),
+                                    "Radians" => Ok(AngleUnit::Radians),
+                                    _ => {
+                                        Err(de::Error::invalid_value(de::Unexpected::Str(v), &self))
+                                    }
+                                }
+                            }
+                        }
+
+                        deserializer.deserialize_identifier(Visitor)
+                    }
+                }
+
+                let (angle_unit, variant_data) = data.variant::<AngleUnit>()?;
+                let data = variant_data.newtype_variant::<T>()?;
+                match angle_unit {
+                    AngleUnit::Degrees => Ok(Angle::Degrees(data)),
+                    AngleUnit::Radians => Ok(Angle::Radians(data)),
+                }
+            }
+        }
+
+        const VARIANTS: &'_ [&'_ str] = &["Degrees", "Radians"];
+        deserializer.deserialize_enum("Angle", VARIANTS, AngleVisitor(PhantomData))
     }
 }
