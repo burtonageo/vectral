@@ -1923,17 +1923,6 @@ where
     }
 }
 
-impl<T: PartialOrd + ClosedSub, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS>
-where
-    [T; ROWS * COLS]: Sized,
-{
-    #[must_use]
-    #[inline]
-    pub fn is_nearly_equal(self, to: Matrix<T, ROWS, COLS>, epsilon: T) -> bool {
-        (self - to).into_elems().all(|elem| elem < epsilon)
-    }
-}
-
 impl<T, const ROWS: usize, const COLS: usize> AsRef<[T]> for Matrix<T, ROWS, COLS> {
     #[inline]
     fn as_ref(&self) -> &[T] {
