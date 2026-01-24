@@ -1,27 +1,33 @@
 #[cfg(feature = "simd")]
 use crate::simd::SimdMul;
+#[cfg(feature = "nightly")]
 use crate::{
     point::Point3,
-    rotation::{Rotation, angle::Angle, quaternion::Quaternion},
+    rotation::Rotation,
+    utils::{flatten, num::checked::CheckedDiv, shrink_to, shrink_to_copy},
+    vector::Vector4,
+};
+use crate::{
+    rotation::{angle::Angle, quaternion::Quaternion},
     utils::{
         array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
-        flatten,
         num::{
             Abs, Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig,
-            Zero,
-            checked::{CheckedAddAssign, CheckedDiv},
-            n,
+            Zero, checked::CheckedAddAssign, n,
         },
-        shrink_to, shrink_to_copy, sum, zip_map,
+        sum, zip_map,
     },
-    vector::{Vector, Vector3, Vector4},
+    vector::{Vector, Vector3},
 };
 #[cfg(feature = "simd")]
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
+#[cfg(feature = "nightly")]
 use core::{
     array,
-    borrow::{Borrow, BorrowMut},
     cmp::{Ordering, max_by},
+};
+use core::{
+    borrow::{Borrow, BorrowMut},
     convert::{AsMut, AsRef},
     mem::{self, ManuallyDrop, MaybeUninit},
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -187,6 +193,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// assert_eq!(array, &[1, 2, 3, 4]);
     /// ```
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub const fn as_flattened_array(&self) -> &[T; ROWS * COLS]
@@ -243,6 +250,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///     [5, 4],
     /// ]));
     /// ```
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub const fn as_mut_flattened_array(&mut self) -> &mut [T; ROWS * COLS]
@@ -657,7 +665,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[inline]
     pub fn map_rows<U, F: FnMut([T; COLS]) -> [U; COLS]>(self, f: F) -> Matrix<U, ROWS, COLS> {
         Matrix {
-            data: self.data.map(f)
+            data: self.data.map(f),
         }
     }
 
@@ -790,6 +798,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         unsafe { mem::transmute_copy(&this) }
     }
 
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub const fn into_flattened(self) -> [T; ROWS * COLS] {
@@ -822,6 +831,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///     [09, 10, 11, 12],
     /// ]));
     /// ```
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub const fn concat_horizontal<const NEW_COLS: usize>(
@@ -885,6 +895,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///     [11, 12],
     /// ]));
     /// ```
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub const fn concat_vertical<const NEW_ROWS: usize>(
@@ -932,6 +943,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         }
     }
 
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub fn into_elems(self) -> array::IntoIter<T, { ROWS * COLS }> {
@@ -1494,6 +1506,7 @@ impl<T: Copy, const N: usize> Matrix<T, N, N> {
         unsafe { MaybeUninit::array_assume_init(diagonal) }
     }
 
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub const fn extract_translation(self) -> Vector<T, { N - 1 }> {
@@ -1561,6 +1574,7 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///     [13, 14, 16],
     /// ]));
     /// ```
+    #[cfg(feature = "nightly")]
     #[track_caller]
     #[must_use]
     #[inline]
@@ -2062,6 +2076,7 @@ impl<T, const ROWS: usize, const COLS: usize> BorrowMut<[[T; COLS]; ROWS]>
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, const ROWS: usize, const COLS: usize> AsRef<[T; ROWS * COLS]> for Matrix<T, ROWS, COLS> {
     #[inline]
     fn as_ref(&self) -> &[T; ROWS * COLS] {
@@ -2069,6 +2084,7 @@ impl<T, const ROWS: usize, const COLS: usize> AsRef<[T; ROWS * COLS]> for Matrix
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, const ROWS: usize, const COLS: usize> AsMut<[T; ROWS * COLS]> for Matrix<T, ROWS, COLS> {
     #[inline]
     fn as_mut(&mut self) -> &mut [T; ROWS * COLS] {
@@ -2076,6 +2092,7 @@ impl<T, const ROWS: usize, const COLS: usize> AsMut<[T; ROWS * COLS]> for Matrix
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, const ROWS: usize, const COLS: usize> Borrow<[T; ROWS * COLS]> for Matrix<T, ROWS, COLS> {
     #[inline]
     fn borrow(&self) -> &[T; ROWS * COLS] {
@@ -2083,6 +2100,7 @@ impl<T, const ROWS: usize, const COLS: usize> Borrow<[T; ROWS * COLS]> for Matri
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, const ROWS: usize, const COLS: usize> BorrowMut<[T; ROWS * COLS]>
     for Matrix<T, ROWS, COLS>
 {
@@ -2098,6 +2116,7 @@ pub type Matrix4<T = f32> = Matrix<T, 4, 4>;
 /// A 3x3 matrix.
 pub type Matrix3<T = f32> = Matrix<T, 3, 3>;
 
+#[cfg(feature = "nightly")]
 impl<T: One + Zero, const N: usize> Matrix<T, N, N>
 where
     Vector<T, { N - 1 }>: Sized,
@@ -2114,6 +2133,7 @@ where
     ///
     /// assert_eq!(transform_matrix.col(3), [1.0, 2.0, 3.0, 1.0]);
     /// ```
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub fn translation(offset: Vector<T, { N - 1 }>) -> Self {
@@ -2258,6 +2278,7 @@ impl<T: Copy + ClosedAdd + ClosedMul + ClosedSub + One + Zero> Matrix4<T> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T: ClosedAdd + ClosedMul + CheckedDiv<Output = T> + ClosedSub + Sqrt + One + Zero> Matrix4<T> {
     #[must_use]
     #[inline]
@@ -2429,6 +2450,7 @@ where
         + PartialOrd,
 {
     /// Decompose a 3d homogeneous transform matrix into a tuple of `(translation, scale, rotation, w)`
+    #[cfg(feature = "nightly")]
     #[doc(alias = "polar_decompose")]
     #[must_use]
     #[inline]
@@ -2475,6 +2497,7 @@ where
     }
 }
 
+#[cfg(feature = "nightly")]
 pub trait TransformHomogeneous<const DIM: usize> {
     type Scalar;
 

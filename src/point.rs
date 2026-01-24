@@ -1,23 +1,27 @@
-use crate::utils::{
-    expand, expand_to,
-    num::{
-        ClosedAdd, ClosedMul, ClosedSub, One, Sqrt, Zero,
-        checked::{CheckedDiv, CheckedMul},
-    },
-    shrink, shrink_to, zip_map,
-};
+#[cfg(feature = "nightly")]
 use crate::{
     matrix::{Matrix, TransformHomogeneous},
     transform::{Transform, Translate},
-    utils::{
-        array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
-    },
-    vector::Vector,
+    utils::{expand, shrink, num::One},
 };
 #[cfg(feature = "simd")]
 use crate::{
     simd::{SimdAdd, SimdDiv, SimdMul, SimdSub},
     utils::num::ClosedDiv,
+};
+use crate::{
+    utils::{
+        array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
+    },
+    utils::{
+        expand_to,
+        num::{
+            ClosedAdd, ClosedMul, ClosedSub, Sqrt, Zero,
+            checked::{CheckedDiv, CheckedMul},
+        },
+        shrink_to, zip_map,
+    },
+    vector::Vector,
 };
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
@@ -238,6 +242,7 @@ impl<T, const N: usize> Point<T, N> {
         Vector::new(self.to_array())
     }
 
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub fn shrink(self) -> Point<T, { N - 1 }> {
@@ -254,6 +259,7 @@ impl<T, const N: usize> Point<T, N> {
         }
     }
 
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub const fn expand(self, to_append: T) -> Point<T, { N + 1 }> {
@@ -293,6 +299,7 @@ impl<T, const N: usize> Point<MaybeUninit<T>, N> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, const N: usize> TransformHomogeneous<N> for Point<T, N>
 where
     T: Zero + One + PartialEq + Copy + DivAssign + ClosedMul + ClosedAdd,
@@ -612,6 +619,7 @@ impl<T, const N: usize> From<[T; N]> for Point<T, N> {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, const DIM: usize> Translate<DIM> for Point<T, DIM>
 where
     T: Zero + One + PartialEq + Copy + DivAssign + ClosedMul + ClosedAdd,

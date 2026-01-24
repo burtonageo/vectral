@@ -8,7 +8,9 @@ use crate::{
 use crate::utils::num::{
     checked::{CheckedAddAssign, CheckedDiv}, Abs, Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero
 };
-use core::ops::{AddAssign, DivAssign, Neg, SubAssign};
+use core::ops::{AddAssign, DivAssign, SubAssign};
+#[cfg(feature = "nightly")]
+use core::ops::Neg;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MatrixTransform<T = f32, const DIM: usize = 3>
@@ -88,6 +90,7 @@ where
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T: Copy + ClosedNeg + One + Zero, const DIM: usize> MatrixTransform<T, DIM>
 where
     Matrix<T, { DIM + 1 }, { DIM + 1 }>: Sized,
@@ -107,6 +110,7 @@ where
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T: Copy + ClosedDiv + One + Zero, const DIM: usize> MatrixTransform<T, DIM>
 where
     Matrix<T, { DIM + 1 }, { DIM + 1 }>: Sized,

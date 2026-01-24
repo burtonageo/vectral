@@ -1,4 +1,5 @@
 use crate::utils::{
+    array_get_unchecked,
     num::{
         Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
         checked::{CheckedAddAssign, CheckedDiv, CheckedMul},
@@ -7,12 +8,12 @@ use crate::utils::{
     shrink_to, sum, zip,
 };
 use crate::{
-    matrix::{Matrix4, TransformHomogeneous},
-    point::Point,
-    rotation::Rotation,
+    matrix::Matrix4,
     rotation::angle::Angle,
     vector::{Vector, Vector3, Vector4},
 };
+#[cfg(feature = "nightly")]
+use crate::{matrix::TransformHomogeneous, point::Point, rotation::Rotation};
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
 use core::{
@@ -55,11 +56,15 @@ impl<T> Quaternion<T> {
     #[must_use]
     #[inline]
     pub const fn into_vector(self) -> Vector4<T> {
-        let v = unsafe { ptr::read(&self.v) };
+        let arr = unsafe { ptr::read(&self.v).to_array() };
         let w = unsafe { ptr::read(&self.w) };
 
-        let _self = ManuallyDrop::new(self);
-        v.expand(w)
+        let x = unsafe { ptr::read(array_get_unchecked(&arr, 0)) };
+        let y = unsafe { ptr::read(array_get_unchecked(&arr, 1)) };
+        let z = unsafe { ptr::read(array_get_unchecked(&arr, 2)) };
+
+        let _self = ManuallyDrop::new((self, arr));
+        Vector4::new([x, y, z, w])
     }
 
     #[must_use]
@@ -310,6 +315,7 @@ where
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T> Rotation<3> for Quaternion<T>
 where
     T: Bounded
@@ -805,12 +811,10 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Quaternion<T> {
 #[cfg(test)]
 mod tests {
     use crate::rotation::quaternion::Quaternion;
+    #[cfg(feature = "nightly")]
+    use crate::{matrix::Matrix, rotation::Rotation};
     #[cfg(any(feature = "std", feature = "libm"))]
-    use crate::{
-        matrix::{Matrix, Matrix4},
-        rotation::{Rotation, angle::Angle},
-        vector::Vector,
-    };
+    use crate::{matrix::Matrix4, rotation::angle::Angle, vector::Vector};
     use core::{
         ops::Neg,
         sync::atomic::{AtomicU32, Ordering},
@@ -826,7 +830,7 @@ mod tests {
         assert_eq!(q2 * q1, q1);
     }
 
-    #[cfg(any(feature = "std", feature = "libm"))]
+    #[cfg(all(any(feature = "std", feature = "libm"), feature = "nightly"))]
     #[test]
     fn test_conjugate() {
         let q1 = Quaternion::from_angle_axis(Angle::<f64>::three_quarters(), Vector::X);

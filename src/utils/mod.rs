@@ -186,6 +186,7 @@ pub const fn unzip<T, U, const N: usize>(array: [(T, U); N]) -> ([T; N], [U; N])
 /// let array = shrink(array);
 /// assert_eq!(array, [1, 2, 3, 4]);
 /// ```
+#[cfg(feature = "nightly")]
 #[must_use]
 #[inline(always)]
 pub fn shrink<T, const N: usize>(array: [T; N]) -> [T; N - 1] {
@@ -247,6 +248,7 @@ pub const fn shrink_to_copy<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>
 /// let expanded = expand(array, 4);
 /// assert_eq!(expanded, [1, 2, 3, 4]);
 /// ```
+#[cfg(feature = "nightly")]
 #[must_use]
 #[inline(always)]
 pub const fn expand<T, const N: usize>(array: [T; N], to_append: T) -> [T; N + 1] {
@@ -298,6 +300,7 @@ pub const fn expand_to<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
 /// let flat_matrix: [i32; _] = flatten(matrix);
 /// assert_eq!(flat_matrix, [1, 2, 3, 4]);
 /// ```
+#[cfg(feature = "nightly")]
 #[must_use]
 #[inline(always)]
 pub const fn flatten<T, const N0: usize, const N1: usize>(array: [[T; N0]; N1]) -> [T; N1 * N0] {
@@ -331,6 +334,7 @@ pub const fn copied<T: Copy, const N: usize>(array: [&'_ T; N]) -> [T; N] {
     unsafe { MaybeUninit::array_assume_init(result) }
 }
 
+#[cfg(feature = "nightly")]
 #[must_use]
 #[inline(always)]
 pub const fn concat<T, const N0: usize, const N1: usize>(
@@ -348,6 +352,7 @@ pub const fn concat<T, const N0: usize, const N1: usize>(
     unsafe { MaybeUninit::array_assume_init(result) }
 }
 
+#[cfg(feature = "nightly")]
 #[must_use]
 #[inline(always)]
 pub const fn split<const IDX: usize, T, const SIZE: usize>(
@@ -459,10 +464,11 @@ mod tests {
         let instances: [_; 5] = array::from_fn(|_| CountInstances::new());
         assert_eq!(NUM_INSTANCES.load(Ordering::SeqCst), 5);
 
-        let _instances = shrink(instances);
+        let _instances = shrink_to::<4, _, _>(instances);
         assert_eq!(NUM_INSTANCES.load(Ordering::SeqCst), 4);
     }
 
+    #[cfg(feature = "nightly")]
     #[test]
     fn test_join() {
         const FST: [i32; 5] = [1, 2, 3, 4, 5];

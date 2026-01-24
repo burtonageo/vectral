@@ -1,22 +1,26 @@
 use crate::{
     fields::Xyz,
-    matrix::{Matrix, TransformHomogeneous},
     point::Point,
-    transform::{Transform, Translate},
     utils::{
         array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
         assertions::AssertLarger,
-        concat, expand, expand_to,
+        expand_to,
         num::{
             ClosedAdd, ClosedMul, ClosedSub, One, Sqrt, Zero,
             checked::{CheckedDiv, CheckedMul},
         },
-        shrink, shrink_to, split, sum, zip_map,
+        shrink_to, sum, zip_map,
     },
+};
+#[cfg(feature = "nightly")]
+use crate::{
+    matrix::{Matrix, TransformHomogeneous},
+    transform::{Transform, Translate},
+    utils::{concat, expand, shrink, split},
 };
 #[cfg(feature = "simd")]
 use crate::{
-    simd::{SimdAdd, SimdDiv, SimdSub, SimdMul},
+    simd::{SimdAdd, SimdDiv, SimdMul, SimdSub},
     utils::num::ClosedDiv,
 };
 #[cfg(feature = "serde")]
@@ -334,6 +338,7 @@ impl<T, const N: usize> Vector<T, N> {
         array
     }
 
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub fn shrink(self) -> Vector<T, { N - 1 }> {
@@ -350,6 +355,7 @@ impl<T, const N: usize> Vector<T, N> {
         }
     }
 
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub const fn expand(self, to_append: T) -> Vector<T, { N + 1 }> {
@@ -390,6 +396,7 @@ impl<T, const N: usize> Vector<T, N> {
     ///
     /// assert_eq!(v3.into_array(), [1, 2, 3, 4, 5, 6]);
     /// ```
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub const fn concat<const N1: usize>(self, other: Vector<T, N1>) -> Vector<T, { N + N1 }> {
@@ -401,6 +408,7 @@ impl<T, const N: usize> Vector<T, N> {
         Vector::new(data)
     }
 
+    #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
     pub fn split<const IDX: usize>(self) -> (Vector<T, IDX>, Vector<T, { N - IDX }>) {
@@ -782,6 +790,7 @@ impl<T: Zero, const N: usize> Zero for Vector<T, N> {
     const ZERO: Self = Self::new(Zero::ZERO);
 }
 
+#[cfg(feature = "nightly")]
 impl<T, const N: usize> TransformHomogeneous<N> for Vector<T, N>
 where
     T: Zero + One + PartialEq + Copy + DivAssign + ClosedMul + ClosedAdd,
@@ -1017,6 +1026,7 @@ where
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T, const DIM: usize> Translate<DIM> for Vector<T, DIM>
 where
     T: Zero + One + PartialEq + Copy + DivAssign + ClosedMul + ClosedAdd,

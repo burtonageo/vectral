@@ -1,15 +1,16 @@
 #[cfg(any(feature = "std", feature = "libm"))]
-use crate::{rotation::angle::Angle, utils::num::Zero};
+use crate::rotation::angle::Angle;
+#[cfg(feature = "simd")]
+use crate::simd::SimdValue;
+#[cfg(feature = "nightly")]
+use crate::{matrix::TransformHomogeneous, point::Point3, utils::num::Zero};
 use crate::{
-    matrix::{Matrix, Matrix4, TransformHomogeneous},
-    point::Point3,
+    matrix::{Matrix, Matrix4},
     rotation::quaternion::Quaternion,
     vector::{Vector, Vector3},
 };
-#[cfg(any(feature = "std", feature = "libm"))]
+#[cfg(all(any(feature = "std", feature = "libm"), feature = "nightly"))]
 use core::ops::Neg;
-#[cfg(feature = "simd")]
-use crate::simd::SimdValue;
 
 #[test]
 fn test_matrix_access() {
@@ -64,6 +65,7 @@ fn test_matrix_access() {
     assert_eq!(matrix[0][0], 99);
 }
 
+#[cfg(feature = "nightly")]
 #[test]
 fn test_concat() {
     let v1 = Vector::new([1, 2, 3, 4]);
@@ -186,6 +188,7 @@ fn test_matrix_add() {
     assert_eq!(m1 - m2, expected_sub_result);
 }
 
+#[cfg(feature = "nightly")]
 #[test]
 fn test_matrix_transform() {
     let origin = Point3::new([1.0, 2.0, 3.0]);
@@ -269,6 +272,7 @@ fn test_rotation_matrices() {
     assert!(quat.is_nearly_equal(back_to_quat, 1e-15));
 }
 
+#[cfg(feature = "nightly")]
 #[test]
 fn test_uniform_scaling() {
     let point = Point3::splat(1.0);
@@ -410,6 +414,7 @@ fn test_determinant() {
     assert_eq!(Matrix::<i32, 4, 4>::identity().determinant(), 1);
 }
 
+#[cfg(feature = "nightly")]
 #[test]
 fn test_cofactor() {
     #[rustfmt::skip]
@@ -475,6 +480,7 @@ fn test_adjoint() {
     assert_eq!(mat.adjoint(), expected_adjoint);
 }
 
+#[cfg(feature = "nightly")]
 #[cfg(any(feature = "std", feature = "libm"))]
 #[test]
 fn test_inverse() {
@@ -504,6 +510,7 @@ fn test_inverse() {
     approx::assert_relative_eq!(rotation, inverse, epsilon = 1e-15);
 }
 
+#[cfg(feature = "nightly")]
 #[cfg(any(feature = "std", feature = "libm"))]
 #[cfg_attr(miri, ignore = "🐌 takes too long by default on miri")]
 #[test]
@@ -549,16 +556,13 @@ fn test_mint_conversions() {
 #[cfg(feature = "simd")]
 #[test]
 fn test_simd() {
-    let matrix = Matrix::new([
-        [1.0f32, 2.0, 3.0, 4.0],
-        [9.0, 8.0, 7.0, 6.0],
-    ]);
+    let matrix = Matrix::new([[1.0f32, 2.0, 3.0, 4.0], [9.0, 8.0, 7.0, 6.0]]);
 
     let matrix = SimdValue(matrix);
     let result = matrix * SimdValue(2.0);
 
-    assert_eq!(*result, Matrix::new([
-        [2.0f32, 4.0, 6.0, 8.0],
-        [18.0, 16.0, 14.0, 12.0],
-    ]))
+    assert_eq!(
+        *result,
+        Matrix::new([[2.0f32, 4.0, 6.0, 8.0], [18.0, 16.0, 14.0, 12.0],])
+    )
 }
