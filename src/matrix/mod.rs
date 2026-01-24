@@ -2429,6 +2429,7 @@ where
         + PartialOrd,
 {
     /// Decompose a 3d homogeneous transform matrix into a tuple of `(translation, scale, rotation, w)`
+    #[doc(alias = "polar_decompose")]
     #[must_use]
     #[inline]
     pub fn decompose_homogeneous_transform_3d<R: Rotation<3, Scalar = T>>(
