@@ -2,7 +2,6 @@ use crate::{
     fields::Xyz,
     matrix::{Matrix, TransformHomogeneous},
     point::Point,
-    simd::SimdMul,
     transform::{Transform, Translate},
     utils::{
         array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
@@ -17,7 +16,7 @@ use crate::{
 };
 #[cfg(feature = "simd")]
 use crate::{
-    simd::{SimdAdd, SimdDiv, SimdSub},
+    simd::{SimdAdd, SimdDiv, SimdSub, SimdMul},
     utils::num::ClosedDiv,
 };
 #[cfg(feature = "serde")]
