@@ -1,3 +1,5 @@
+#[cfg(feature = "simd")]
+use crate::simd::SimdMul;
 use crate::{
     point::Point3,
     rotation::{Rotation, angle::Angle, quaternion::Quaternion},
@@ -14,6 +16,8 @@ use crate::{
     },
     vector::{Vector, Vector3, Vector4},
 };
+#[cfg(feature = "simd")]
+use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{
     array,
     borrow::{Borrow, BorrowMut},
@@ -42,6 +46,8 @@ impl<T: Default, const ROWS: usize, const COLS: usize> Default for Matrix<T, ROW
 }
 
 impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
+    pub const NUM_ELEMENTS: usize = ROWS * COLS;
+
     /// Create a new `Matrix` from the given nested array.
     ///
     /// # Examples
@@ -644,6 +650,14 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     pub fn map<U, F: FnMut(T) -> U>(self, mut f: F) -> Matrix<U, ROWS, COLS> {
         Matrix {
             data: self.data.map(|row| row.map(&mut f)),
+        }
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn map_rows<U, F: FnMut([T; COLS]) -> [U; COLS]>(self, f: F) -> Matrix<U, ROWS, COLS> {
+        Matrix {
+            data: self.data.map(f)
         }
     }
 
@@ -1815,6 +1829,73 @@ impl<T: Neg, const ROWS: usize, const COLS: usize> Neg for Matrix<T, ROWS, COLS>
     }
 }
 
+#[cfg(feature = "simd")]
+impl<T, const A: usize, const B: usize, const C: usize> SimdMul<Matrix<T, B, C>> for Matrix<T, A, B>
+where
+    T: Zero + ClosedAdd + ClosedMul + SimdElement,
+    Simd<T, B>: ClosedMul,
+    LaneCount<B>: SupportedLaneCount,
+{
+    type Output = Matrix<T, A, C>;
+    #[inline]
+    fn simd_mul(self, rhs: Matrix<T, B, C>) -> Self::Output {
+        let mut out_matrix: Matrix<_, A, C> = Matrix::uninit();
+
+        for row in 0..A {
+            for col in 0..C {
+                let x = Simd::from_array(self.row(row));
+                let y = Simd::from_array(rhs.col(col));
+
+                unsafe {
+                    out_matrix
+                        .get_unchecked_mut(row, col)
+                        .write(sum((x * y).to_array()));
+                }
+            }
+        }
+
+        unsafe { Matrix::assume_init(out_matrix) }
+    }
+}
+
+#[cfg(feature = "simd")]
+impl<T, const ROWS: usize, const COLS: usize> SimdMul<Vector<T, COLS>> for Matrix<T, ROWS, COLS>
+where
+    T: Zero + ClosedAdd + ClosedMul + SimdElement,
+    Simd<T, COLS>: ClosedMul,
+    LaneCount<COLS>: SupportedLaneCount,
+{
+    type Output = Vector<T, ROWS>;
+    #[inline]
+    fn simd_mul(self, rhs: Vector<T, COLS>) -> Self::Output {
+        let rhs = Simd::from_array(rhs.to_array());
+
+        let result = self.data.map(|row| {
+            let row = Simd::from_array(row);
+            sum((row * rhs).to_array())
+        });
+
+        Vector::from(result)
+    }
+}
+
+#[cfg(feature = "simd")]
+impl<T, const ROWS: usize, const COLS: usize> SimdMul<T> for Matrix<T, ROWS, COLS>
+where
+    T: Zero + ClosedAdd + ClosedMul + SimdElement,
+    Simd<T, { ROWS * COLS }>: ClosedMul,
+    LaneCount<{ ROWS * COLS }>: SupportedLaneCount,
+{
+    type Output = Matrix<T, ROWS, COLS>;
+    #[inline]
+    fn simd_mul(self, rhs: T) -> Self::Output {
+        let simd = Simd::splat(rhs);
+        let this = Simd::from_array(self.into_flattened());
+        let result = this * simd;
+        Matrix::new([result.to_array()]).resize::<ROWS, COLS>()
+    }
+}
+
 impl<T, const N: usize> Matrix<T, N, N>
 where
     T: AddAssign + SubAssign + Zero + Copy + ClosedAdd + ClosedMul + ClosedSub,
@@ -2254,7 +2335,7 @@ where
         let fov = fov.in_radians();
 
         let top = near * Trig::tan(fov / two);
-        let right = aspect * near * Trig::tan(fov / two);
+        let right = aspect * top;
 
         let z = T::ZERO;
 

@@ -2,6 +2,7 @@ use crate::{
     fields::Xyz,
     matrix::{Matrix, TransformHomogeneous},
     point::Point,
+    simd::SimdMul,
     transform::{Transform, Translate},
     utils::{
         array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
@@ -13,6 +14,11 @@ use crate::{
         },
         shrink, shrink_to, split, sum, zip_map,
     },
+};
+#[cfg(feature = "simd")]
+use crate::{
+    simd::{SimdAdd, SimdDiv, SimdSub},
+    utils::num::ClosedDiv,
 };
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
@@ -405,106 +411,138 @@ impl<T, const N: usize> Vector<T, N> {
 }
 
 #[cfg(feature = "simd")]
+impl<T: SimdElement, const N: usize> SimdMul for Vector<T, N>
+where
+    Simd<T, N>: ClosedMul,
+    LaneCount<N>: SupportedLaneCount,
+{
+    type Output = Self;
+    #[inline]
+    fn simd_mul(self, rhs: Self) -> Self::Output {
+        let lhs = Simd::from_array(self.to_array());
+        let rhs = Simd::from_array(rhs.to_array());
+        let res = lhs * rhs;
+        Self::new(res.to_array())
+    }
+}
+
+#[cfg(feature = "simd")]
+impl<T: SimdElement, const N: usize> SimdMul<T> for Vector<T, N>
+where
+    Simd<T, N>: ClosedMul,
+    LaneCount<N>: SupportedLaneCount,
+{
+    type Output = Self;
+    #[inline]
+    fn simd_mul(self, rhs: T) -> Self::Output {
+        let lhs = Simd::from_array(self.to_array());
+        let rhs = Simd::splat(rhs);
+        let res = lhs * rhs;
+        Self::new(res.to_array())
+    }
+}
+
+#[cfg(feature = "simd")]
+impl<T: SimdElement, const N: usize> SimdDiv for Vector<T, N>
+where
+    Simd<T, N>: ClosedDiv,
+    LaneCount<N>: SupportedLaneCount,
+{
+    type Output = Self;
+    #[inline]
+    fn simd_div(self, rhs: Self) -> Self::Output {
+        let lhs = Simd::from_array(self.to_array());
+        let rhs = Simd::from_array(rhs.to_array());
+        let res = lhs / rhs;
+        Self::new(res.to_array())
+    }
+}
+
+#[cfg(feature = "simd")]
+impl<T: SimdElement, const N: usize> SimdDiv<T> for Vector<T, N>
+where
+    Simd<T, N>: ClosedDiv,
+    LaneCount<N>: SupportedLaneCount,
+{
+    type Output = Self;
+    #[inline]
+    fn simd_div(self, rhs: T) -> Self::Output {
+        let lhs = Simd::from_array(self.to_array());
+        let rhs = Simd::splat(rhs);
+        let res = lhs / rhs;
+        Self::new(res.to_array())
+    }
+}
+
+#[cfg(feature = "simd")]
+impl<T: SimdElement, const N: usize> SimdAdd for Vector<T, N>
+where
+    Simd<T, N>: ClosedAdd,
+    LaneCount<N>: SupportedLaneCount,
+{
+    type Output = Self;
+    #[inline]
+    fn simd_add(self, rhs: Self) -> Self::Output {
+        let lhs = Simd::from_array(self.to_array());
+        let rhs = Simd::from_array(rhs.to_array());
+        let res = lhs + rhs;
+        Self::new(res.to_array())
+    }
+}
+
+#[cfg(feature = "simd")]
+impl<T: SimdElement, const N: usize> SimdAdd<T> for Vector<T, N>
+where
+    Simd<T, N>: ClosedAdd,
+    LaneCount<N>: SupportedLaneCount,
+{
+    type Output = Self;
+    #[inline]
+    fn simd_add(self, rhs: T) -> Self::Output {
+        let lhs = Simd::from_array(self.to_array());
+        let rhs = Simd::splat(rhs);
+        let res = lhs + rhs;
+        Self::new(res.to_array())
+    }
+}
+
+#[cfg(feature = "simd")]
+impl<T: SimdElement, const N: usize> SimdSub for Vector<T, N>
+where
+    Simd<T, N>: ClosedSub,
+    LaneCount<N>: SupportedLaneCount,
+{
+    type Output = Self;
+    #[inline]
+    fn simd_sub(self, rhs: Self) -> Self::Output {
+        let lhs = Simd::from_array(self.to_array());
+        let rhs = Simd::from_array(rhs.to_array());
+        let res = lhs - rhs;
+        Self::new(res.to_array())
+    }
+}
+
+#[cfg(feature = "simd")]
+impl<T: SimdElement, const N: usize> SimdSub<T> for Vector<T, N>
+where
+    Simd<T, N>: ClosedSub,
+    LaneCount<N>: SupportedLaneCount,
+{
+    type Output = Self;
+    #[inline]
+    fn simd_sub(self, rhs: T) -> Self::Output {
+        let lhs = Simd::from_array(self.to_array());
+        let rhs = Simd::splat(rhs);
+        let res = lhs - rhs;
+        Self::new(res.to_array())
+    }
+}
+
+#[cfg(feature = "simd")]
 impl<T: SimdElement, const N: usize> Vector<T, N>
 where
     LaneCount<N>: SupportedLaneCount,
 {
-    #[must_use]
-    #[inline]
-    pub fn simd_elementwise_sub(self, rhs: Self) -> Self
-    where
-        Simd<T, N>: Sub<Output = Simd<T, N>>,
-    {
-        let lhs = Simd::from_array(self.to_array());
-        let rhs = Simd::from_array(rhs.to_array());
-        let res = lhs - rhs;
-        Self::new(res.to_array())
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn simd_elementwise_add(self, rhs: Self) -> Self
-    where
-        Simd<T, N>: Add<Output = Simd<T, N>>,
-    {
-        let lhs = Simd::from_array(self.to_array());
-        let rhs = Simd::from_array(rhs.to_array());
-        let res = lhs + rhs;
-        Self::new(res.to_array())
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn simd_elementwise_mul(self, rhs: Self) -> Self
-    where
-        Simd<T, N>: Mul<Output = Simd<T, N>>,
-    {
-        let lhs = Simd::from_array(self.to_array());
-        let rhs = Simd::from_array(rhs.to_array());
-        let res = lhs * rhs;
-        Self::new(res.to_array())
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn simd_elementwise_div(self, rhs: Self) -> Self
-    where
-        Simd<T, N>: Div<Output = Simd<T, N>>,
-    {
-        let lhs = Simd::from_array(self.to_array());
-        let rhs = Simd::from_array(rhs.to_array());
-        let res = lhs / rhs;
-        Self::new(res.to_array())
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn simd_scalar_add(self, rhs: T) -> Self
-    where
-        Simd<T, N>: Add<Output = Simd<T, N>>,
-    {
-        let lhs = Simd::from_array(self.to_array());
-        let rhs = Simd::splat(rhs);
-        let res = lhs + rhs;
-        Self::new(res.to_array())
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn simd_scalar_sub(self, rhs: T) -> Self
-    where
-        Simd<T, N>: Sub<Output = Simd<T, N>>,
-    {
-        let lhs = Simd::from_array(self.to_array());
-        let rhs = Simd::splat(rhs);
-        let res = lhs - rhs;
-        Self::new(res.to_array())
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn simd_scalar_mul(self, rhs: T) -> Self
-    where
-        Simd<T, N>: Mul<Output = Simd<T, N>>,
-    {
-        let lhs = Simd::from_array(self.to_array());
-        let rhs = Simd::splat(rhs);
-        let res = lhs * rhs;
-        Self::new(res.to_array())
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn simd_scalar_div(self, rhs: T) -> Self
-    where
-        Simd<T, N>: Div<Output = Simd<T, N>>,
-    {
-        let lhs = Simd::from_array(self.to_array());
-        let rhs = Simd::splat(rhs);
-        let res = lhs / rhs;
-        Self::new(res.to_array())
-    }
-
     #[must_use]
     #[inline]
     pub fn simd_dot(self, rhs: Self) -> T
@@ -513,7 +551,7 @@ where
         Simd<T, N>: ClosedMul,
         T: ClosedAdd + Zero,
     {
-        let res = Self::simd_elementwise_mul(self, rhs);
+        let res = self.simd_mul(rhs);
         sum(res.into_iter())
     }
 
@@ -1251,16 +1289,18 @@ mod tests {
     #[cfg(feature = "simd")]
     #[test]
     fn test_simd() {
-        let vector_1 = Vector::new([1, 2, 4, 5]);
-        let vector_2 = Vector::new([2, 5, 5, 3]);
+        use crate::simd::SimdValue;
 
-        let result = vector_1.simd_elementwise_add(vector_2);
+        let vector_1 = SimdValue(Vector::new([1, 2, 4, 5]));
+        let vector_2 = SimdValue(Vector::new([2, 5, 5, 3]));
+
+        let result = vector_1 * vector_2;
         assert_eq!(result.as_slice(), &[3, 7, 9, 8]);
 
-        let result = vector_1.simd_elementwise_sub(vector_2);
+        let result = vector_1 * vector_2;
         assert_eq!(result.as_slice(), &[-1, -3, -1, 2]);
 
-        let result = vector_1.simd_scalar_mul(2);
+        let result = vector_1 * SimdValue(2);
         assert_eq!(result.as_slice(), &[2, 4, 8, 10]);
     }
 }

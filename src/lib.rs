@@ -242,3 +242,6 @@ pub mod rotation;
 pub mod transform;
 pub mod utils;
 pub mod vector;
+
+#[cfg(feature = "simd")]
+pub mod simd;

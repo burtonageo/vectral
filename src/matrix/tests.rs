@@ -8,6 +8,8 @@ use crate::{
 };
 #[cfg(any(feature = "std", feature = "libm"))]
 use core::ops::Neg;
+#[cfg(feature = "simd")]
+use crate::simd::SimdValue;
 
 #[test]
 fn test_matrix_access() {
@@ -542,4 +544,21 @@ fn test_mint_conversions() {
     assert_eq!(matrix, Matrix::new([[1.0, 3.0, 5.0], [2.0, 4.0, 6.0],]));
 
     assert_eq!(matrix, mint_matrix);
+}
+
+#[cfg(feature = "simd")]
+#[test]
+fn test_simd() {
+    let matrix = Matrix::new([
+        [1.0f32, 2.0, 3.0, 4.0],
+        [9.0, 8.0, 7.0, 6.0],
+    ]);
+
+    let matrix = SimdValue(matrix);
+    let result = matrix * SimdValue(2.0);
+
+    assert_eq!(*result, Matrix::new([
+        [2.0f32, 4.0, 6.0, 8.0],
+        [18.0, 16.0, 14.0, 12.0],
+    ]))
 }
