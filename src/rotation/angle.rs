@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 use crate::utils::num::{
     Bounded, ClosedAdd, ClosedSub, One, Trig, Zero, checked::CheckedAddAssign, n,
 };

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 #![cfg_attr(not(any(test, feature = "std")), no_std)]
 #![cfg_attr(feature = "nightly", allow(incomplete_features))]
 #![feature(maybe_uninit_array_assume_init)]

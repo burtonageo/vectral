@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 use crate::{
     const_assert_larger, const_assert_smaller,
     utils::num::{ClosedAdd, ClosedMul, One, Zero},

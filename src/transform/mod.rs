@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 use crate::{matrix::Matrix, point::Point, vector::Vector, rotation::Rotation};
 
 pub mod matrix_transform;

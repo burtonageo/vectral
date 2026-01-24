@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 #[cfg(any(feature = "std", feature = "libm"))]
 use crate::rotation::angle::Angle;
 #[cfg(feature = "simd")]
