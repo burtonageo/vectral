@@ -40,20 +40,20 @@ fn test_matrix_access() {
 
     assert_eq!(
         matrix.leftwards_diagonal_ref().map(|elem| *elem),
-        matrix.leftwards_diagonal()
+        matrix.leftwards_diagonal(),
     );
     assert_eq!(
         matrix.leftwards_diagonal_mut().map(|elem| *elem),
-        matrix.leftwards_diagonal()
+        matrix.leftwards_diagonal(),
     );
 
     assert_eq!(
         matrix.rightwards_diagonal_ref().map(|elem| *elem),
-        matrix.rightwards_diagonal()
+        matrix.rightwards_diagonal(),
     );
     assert_eq!(
         matrix.rightwards_diagonal_mut().map(|elem| *elem),
-        matrix.rightwards_diagonal()
+        matrix.rightwards_diagonal(),
     );
 
     {
