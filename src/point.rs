@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+#[cfg(feature = "simd")]
+use crate::utils::num::ClosedSub;
 #[cfg(feature = "nightly")]
 use crate::{
     matrix::{Matrix, TransformHomogeneous},
     transform::{Transform, Translate},
-    utils::{expand, shrink, num::One},
+    utils::{expand, num::One, shrink},
 };
 #[cfg(feature = "simd")]
 use crate::{

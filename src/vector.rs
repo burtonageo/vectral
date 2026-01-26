@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+#[cfg(feature = "simd")]
+use crate::utils::num::ClosedSub;
 use crate::{
     const_assert_larger,
     fields::Xyz,
