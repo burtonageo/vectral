@@ -20,6 +20,14 @@ pub mod assertions {
         };
     }
 
+    #[macro_export]
+    macro_rules! const_assert_equal {
+        ($x:expr, $y:expr) => {
+            #[allow(path_statements)]
+            <$crate::utils::assertions::AssertEqual<$x, $y>>::ASSERT;
+        };
+    }
+
     #[non_exhaustive]
     pub struct AssertSmaller<const X: usize, const Y: usize>;
 
@@ -32,6 +40,13 @@ pub mod assertions {
 
     impl<const X: usize, const Y: usize> AssertLarger<{ X }, { Y }> {
         pub const ASSERT: () = assert!(X > Y);
+    }
+
+    #[non_exhaustive]
+    pub struct AssertEqual<const X: usize, const Y: usize>;
+
+    impl<const X: usize, const Y: usize> AssertEqual<X, Y> {
+        pub const ASSERT: () = assert!(X == Y);
     }
 }
 
