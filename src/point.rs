@@ -18,7 +18,7 @@ use crate::{
     utils::{
         expand_to,
         num::{
-            ClosedAdd, ClosedMul, ClosedSub, Sqrt, Zero,
+            ClosedAdd, ClosedMul, Sqrt, Zero,
             checked::{CheckedDiv, CheckedMul},
         },
         shrink_to, zip_map,
@@ -280,14 +280,6 @@ impl<T, const N: usize> Point<T, N> {
     #[inline]
     pub fn iter_mut(&mut self) -> IterMut<'_, T> {
         self.data.iter_mut()
-    }
-}
-
-impl<T: PartialOrd + ClosedSub, const N: usize> Point<T, N> {
-    #[must_use]
-    #[inline]
-    pub fn is_nearly_equal(self, to: Point<T, N>, epsilon: T) -> bool {
-        (self - to).into_iter().all(|elem| elem < epsilon)
     }
 }
 

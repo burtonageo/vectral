@@ -8,7 +8,7 @@ use crate::{
         assertions::AssertLarger,
         expand_to,
         num::{
-            ClosedAdd, ClosedMul, ClosedSub, One, Sqrt, Zero,
+            ClosedAdd, ClosedMul, One, Sqrt, Zero,
             checked::{CheckedDiv, CheckedMul},
         },
         shrink_to, sum, zip_map,
@@ -777,14 +777,6 @@ impl<T: Copy, const N: usize> Vector<T, N> {
             Some(vector) => vector,
             None => panic!("swizzle index out of bounds"),
         }
-    }
-}
-
-impl<T: PartialOrd + ClosedSub, const N: usize> Vector<T, N> {
-    #[must_use]
-    #[inline]
-    pub fn is_nearly_equal(self, to: Vector<T, N>, epsilon: T) -> bool {
-        (self - to).into_iter().all(|elem| elem < epsilon)
     }
 }
 

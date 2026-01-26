@@ -378,16 +378,6 @@ where
     }
 }
 
-impl<T: PartialOrd + ClosedSub> Quaternion<T> {
-    #[must_use]
-    #[inline]
-    pub fn is_nearly_equal(self, to: Quaternion<T>, epsilon: T) -> bool {
-        (self.into_vector() - to.into_vector())
-            .into_iter()
-            .all(|elem| elem < epsilon)
-    }
-}
-
 impl<T: ClosedMul + Zero + ClosedAdd + ClosedDiv + ClosedSub + Sqrt + Copy> Mul<Quaternion<T>>
     for Quaternion<T>
 {

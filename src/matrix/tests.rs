@@ -220,6 +220,8 @@ fn test_matrix_transform() {
 #[cfg_attr(miri, ignore = "🐌 takes too long by default on miri")]
 #[test]
 fn test_rotation_matrices() {
+    use approx::assert_relative_eq;
+
     let mut angle = Angle::<f64>::zero();
     while angle < Angle::full() {
         let matrix = Matrix::x_axis_rotation(angle);
@@ -271,7 +273,7 @@ fn test_rotation_matrices() {
     let mat = Matrix::rotation_3d(quat);
     let back_to_quat = Quaternion::from_matrix(mat);
 
-    assert!(quat.is_nearly_equal(back_to_quat, 1e-15));
+    assert_relative_eq!(quat, back_to_quat, epsilon = 1e-15);
 }
 
 #[cfg(feature = "nightly")]
