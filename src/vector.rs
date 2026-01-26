@@ -155,7 +155,7 @@ impl<T: One + Zero, const N: usize> Vector<T, N> {
     /// ```
     /// # use vectral::vector::Vector;
     /// let vector = Vector::<i32, 6>::unit_n::<2>();
-    /// assert_eq!(vector.into_array(), [0, 0, 1, 0, 0, 0]);
+    /// assert_eq!(vector.to_array(), [0, 0, 1, 0, 0, 0]);
     /// ```
     #[must_use]
     #[inline]
@@ -327,9 +327,7 @@ impl<T, const N: usize> Vector<T, N> {
     #[must_use]
     #[inline]
     pub const fn into_array(self) -> [T; N] {
-        let array = unsafe { ptr::read(&self.data) };
-        let _this = ManuallyDrop::new(self);
-        array
+        self.to_array()
     }
 
     #[must_use]
@@ -396,7 +394,7 @@ impl<T, const N: usize> Vector<T, N> {
     /// let v2 = Vector::new([4, 5, 6]);
     /// let v3 = v1.concat(v2);
     ///
-    /// assert_eq!(v3.into_array(), [1, 2, 3, 4, 5, 6]);
+    /// assert_eq!(v3.to_array(), [1, 2, 3, 4, 5, 6]);
     /// ```
     #[cfg(feature = "nightly")]
     #[must_use]
@@ -702,7 +700,7 @@ impl<T: Copy, const N: usize> Vector<T, N> {
     /// # use vectral::vector::Vector;
     /// let vector = Vector::new([1, 2]);
     /// let expanded = vector.expand_to::<4>(0);
-    /// assert_eq!(expanded.into_array(), [1, 2, 0, 0]);
+    /// assert_eq!(expanded.to_array(), [1, 2, 0, 0]);
     /// ```
     #[must_use]
     #[inline]
@@ -725,7 +723,7 @@ impl<T: Copy, const N: usize> Vector<T, N> {
     /// # use vectral::vector::Vector;
     /// let vector = Vector::new([1, 2, 8, 9, 3, 1, 4]);
     /// let swizzled = vector.try_swizzle(&[1, 4, 0, 0]).unwrap();
-    /// assert_eq!(swizzled.into_array(), [2, 3, 1, 1]);
+    /// assert_eq!(swizzled.to_array(), [2, 3, 1, 1]);
     /// ```
     #[must_use]
     #[inline]
@@ -814,7 +812,7 @@ impl<T: Copy, const N: usize> Vector<T, N> {
     /// # use vectral::vector::Vector;
     /// let vector = Vector::new([1, 2, 8, 9, 3, 1, 4]);
     /// let swizzled = vector.swizzle(&[1, 4, 0, 0]);
-    /// assert_eq!(swizzled.into_array(), [2, 3, 1, 1]);
+    /// assert_eq!(swizzled.to_array(), [2, 3, 1, 1]);
     /// ```
     #[track_caller]
     #[must_use]

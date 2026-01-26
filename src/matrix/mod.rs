@@ -129,9 +129,16 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         &self.data
     }
 
+    #[deprecated(note = "use Matrix::to_array instead")]
     #[must_use]
     #[inline]
     pub const fn into_array(self) -> [[T; COLS]; ROWS] {
+        self.to_array()
+    }
+
+    #[must_use]
+    #[inline]
+    pub const fn to_array(self) -> [[T; COLS]; ROWS] {
         let array = unsafe { ptr::read(&self.data) };
         let _self = ManuallyDrop::new(self);
         array
@@ -804,7 +811,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const fn into_flattened(self) -> [T; ROWS * COLS] {
-        flatten(self.into_array())
+        flatten(self.to_array())
     }
 
     /// Horizontally concatenates two matrices together.
@@ -2584,7 +2591,7 @@ macro_rules! impl_matrix_conversion {
         impl<T> From<Matrix<T, $rows, $cols>> for mint:: $matrix_name<T> {
             #[inline]
             fn from(value: Matrix<T, $rows, $cols>) -> Self {
-                mint::$matrix_name::from(value.into_array())
+                mint::$matrix_name::from(value.to_array())
             }
         }
 
@@ -2759,7 +2766,7 @@ macro_rules! impl_matrix_conversion {
         impl<T> From<Matrix<T, $rows, $cols>> for mint:: $matrix_name<T> {
             #[inline]
             fn from(value: Matrix<T, $rows, $cols>) -> Self {
-                mint::$matrix_name::from(value.transpose().into_array())
+                mint::$matrix_name::from(value.transpose().to_array())
             }
         }
 
