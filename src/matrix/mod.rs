@@ -855,7 +855,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         let mut row = 0;
         while row < ROWS {
             unsafe {
-                let src_row = { array_get_unchecked(&self.data, row).as_ptr() };
+                let src_row = array_get_unchecked(&self.data, row).as_ptr();
                 let dst_row = concat_matrix.data.as_mut_ptr().add(row).cast::<T>();
 
                 ptr::copy(src_row, dst_row, COLS);
