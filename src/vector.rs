@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
+    const_assert_larger,
     fields::Xyz,
     point::Point,
     utils::{
         array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
-        assertions::AssertLarger,
         expand_to,
         num::{
             ClosedAdd, ClosedMul, One, Sqrt, Zero,
@@ -157,11 +157,19 @@ impl<T: One + Zero, const N: usize> Vector<T, N> {
     /// let vector = Vector::<i32, 6>::unit_n::<2>();
     /// assert_eq!(vector.to_array(), [0, 0, 1, 0, 0, 0]);
     /// ```
+    ///
+    /// This method will fail to compile if the given `DIM` is greater
+    /// than the length of the vector.
+    ///
+    /// ```compile_fail
+    /// use vectral::vector::Vector;
+    ///
+    /// let _ = Vector::<i32, 6>::unit_n::<12>();
+    /// ```
     #[must_use]
     #[inline]
     pub const fn unit_n<const DIM: usize>() -> Self {
-        #[allow(path_statements)]
-        <AssertLarger<N, DIM>>::ASSERT;
+        const_assert_larger!(N, DIM);
 
         let mut vector = Vector::new([const { MaybeUninit::new(T::ZERO) }; N]);
         unsafe {
