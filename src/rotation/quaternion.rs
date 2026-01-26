@@ -828,7 +828,7 @@ mod tests {
         let q1 = Quaternion::from_angle_axis(Angle::<f64>::three_quarters(), Vector::X);
         let q2 = Quaternion::from_angle_axis(Angle::<f64>::three_quarters().neg(), Vector::X);
 
-        assert!(q1.conjugated().is_nearly_equal(q2, 1e-14));
+        approx::assert_relative_eq!(q1.conjugated(), q2);
 
         let m1 = q1.into_homogeneous();
         let m2 = q1.conjugated().into_homogeneous();
