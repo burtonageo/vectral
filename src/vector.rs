@@ -757,6 +757,53 @@ impl<T: Copy, const N: usize> Vector<T, N> {
     /// Swizzles the vector using the given `swizzle_vec`, returning a new vector where each
     /// element is the item at the index of `swizzle_vec`.
     ///
+    /// # Notes
+    ///
+    /// If any index given in `swizzle_vec` is out of bounds, then the corresponding element from the
+    /// `or` `Vector` will be used instead.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::vector::Vector;
+    ///
+    /// let vector = Vector::new([1, 2, 8, 9, 3, 1, 4]);
+    /// let swizzled = vector.swizzle_or(&[1, 4, 0, 900], &Vector::new([6, 7, 8, 19]));
+    ///
+    /// assert_eq!(swizzled.to_array(), [2, 3, 1, 19]);
+    /// ```
+    #[must_use]
+    #[inline]
+    pub const fn swizzle_or<const N1: usize>(
+        self,
+        swizzle_vec: &[usize; N1],
+        or: &Vector<T, N1>,
+    ) -> Vector<T, N1> {
+        let mut vec = Vector::<_, N1>::uninit();
+
+        let mut i = 0;
+        while i < N1 {
+            unsafe {
+                let swizzle_idx = *swizzle_vec.as_ptr().add(i);
+
+                let swizzle_elem = if swizzle_idx >= N {
+                    *or.get_unchecked(i)
+                } else {
+                    *self.get_unchecked(swizzle_idx)
+                };
+                let slot = vec.get_unchecked_mut(i);
+                slot.write(swizzle_elem);
+            }
+
+            i += 1;
+        }
+
+        unsafe { Vector::assume_init(vec) }
+    }
+
+    /// Swizzles the vector using the given `swizzle_vec`, returning a new vector where each
+    /// element is the item at the index of `swizzle_vec`.
+    ///
     /// # Panics
     ///
     /// If any index given in `swizzle_vec` is out of bounds, then this method will panic.

@@ -1264,6 +1264,42 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         unsafe { Some(Matrix::assume_init(matrix)) }
     }
 
+    #[must_use]
+    #[inline]
+    pub const fn swizzle_or<const SWIZZ_ROWS: usize, const SWIZZ_COLS: usize>(
+        self,
+        swizzle_matrix: &[[(usize, usize); SWIZZ_COLS]; SWIZZ_ROWS],
+        or: &Matrix<T, SWIZZ_ROWS, SWIZZ_COLS>,
+    ) -> Matrix<T, SWIZZ_ROWS, SWIZZ_COLS> {
+        let mut matrix = Matrix::uninit();
+
+        let mut row = 0;
+        while row < SWIZZ_ROWS {
+            let mut col = 0;
+            while col < SWIZZ_COLS {
+                let (swizzle_row_idx, swizzle_col_idx) = unsafe {
+                    let swizz_row = array_get_unchecked(swizzle_matrix, row);
+                    *array_get_unchecked(swizz_row, col)
+                };
+
+                unsafe {
+                    let elem = if swizzle_row_idx >= ROWS || swizzle_col_idx >= COLS {
+                        *or.get_unchecked(swizzle_row_idx, swizzle_col_idx)
+                    } else {
+                        *self.get_unchecked(swizzle_row_idx, swizzle_col_idx)
+                    };
+
+                    let slot = matrix.get_unchecked_mut(row, col);
+                    slot.write(elem);
+                }
+                col += 1;
+            }
+            row += 1;
+        }
+
+        unsafe { Matrix::assume_init(matrix) }
+    }
+
     /// Swizzle the matrix using the given swizzle matrix.
     ///
     /// The returned matrix will have the dimensions of the swizzle matrix, where each
