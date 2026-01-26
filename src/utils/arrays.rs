@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{
-    const_assert_larger, const_assert_smaller,
-};
+use crate::{const_assert_larger, const_assert_smaller};
 use core::{
     mem::{self, ManuallyDrop, MaybeUninit},
     ptr,
 };
+use std::mem::transmute_copy;
 
 /// Zips two arrays together and applies the function `f` to each memberwise element, returning a fixed
 /// size array of the results.
@@ -219,6 +218,21 @@ pub const fn expand_to<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
 
         let _ = ManuallyDrop::new((to_append, array));
         data.assume_init()
+    }
+}
+
+#[must_use]
+#[inline]
+pub const fn resize<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
+    array: [T; OLD_LEN],
+    to_append: T,
+) -> [T; NEW_LEN] {
+    if NEW_LEN > OLD_LEN {
+        expand_to::<NEW_LEN, T, OLD_LEN>(array, to_append)
+    } else if NEW_LEN < OLD_LEN {
+        shrink_to_copy::<NEW_LEN, T, OLD_LEN>(array)
+    } else {
+        unsafe { transmute_copy(&array) }
     }
 }
 
