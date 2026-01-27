@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 #[cfg(feature = "simd")]
-use crate::simd::SimdMul;
+use crate::simd::{SimdAdd, SimdMul, SimdSub};
 #[cfg(feature = "nightly")]
 use crate::{
     point::Point3,
@@ -1952,6 +1952,42 @@ where
         let this = Simd::from_array(self.into_flattened());
         let result = this * simd;
         Matrix::new([result.to_array()]).resize::<ROWS, COLS>()
+    }
+}
+
+#[cfg(feature = "simd")]
+impl<T, const ROWS: usize, const COLS: usize> SimdAdd<Matrix<T, ROWS, COLS>> for Matrix<T, ROWS, COLS>
+where
+    T: SimdElement,
+    Simd<T, { ROWS * COLS }>: ClosedAdd,
+    LaneCount<{ ROWS * COLS }>: SupportedLaneCount,
+{
+    type Output = Matrix<T, ROWS, COLS>;
+    #[inline]
+    fn simd_add(self, rhs: Matrix<T, ROWS, COLS>) -> Self::Output {
+        let lhs = Simd::from_array(self.into_flattened());
+        let rhs = Simd::from_array(rhs.into_flattened());
+
+        let result = lhs + rhs;
+        Matrix::from_row_vector(Vector::new(result.to_array())).resize::<ROWS, COLS>()
+    }
+}
+
+#[cfg(feature = "simd")]
+impl<T, const ROWS: usize, const COLS: usize> SimdSub<Matrix<T, ROWS, COLS>> for Matrix<T, ROWS, COLS>
+where
+    T: SimdElement,
+    Simd<T, { ROWS * COLS }>: ClosedSub,
+    LaneCount<{ ROWS * COLS }>: SupportedLaneCount,
+{
+    type Output = Matrix<T, ROWS, COLS>;
+    #[inline]
+    fn simd_sub(self, rhs: Matrix<T, ROWS, COLS>) -> Self::Output {
+        let lhs = Simd::from_array(self.into_flattened());
+        let rhs = Simd::from_array(rhs.into_flattened());
+
+        let result = lhs - rhs;
+        Matrix::from_row_vector(Vector::new(result.to_array())).resize::<ROWS, COLS>()
     }
 }
 
