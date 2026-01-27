@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-#[cfg(feature = "simd")]
-use crate::utils::num::ClosedSub;
 use crate::{
     const_assert_larger,
     fields::Xyz,
@@ -10,7 +8,7 @@ use crate::{
         array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
         expand_to,
         num::{
-            ClosedAdd, ClosedMul, ClosedNeg, One, Sqrt, Zero,
+            ClosedAdd, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Zero,
             checked::{CheckedDiv, CheckedMul},
         },
         shrink_to, sum, zip_map,
@@ -699,7 +697,7 @@ where
     #[inline]
     pub fn simd_cross(self, rhs: Self) -> Self {
         let [x0, y0, z0] = self.to_array();
-        let [x1 ,y1, z1] = rhs.to_array();
+        let [x1, y1, z1] = rhs.to_array();
 
         let v0 = Simd::from_array([y0, x0, x0]);
         let v1 = Simd::from_array([z1, z1, y1]);
