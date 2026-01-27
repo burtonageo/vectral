@@ -2324,7 +2324,10 @@ impl<T: Copy + ClosedAdd + ClosedMul + ClosedSub + One + Zero> Matrix4<T> {
 }
 
 #[cfg(feature = "nightly")]
-impl<T: ClosedAdd + ClosedMul + CheckedDiv<Output = T> + ClosedSub + Sqrt + One + Zero> Matrix4<T> {
+impl<T> Matrix4<T>
+where
+    T: ClosedAdd + ClosedMul + CheckedDiv<Output = T> + ClosedSub + Sqrt + One + Zero + ClosedNeg,
+{
     #[must_use]
     #[inline]
     pub fn look_at_lh(origin: Point3<T>, target: Point3<T>, up: Vector3<T>) -> Self {

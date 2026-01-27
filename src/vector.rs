@@ -10,7 +10,7 @@ use crate::{
         array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
         expand_to,
         num::{
-            ClosedAdd, ClosedMul, One, Sqrt, Zero,
+            ClosedAdd, ClosedMul, ClosedNeg, One, Sqrt, Zero,
             checked::{CheckedDiv, CheckedMul},
         },
         shrink_to, sum, zip_map,
@@ -666,10 +666,10 @@ where
     }
 }
 
-impl<T: Mul> Vector3<T> {
+impl<T: Copy + ClosedMul + ClosedSub + ClosedNeg> Vector3<T> {
     #[must_use]
     #[inline]
-    pub fn cross(self, rhs: Self) -> Vector3<T::Output> {
+    pub fn cross(self, rhs: Self) -> Vector3<T> {
         let Xyz {
             x: x0,
             y: y0,
@@ -681,7 +681,38 @@ impl<T: Mul> Vector3<T> {
             z: z1,
         } = rhs.into();
 
-        Vector3::new([y0 * z1, z0 * x1, x0 * y1])
+        let x = (y0 * z1) - (z0 * y1);
+        let y = (x0 * z1) - (z0 * x1);
+        let z = (x0 * y1) - (y0 * x1);
+
+        Vector3::new([x, y.neg(), z])
+    }
+}
+
+#[cfg(feature = "simd")]
+impl<T: SimdElement + ClosedNeg> Vector3<T>
+where
+    LaneCount<3>: SupportedLaneCount,
+    Simd<T, 3>: ClosedMul + ClosedSub,
+{
+    #[must_use]
+    #[inline]
+    pub fn simd_cross(self, rhs: Self) -> Self {
+        let [x0, y0, z0] = self.to_array();
+        let [x1 ,y1, z1] = rhs.to_array();
+
+        let v0 = Simd::from_array([y0, x0, x0]);
+        let v1 = Simd::from_array([z1, z1, y1]);
+
+        let v2 = Simd::from_array([z0, z0, y0]);
+        let v3 = Simd::from_array([y1, x1, x1]);
+
+        let lhs = v0 * v1;
+        let rhs = v2 * v3;
+        let result = lhs - rhs;
+
+        let [x, y, z] = result.to_array();
+        Vector3::new([x, y.neg(), z])
     }
 }
 
@@ -1342,6 +1373,39 @@ mod tests {
         assert_eq!(swizzled.to_array(), [2, 3, 1, 1]);
 
         assert!(vector.try_swizzle(&[421]).is_none());
+    }
+
+    #[test]
+    fn test_cross() {
+        let v1 = Vector::new([3.0, 4.0, 5.0]);
+        let v2 = Vector::new([7.0, 8.0, 9.0]);
+        let result = Vector::cross(v1, v2);
+
+        assert_eq!(result, Vector::new([-4.0, 8.0, -4.0]));
+        #[cfg(feature = "simd")]
+        {
+            assert_eq!(Vector::simd_cross(v1, v2), result);
+        }
+
+        let x = Vector::X;
+        let y = Vector::Y;
+        let z = Vector::<f64, _>::cross(x, y);
+
+        assert_eq!(z, Vector::Z);
+        #[cfg(feature = "simd")]
+        {
+            assert_eq!(Vector::simd_cross(x, y), z);
+        }
+
+        let v1 = Vector::new([13.0, 24.0, 19.0]);
+        let v2 = Vector::new([244.0, 190.0, 80.0]);
+        let result = Vector::cross(v1, v2);
+
+        assert_eq!(result, Vector::new([-1690.0, 3596.0, -3386.0]));
+        #[cfg(feature = "simd")]
+        {
+            assert_eq!(Vector::simd_cross(v1, v2), result);
+        }
     }
 
     #[cfg(feature = "simd")]

@@ -378,8 +378,9 @@ where
     }
 }
 
-impl<T: ClosedMul + Zero + ClosedAdd + ClosedDiv + ClosedSub + Sqrt + Copy> Mul<Quaternion<T>>
-    for Quaternion<T>
+impl<T> Mul<Quaternion<T>> for Quaternion<T>
+where
+    T: ClosedMul + Zero + ClosedAdd + ClosedDiv + ClosedSub + Sqrt + Copy + ClosedNeg,
 {
     type Output = Quaternion<T>;
     fn mul(self, rhs: Quaternion<T>) -> Self::Output {
