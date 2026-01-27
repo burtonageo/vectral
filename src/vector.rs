@@ -1352,10 +1352,10 @@ mod tests {
         let vector_1 = SimdValue(Vector::new([1, 2, 4, 5]));
         let vector_2 = SimdValue(Vector::new([2, 5, 5, 3]));
 
-        let result = vector_1 * vector_2;
+        let result = vector_1 + vector_2;
         assert_eq!(result.as_slice(), &[3, 7, 9, 8]);
 
-        let result = vector_1 * vector_2;
+        let result = vector_1 - vector_2;
         assert_eq!(result.as_slice(), &[-1, -3, -1, 2]);
 
         let result = vector_1 * SimdValue(2);
