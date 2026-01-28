@@ -22,7 +22,7 @@ use crate::{
 };
 #[cfg(feature = "simd")]
 use crate::{
-    simd::{SimdAdd, SimdDiv, SimdMul, SimdSub},
+    simd::{SimdAdd, SimdDiv, SimdMul, SimdSub, SimdValue},
     utils::num::ClosedDiv,
 };
 #[cfg(feature = "serde")]
@@ -554,30 +554,21 @@ where
 }
 
 #[cfg(feature = "simd")]
-impl<T: SimdElement, const N: usize> Vector<T, N>
+impl<T: SimdElement + ClosedAdd + Zero, const N: usize> Vector<T, N>
 where
     LaneCount<N>: SupportedLaneCount,
+    Simd<T, N>: ClosedMul,
 {
     #[must_use]
     #[inline]
-    pub fn simd_dot(self, rhs: Self) -> T
-    where
-        LaneCount<N>: SupportedLaneCount,
-        Simd<T, N>: ClosedMul,
-        T: ClosedAdd + Zero,
-    {
-        let res = self.simd_mul(rhs);
+    pub fn simd_dot<I: Into<SimdValue<Self>>>(self, rhs: I) -> T {
+        let res = (SimdValue(self) * rhs.into()).to_array();
         sum(res.into_iter())
     }
 
     #[must_use]
     #[inline]
-    pub fn simd_len_squared(self) -> T
-    where
-        LaneCount<N>: SupportedLaneCount,
-        Simd<T, N>: ClosedMul,
-        T: ClosedAdd + Zero,
-    {
+    pub fn simd_len_squared(self) -> T {
         Self::simd_dot(self, self)
     }
 
@@ -585,9 +576,7 @@ where
     #[inline]
     pub fn simd_len(self) -> T
     where
-        LaneCount<N>: SupportedLaneCount,
-        Simd<T, N>: ClosedMul,
-        T: ClosedAdd + Zero + Sqrt,
+        T: Sqrt,
     {
         Self::simd_len_squared(self).sqrt()
     }
@@ -695,9 +684,9 @@ where
 {
     #[must_use]
     #[inline]
-    pub fn simd_cross(self, rhs: Self) -> Self {
+    pub fn simd_cross<I: Into<SimdValue<Self>>>(self, rhs: I) -> Self {
         let [x0, y0, z0] = self.to_array();
-        let [x1, y1, z1] = rhs.to_array();
+        let [x1, y1, z1] = rhs.into().to_array();
 
         let v0 = Simd::from_array([y0, x0, x0]);
         let v1 = Simd::from_array([z1, z1, y1]);
