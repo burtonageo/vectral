@@ -144,8 +144,8 @@ fn test_matrix_multiply() {
         Matrix4::identity()
     );
 
-    let m0 = Matrix::new([[1, 2, 3]]);
-    let m1 = Matrix::new([[4], [5], [6]]);
+    let m0 = Matrix::from_row_vector(From::from([1, 2, 3]));
+    let m1 = Matrix::from_column_vector(From::from([4, 5, 6]));
 
     assert_eq!(m0 * m1, Matrix::new([[32]]));
 
