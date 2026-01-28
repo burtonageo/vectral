@@ -2,24 +2,26 @@
 
 #[cfg(feature = "simd")]
 use crate::simd::{SimdAdd, SimdMul, SimdSub};
-#[cfg(feature = "nightly")]
 use crate::{
     point::Point3,
-    rotation::Rotation,
-    utils::{flatten, num::checked::CheckedDiv, shrink_to, shrink_to_copy},
-    vector::Vector4,
-};
-use crate::{
     rotation::{angle::Angle, quaternion::Quaternion},
     utils::{
         array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
         num::{
             Abs, Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig,
-            Zero, checked::CheckedAddAssign, n,
+            Zero,
+            checked::{CheckedAddAssign, CheckedDiv},
+            n,
         },
         sum, zip_map,
     },
     vector::{Vector, Vector3},
+};
+#[cfg(feature = "nightly")]
+use crate::{
+    rotation::Rotation,
+    utils::{flatten, shrink_to, shrink_to_copy},
+    vector::Vector4,
 };
 #[cfg(feature = "nightly")]
 use core::cmp::{Ordering, max_by};
@@ -2366,7 +2368,6 @@ impl<T: Copy + ClosedAdd + ClosedMul + ClosedSub + One + Zero> Matrix4<T> {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<T> Matrix4<T>
 where
     T: ClosedAdd + ClosedMul + CheckedDiv<Output = T> + ClosedSub + Sqrt + One + Zero + ClosedNeg,
@@ -2374,15 +2375,20 @@ where
     #[must_use]
     #[inline]
     pub fn look_at_lh(origin: Point3<T>, target: Point3<T>, up: Vector3<T>) -> Self {
-        let mut cam_to_world = Matrix4::translation(origin.into());
+        let mut cam_to_world = {
+            // @TODO: Replace with `Matrix::translation(identity)` when const generics are stable.
+            let mut mat = Matrix::identity();
+            mat.set_col(3, origin.expand_to::<4>(T::ONE).into());
+            mat
+        };
 
         let dir = origin.direction_to(target);
         let left = Vector::cross(up.normalized(), dir);
         let new_up = Vector::cross(dir, left);
 
-        cam_to_world.set_col(0, left.expand(T::ZERO).to_array());
-        cam_to_world.set_col(1, new_up.expand(T::ZERO).to_array());
-        cam_to_world.set_col(2, dir.expand(T::ZERO).to_array());
+        cam_to_world.set_col(0, left.expand_to::<4>(T::ZERO).to_array());
+        cam_to_world.set_col(1, new_up.expand_to::<4>(T::ZERO).to_array());
+        cam_to_world.set_col(2, dir.expand_to::<4>(T::ZERO).to_array());
 
         cam_to_world
     }
