@@ -2,7 +2,6 @@
 
 use crate::{
     const_assert_larger,
-    fields::Xyz,
     point::Point,
     utils::{
         array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
@@ -657,16 +656,8 @@ impl<T: Copy + ClosedMul + ClosedSub + ClosedNeg> Vector3<T> {
     #[must_use]
     #[inline]
     pub fn cross(self, rhs: Self) -> Vector3<T> {
-        let Xyz {
-            x: x0,
-            y: y0,
-            z: z0,
-        } = self.into();
-        let Xyz {
-            x: x1,
-            y: y1,
-            z: z1,
-        } = rhs.into();
+        let [x0, y0, z0] = self.to_array();
+        let [x1, y1, z1] = rhs.to_array();
 
         let x = (y0 * z1) - (z0 * y1);
         let y = (x0 * z1) - (z0 * x1);
