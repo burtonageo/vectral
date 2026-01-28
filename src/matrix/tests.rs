@@ -3,7 +3,7 @@
 #[cfg(any(feature = "std", feature = "libm"))]
 use crate::rotation::angle::Angle;
 #[cfg(feature = "simd")]
-use crate::simd::SimdValue;
+use crate::simd::{SimdMul, SimdValue};
 #[cfg(feature = "nightly")]
 use crate::{matrix::TransformHomogeneous, point::Point3, utils::num::Zero};
 use crate::{
@@ -134,6 +134,10 @@ fn test_matrix_multiply() {
     ]);
 
     assert_eq!(m1 * m2, result);
+    #[cfg(feature = "simd")]
+    {
+        assert_eq!(SimdValue(m1) * SimdValue(m2), SimdValue(result));
+    }
 
     assert_eq!(
         Matrix4::<f32>::identity() * Matrix4::identity(),
@@ -153,6 +157,11 @@ fn test_matrix_multiply() {
     ]);
 
     assert_eq!(m1 * m0, m1_by_m0_result);
+
+    #[cfg(feature = "simd")]
+    {
+        assert_eq!(m1.simd_mul(m0), m1_by_m0_result);
+    }
 }
 
 #[test]

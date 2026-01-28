@@ -31,7 +31,7 @@ pub trait SimdSub<U = Self>: Copy {
     fn simd_sub(self, rhs: U) -> Self::Output;
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct SimdValue<T>(pub T);
 
 impl<T> AsRef<T> for SimdValue<T> {
