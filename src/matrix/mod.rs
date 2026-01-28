@@ -561,7 +561,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
                 unsafe {
                     matrix
                         .get_unchecked_mut(row, col)
-                        .write(mem::transmute(&raw mut self.data[row][col]));
+                        .write(&mut *self.get_unchecked_raw_mut(row, col));
                 }
 
                 col += 1;
@@ -965,7 +965,6 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         self.as_slice().iter()
     }
 
-    #[must_use]
     #[inline]
     pub fn elems_mut(&mut self) -> slice::IterMut<'_, T> {
         self.as_mut_slice().iter_mut()
@@ -1974,7 +1973,8 @@ where
 }
 
 #[cfg(feature = "simd")]
-impl<T, const ROWS: usize, const COLS: usize> SimdSub<Matrix<T, ROWS, COLS>> for Matrix<T, ROWS, COLS>
+impl<T, const ROWS: usize, const COLS: usize> SimdSub<Matrix<T, ROWS, COLS>>
+    for Matrix<T, ROWS, COLS>
 where
     T: SimdElement,
     Simd<T, { ROWS * COLS }>: ClosedSub,
