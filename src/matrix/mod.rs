@@ -21,16 +21,14 @@ use crate::{
     },
     vector::{Vector, Vector3},
 };
+#[cfg(feature = "nightly")]
+use core::cmp::{Ordering, max_by};
 #[cfg(feature = "simd")]
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
-#[cfg(feature = "nightly")]
-use core::{
-    array,
-    cmp::{Ordering, max_by},
-};
 use core::{
     borrow::{Borrow, BorrowMut},
     convert::{AsMut, AsRef},
+    fmt,
     mem::{self, ManuallyDrop, MaybeUninit},
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
     ptr, slice,
@@ -407,7 +405,13 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const unsafe fn get_unchecked(&self, row: usize, col: usize) -> &T {
-        unsafe { array_get_unchecked(array_get_unchecked(&self.data, row).as_slice(), col) }
+        unsafe { &*self.get_unchecked_raw(row, col) }
+    }
+
+    #[must_use]
+    #[inline]
+    pub const fn get_unchecked_raw(&self, row: usize, col: usize) -> *const T {
+        unsafe { self.as_ptr().add((row * COLS) + col) }
     }
 
     /// Get a mutable reference to the element at index `row` and `col` without performing
@@ -434,12 +438,13 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const unsafe fn get_unchecked_mut(&mut self, row: usize, col: usize) -> &mut T {
-        unsafe {
-            array_get_unchecked_mut(
-                array_get_unchecked_mut(&mut self.data, row).as_mut_slice(),
-                col,
-            )
-        }
+        unsafe { &mut *self.get_unchecked_raw_mut(row, col) }
+    }
+
+    #[must_use]
+    #[inline]
+    pub const fn get_unchecked_raw_mut(&mut self, row: usize, col: usize) -> *mut T {
+        unsafe { self.as_mut_ptr().add((row * COLS) + col) }
     }
 
     /// Sets the column of the `Matrix` at `col_idx` to the given `col`.
@@ -952,14 +957,15 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         }
     }
 
-    #[cfg(feature = "nightly")]
-    #[must_use]
     #[inline]
-    pub fn into_elems(self) -> array::IntoIter<T, { ROWS * COLS }> {
-        IntoIterator::into_iter(self.into_flattened())
+    pub fn into_elems(self) -> IntoElements<T, ROWS, COLS> {
+        IntoElements {
+            matrix: self.into_uninit(),
+            front: 0,
+            back: Self::NUM_ELEMENTS.saturating_sub(1),
+        }
     }
 
-    #[must_use]
     #[inline]
     pub fn elems(&self) -> slice::Iter<'_, T> {
         self.as_slice().iter()
@@ -1955,7 +1961,8 @@ where
 }
 
 #[cfg(feature = "simd")]
-impl<T, const ROWS: usize, const COLS: usize> SimdAdd<Matrix<T, ROWS, COLS>> for Matrix<T, ROWS, COLS>
+impl<T, const ROWS: usize, const COLS: usize> SimdAdd<Matrix<T, ROWS, COLS>>
+    for Matrix<T, ROWS, COLS>
 where
     T: SimdElement,
     Simd<T, { ROWS * COLS }>: ClosedAdd,
@@ -2611,6 +2618,132 @@ where
     #[inline]
     fn mul(self, rhs: Matrix<T, ROWS, COLS>) -> Self::Output {
         rhs * self
+    }
+}
+
+pub struct IntoElements<T, const ROWS: usize, const COLS: usize> {
+    matrix: Matrix<MaybeUninit<T>, ROWS, COLS>,
+    front: usize,
+    back: usize,
+}
+
+impl<T, const ROWS: usize, const COLS: usize> IntoElements<T, ROWS, COLS> {
+    #[must_use]
+    #[inline]
+    const fn as_slice(&self) -> &[T] {
+        unsafe {
+            let ptr = self.matrix.as_ptr().add(self.front).cast::<T>();
+            slice::from_raw_parts(ptr, self.len_const())
+        }
+    }
+
+    #[must_use]
+    #[inline]
+    const fn as_mut_slice(&mut self) -> &mut [T] {
+        unsafe {
+            let ptr = self.matrix.as_mut_ptr().add(self.front).cast::<T>();
+            slice::from_raw_parts_mut(ptr, self.len_const())
+        }
+    }
+
+    #[must_use]
+    #[inline]
+    const fn len_const(&self) -> usize {
+        if self.back == self.front {
+            0
+        } else {
+            (self.back - self.front) + 1
+        }
+    }
+}
+
+impl<T: Clone, const ROWS: usize, const COLS: usize> Clone for IntoElements<T, ROWS, COLS> {
+    #[inline]
+    fn clone(&self) -> Self {
+        let mut out = IntoElements {
+            matrix: Matrix::uninit(),
+            front: self.front,
+            back: self.back,
+        };
+
+        for (lhs, rhs) in out
+            .matrix
+            .as_mut_slice()
+            .iter_mut()
+            .zip(self.matrix.as_slice())
+        {
+            unsafe {
+                lhs.write(rhs.assume_init_ref().clone());
+            }
+        }
+
+        out
+    }
+}
+
+impl<T: fmt::Debug, const ROWS: usize, const COLS: usize> fmt::Debug
+    for IntoElements<T, ROWS, COLS>
+{
+    #[inline]
+    fn fmt(&self, fmtr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fmtr.write_str("Matrix")?;
+        fmtr.debug_list().entries(self.as_slice()).finish()?;
+        Ok(())
+    }
+}
+
+impl<T, const ROWS: usize, const COLS: usize> Drop for IntoElements<T, ROWS, COLS> {
+    #[inline]
+    fn drop(&mut self) {
+        let slice = self.as_mut_slice();
+
+        unsafe {
+            ptr::drop_in_place(slice);
+        }
+    }
+}
+
+impl<T, const ROWS: usize, const COLS: usize> Iterator for IntoElements<T, ROWS, COLS> {
+    type Item = T;
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.front >= self.back {
+            return None;
+        }
+
+        let value = unsafe { ptr::read(self.matrix.as_ptr().add(self.front)) };
+
+        self.front += 1;
+
+        unsafe { Some(MaybeUninit::assume_init(value)) }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.len();
+        (len, Some(len))
+    }
+}
+
+impl<T, const ROWS: usize, const COLS: usize> DoubleEndedIterator for IntoElements<T, ROWS, COLS> {
+    #[inline]
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.front >= self.back {
+            return None;
+        }
+
+        let value = unsafe { ptr::read(self.matrix.as_ptr().add(self.back)) };
+
+        self.back -= 1;
+
+        unsafe { Some(MaybeUninit::assume_init(value)) }
+    }
+}
+
+impl<T, const ROWS: usize, const COLS: usize> ExactSizeIterator for IntoElements<T, ROWS, COLS> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.len_const()
     }
 }
 

@@ -493,6 +493,37 @@ fn test_adjoint() {
     assert_eq!(mat.adjoint(), expected_adjoint);
 }
 
+#[test]
+fn test_iter() {
+    #[rustfmt::skip]
+    let matrix = Matrix::new([
+        [1, 2, 3, 4, 5, 6],
+        [1, 2, 3, 4, 5, 6],
+        [1, 2, 3, 4, 5, 6],
+        [1, 2, 3, 4, 5, 6],
+        [1, 2, 3, 4, 5, 6],
+        [1, 2, 3, 4, 5, 6],
+        [1, 2, 3, 4, 5, 6],
+    ]);
+
+    let copy = matrix;
+    let slice = matrix.as_slice();
+    let iter = copy.into_elems();
+
+    assert_eq!(slice.len(), iter.len());
+
+    for (lhs, rhs) in iter.zip(slice) {
+        assert_eq!(&lhs, rhs);
+    }
+
+    let slice = matrix.as_slice();
+    let iter = copy.into_elems();
+
+    for (lhs, rhs) in iter.rev().zip(slice.iter().rev()) {
+        assert_eq!(&lhs, rhs);
+    }
+}
+
 #[cfg(feature = "nightly")]
 #[cfg(any(feature = "std", feature = "libm"))]
 #[test]
