@@ -229,14 +229,18 @@ fn test_matrix_transform() {
 #[cfg_attr(miri, ignore = "🐌 takes too long by default on miri")]
 #[test]
 fn test_rotation_matrices() {
-    use approx::assert_relative_eq;
+    let epsilon = if cfg!(miri) {
+        1e-13
+    } else {
+        1e-15
+    };
 
     let mut angle = Angle::<f64>::zero();
     while angle < Angle::full() {
         let matrix = Matrix::x_axis_rotation(angle);
         let matrix_2 = Matrix::axis_rotation_3d(angle, Vector3::X);
 
-        approx::assert_relative_eq!(matrix, matrix_2, epsilon = 1e-15);
+        approx::assert_relative_eq!(matrix, matrix_2, epsilon = epsilon);
         angle += Angle::Degrees(1.0);
     }
 
@@ -245,7 +249,7 @@ fn test_rotation_matrices() {
         let matrix = Matrix::y_axis_rotation(angle);
         let matrix_2 = Matrix::axis_rotation_3d(angle, Vector3::Y);
 
-        approx::assert_relative_eq!(matrix, matrix_2, epsilon = 1e-15);
+        approx::assert_relative_eq!(matrix, matrix_2, epsilon = epsilon);
         angle += Angle::Degrees(1.0);
     }
 
@@ -254,7 +258,7 @@ fn test_rotation_matrices() {
         let matrix = Matrix::z_axis_rotation(angle);
         let matrix_2 = Matrix::axis_rotation_3d(angle, Vector3::Z);
 
-        approx::assert_relative_eq!(matrix, matrix_2, epsilon = 1e-15);
+        approx::assert_relative_eq!(matrix, matrix_2, epsilon = epsilon);
         angle += Angle::Degrees(1.0);
     }
 
@@ -265,7 +269,7 @@ fn test_rotation_matrices() {
             let matrix = Matrix::axis_rotation_3d(angle, axis);
             let matrix_2 = Matrix::rotation_3d(quat);
 
-            approx::assert_relative_eq!(matrix, matrix_2, epsilon = 1e-15);
+            approx::assert_relative_eq!(matrix, matrix_2, epsilon = epsilon);
 
             angle += Angle::Degrees(1.0);
         }
@@ -282,7 +286,7 @@ fn test_rotation_matrices() {
     let mat = Matrix::rotation_3d(quat);
     let back_to_quat = Quaternion::from_matrix(mat);
 
-    assert_relative_eq!(quat, back_to_quat, epsilon = 1e-15);
+    approx::assert_relative_eq!(quat, back_to_quat, epsilon = epsilon);
 }
 
 #[cfg(feature = "nightly")]
