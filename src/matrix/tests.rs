@@ -560,9 +560,13 @@ fn test_inverse() {
 
 #[cfg(feature = "nightly")]
 #[cfg(any(feature = "std", feature = "libm"))]
-#[cfg_attr(miri, ignore = "🐌 takes too long by default on miri")]
 #[test]
 fn test_decompose() {
+    let epsilon = if cfg!(miri) {
+        1e-14
+    } else {
+        1e-15
+    };
     let rot = Quaternion::from_angle_axis(
         Angle::Degrees(21.0),
         Vector3::new([0.7, 0.3, 0.4]).normalized(),
@@ -579,8 +583,8 @@ fn test_decompose() {
     let (decomp_translation, decomp_scale, decomp_rot, w) =
         mat.decompose_homogeneous_transform_3d::<Quaternion<_>>();
     assert_eq!(translation, decomp_translation);
-    approx::assert_abs_diff_eq!(rot.into_vector(), decomp_rot.into_vector(), epsilon = 1e-15);
-    approx::assert_abs_diff_eq!(scale, decomp_scale, epsilon = 1e-15);
+    approx::assert_abs_diff_eq!(rot.into_vector(), decomp_rot.into_vector(), epsilon = epsilon);
+    approx::assert_abs_diff_eq!(scale, decomp_scale, epsilon = epsilon);
     assert_eq!(w, 1.0);
 }
 
