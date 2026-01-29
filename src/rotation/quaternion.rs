@@ -912,18 +912,25 @@ mod tests {
     }
 
     #[cfg(any(feature = "std", feature = "libm"))]
-    #[ignore = "I don't know how to math"]
     #[test]
     fn test_convert() {
+        let epsilon = if cfg!(miri) {
+            1e-14
+        } else {
+            1e-15
+        };
+
         let (angle, axis) = (
             Angle::<f64>::quarter(),
             Vector::new([1.0, 5.0, 3.0]).normalized(),
         );
 
-        let quat = Quaternion::from_angle_axis(angle, axis);
+        let quat = Quaternion::from_angle_axis(angle, axis).normalized();
 
-        let (angle_2, axis_2) = quat.into_angle_axis();
-        assert_eq!(angle, angle_2);
-        assert_eq!(axis, axis_2);
+        let (angle_2, mut axis_2) = quat.into_angle_axis();
+        axis_2.normalize();
+
+        approx::assert_relative_eq!(angle, angle_2, epsilon = epsilon);
+        approx::assert_relative_eq!(axis, axis_2, epsilon = epsilon);
     }
 }
