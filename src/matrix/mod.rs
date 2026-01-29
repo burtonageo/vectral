@@ -515,7 +515,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const fn each_ref(&self) -> Matrix<&T, ROWS, COLS> {
-        let mut matrix: Matrix<*const T, ROWS, COLS> = Matrix::splat(ptr::null::<T>());
+        let mut matrix = Matrix::<_, ROWS, COLS>::splat(ptr::null::<T>());
 
         let mut row = 0;
         while row < ROWS {
@@ -559,7 +559,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const fn each_mut(&mut self) -> Matrix<&mut T, ROWS, COLS> {
-        let mut matrix: Matrix<_, ROWS, COLS> = Matrix::splat(ptr::null_mut::<T>());
+        let mut matrix = Matrix::<_, ROWS, COLS>::splat(ptr::null_mut::<T>());
 
         let mut row = 0;
         while row < ROWS {
