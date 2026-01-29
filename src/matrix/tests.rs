@@ -230,7 +230,7 @@ fn test_matrix_transform() {
 #[test]
 fn test_rotation_matrices() {
     let epsilon = if cfg!(miri) {
-        1e-13
+        1e-14
     } else {
         1e-15
     };
