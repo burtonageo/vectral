@@ -1403,4 +1403,23 @@ mod tests {
         let result = vector_1 * SimdValue(2);
         assert_eq!(result.as_slice(), &[2, 4, 8, 10]);
     }
+
+    #[test]
+    fn test_dot() {
+        let v1 = Vector::new([1.0, 2.0, 3.0]);
+        let v2 = Vector::new([7.0, 8.0, 9.0]);
+
+        let dot = Vector::dot(v1, v2);
+        assert_eq!(dot, 50.0);
+
+        #[cfg(feature = "simd")]
+        {
+            let simd_dot = Vector::simd_dot(v1, v2);
+            assert_eq!(dot, simd_dot);
+        }
+
+        let v = Vector::<_, 5>::X * 60.0;
+        let len = v.len();
+        assert_eq!(len, 60.0);
+    }
 }
