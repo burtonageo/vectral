@@ -515,7 +515,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const fn each_ref(&self) -> Matrix<&T, ROWS, COLS> {
-        let mut matrix = Matrix::uninit();
+        let mut matrix: Matrix<*const T, ROWS, COLS> = Matrix::splat(ptr::null::<T>());
 
         let mut row = 0;
         while row < ROWS {
@@ -523,8 +523,8 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             while col < COLS {
                 unsafe {
                     matrix
-                        .get_unchecked_mut(row, col)
-                        .write(self.get_unchecked(row, col));
+                        .get_unchecked_raw_mut(row, col)
+                        .write(&raw const self.data[row][col]);
                 }
 
                 col += 1;
@@ -533,7 +533,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             row += 1;
         }
 
-        unsafe { Matrix::assume_init(matrix) }
+        unsafe { mem::transmute_copy(&matrix) }
     }
 
     /// Returns a new `Matrix` where each element is a mutable reference to the corresponding element
@@ -559,7 +559,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const fn each_mut(&mut self) -> Matrix<&mut T, ROWS, COLS> {
-        let mut matrix = Matrix::uninit();
+        let mut matrix: Matrix<_, ROWS, COLS> = Matrix::splat(ptr::null_mut::<T>());
 
         let mut row = 0;
         while row < ROWS {
@@ -567,8 +567,8 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             while col < COLS {
                 unsafe {
                     matrix
-                        .get_unchecked_mut(row, col)
-                        .write(&mut *self.get_unchecked_raw_mut(row, col));
+                        .get_unchecked_raw_mut(row, col)
+                        .write(&raw mut self.data[row][col]);
                 }
 
                 col += 1;
@@ -577,7 +577,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             row += 1;
         }
 
-        unsafe { Matrix::assume_init(matrix) }
+        unsafe { mem::transmute_copy(&matrix) }
     }
 
     #[inline]
