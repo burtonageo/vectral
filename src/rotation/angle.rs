@@ -16,7 +16,7 @@ use serde_core::{
     ser::{Serialize, Serializer},
 };
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Hash)]
 pub enum Angle<T> {
     Degrees(T),
     Radians(T),
@@ -115,9 +115,9 @@ impl<T: Trig + SubAssign> SubAssign for Angle<T> {
     }
 }
 
-impl<T: PartialOrd + Trig> PartialOrd for Angle<T> {
+impl<T: PartialOrd<U> + Trig, U: Trig> PartialOrd<Angle<U>> for Angle<T> {
     #[inline]
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+    fn partial_cmp(&self, other: &Angle<U>) -> Option<cmp::Ordering> {
         match (*self, *other) {
             (Angle::Degrees(ref a0), Angle::Degrees(ref a1)) => a0.partial_cmp(a1),
             (a0, a1) => a0.in_radians().partial_cmp(&a1.in_radians()),
@@ -125,9 +125,19 @@ impl<T: PartialOrd + Trig> PartialOrd for Angle<T> {
     }
 }
 
-impl<T: PartialEq + Trig> PartialEq for Angle<T> {
+impl<T: Ord + Trig> Ord for Angle<T> {
     #[inline]
-    fn eq(&self, other: &Self) -> bool {
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        match (*self, *other) {
+            (Angle::Degrees(ref a0), Angle::Degrees(ref a1)) => a0.cmp(a1),
+            (a0, a1) => a0.in_radians().cmp(&a1.in_radians()),
+        }
+    }
+}
+
+impl<T: PartialEq<U> + Trig, U: Trig> PartialEq<Angle<U>> for Angle<T> {
+    #[inline]
+    fn eq(&self, other: &Angle<U>) -> bool {
         match (*self, *other) {
             (Angle::Degrees(ref a0), Angle::Degrees(ref a1)) => a0.eq(a1),
             (a0, a1) => a0.in_radians().eq(&a1.in_radians()),
@@ -378,5 +388,66 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Angle<T> {
 
         const VARIANTS: &'_ [&'_ str] = &["Degrees", "Radians"];
         deserializer.deserialize_enum("Angle", VARIANTS, AngleVisitor(PhantomData))
+    }
+}
+
+#[cfg(feature = "approx")]
+impl<T: approx::AbsDiffEq<U> + Trig, U: Trig> approx::AbsDiffEq<Angle<U>> for Angle<T> {
+    type Epsilon = T::Epsilon;
+
+    #[inline]
+    fn default_epsilon() -> Self::Epsilon {
+        T::default_epsilon()
+    }
+
+    #[inline]
+    fn abs_diff_eq(&self, other: &Angle<U>, epsilon: Self::Epsilon) -> bool {
+        match (*self, *other) {
+            (Angle::Degrees(ref d0), Angle::Degrees(ref d1)) => d0.abs_diff_eq(d1, epsilon),
+            (lhs, rhs) => lhs.in_radians().abs_diff_eq(&rhs.in_radians(), epsilon),
+        }
+    }
+}
+
+#[cfg(feature = "approx")]
+impl<T: approx::RelativeEq<U> + Trig, U: Trig> approx::RelativeEq<Angle<U>> for Angle<T> {
+    #[inline]
+    fn default_max_relative() -> Self::Epsilon {
+        T::default_max_relative()
+    }
+
+    #[inline]
+    fn relative_eq(
+        &self,
+        other: &Angle<U>,
+        epsilon: Self::Epsilon,
+        max_relative: Self::Epsilon,
+    ) -> bool {
+        match (*self, *other) {
+            (Angle::Degrees(ref d0), Angle::Degrees(ref d1)) => {
+                d0.relative_eq(d1, epsilon, max_relative)
+            }
+            (lhs, rhs) => lhs
+                .in_radians()
+                .relative_eq(&rhs.in_radians(), epsilon, max_relative),
+        }
+    }
+}
+
+#[cfg(feature = "approx")]
+impl<T: approx::UlpsEq<U> + Trig, U: Trig> approx::UlpsEq<Angle<U>> for Angle<T> {
+    #[inline]
+    fn default_max_ulps() -> u32 {
+        T::default_max_ulps()
+    }
+
+    #[inline]
+    fn ulps_eq(&self, other: &Angle<U>, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
+        match (*self, *other) {
+            (Angle::Degrees(ref d0), Angle::Degrees(ref d1)) => d0.ulps_eq(d1, epsilon, max_ulps),
+            (lhs, rhs) => lhs
+                .in_radians()
+                .ulps_eq(&rhs.in_radians(), epsilon, max_ulps),
+        }
     }
 }
