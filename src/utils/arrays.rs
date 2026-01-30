@@ -333,7 +333,7 @@ pub const fn concat<T, const N0: usize, const N1: usize>(
     }
 
     let _arrs = ManuallyDrop::new((arr_0, arr_1));
-    unsafe { MaybeUninit::array_assume_init(result) }
+    unsafe { array_assume_init(result) }
 }
 
 #[cfg(feature = "nightly")]
@@ -359,10 +359,7 @@ pub const fn split<const IDX: usize, T, const SIZE: usize>(
 
         let _ = ManuallyDrop::new(array);
 
-        (
-            MaybeUninit::array_assume_init(lhs),
-            MaybeUninit::array_assume_init(rhs),
-        )
+        (array_assume_init(lhs), array_assume_init(rhs))
     }
 }
 
