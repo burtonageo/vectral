@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-#[cfg(feature = "simd")]
-use crate::utils::num::ClosedSub;
 #[cfg(feature = "nightly")]
 use crate::{
     matrix::{Matrix, TransformHomogeneous},
@@ -11,7 +9,7 @@ use crate::{
 #[cfg(feature = "simd")]
 use crate::{
     simd::{SimdAdd, SimdDiv, SimdMul, SimdSub},
-    utils::num::ClosedDiv,
+    utils::num::{ClosedDiv, ClosedSub},
 };
 use crate::{
     utils::{
@@ -30,7 +28,7 @@ use crate::{
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
 #[cfg(feature = "simd")]
-use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
+use core::simd::{Simd, SimdElement};
 use core::{
     array::{self, IntoIter},
     borrow::{Borrow, BorrowMut},
@@ -458,7 +456,6 @@ impl<T, const N: usize> SimdMul<T> for Point<T, N>
 where
     T: SimdElement,
     Simd<T, N>: ClosedMul,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     fn simd_mul(self, rhs: T) -> Self::Output {
@@ -473,7 +470,6 @@ impl<T, const N: usize> SimdDiv<T> for Point<T, N>
 where
     T: SimdElement,
     Simd<T, N>: ClosedDiv,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     fn simd_div(self, rhs: T) -> Self::Output {
@@ -488,7 +484,6 @@ impl<T, const N: usize> SimdAdd<T> for Point<T, N>
 where
     T: SimdElement,
     Simd<T, N>: ClosedAdd,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     fn simd_add(self, rhs: T) -> Self::Output {
@@ -503,7 +498,6 @@ impl<T, const N: usize> SimdSub<T> for Point<T, N>
 where
     T: SimdElement,
     Simd<T, N>: ClosedSub,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     fn simd_sub(self, rhs: T) -> Self::Output {
@@ -518,7 +512,6 @@ impl<T, const N: usize> SimdMul<Vector<T, N>> for Point<T, N>
 where
     T: SimdElement,
     Simd<T, N>: ClosedMul,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     fn simd_mul(self, rhs: Vector<T, N>) -> Self::Output {
@@ -533,7 +526,6 @@ impl<T, const N: usize> SimdDiv<Vector<T, N>> for Point<T, N>
 where
     T: SimdElement,
     Simd<T, N>: ClosedDiv,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     fn simd_div(self, rhs: Vector<T, N>) -> Self::Output {
@@ -548,7 +540,6 @@ impl<T, const N: usize> SimdAdd<Vector<T, N>> for Point<T, N>
 where
     T: SimdElement,
     Simd<T, N>: ClosedAdd,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     fn simd_add(self, rhs: Vector<T, N>) -> Self::Output {
@@ -563,7 +554,6 @@ impl<T, const N: usize> SimdSub<Vector<T, N>> for Point<T, N>
 where
     T: SimdElement,
     Simd<T, N>: ClosedSub,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     fn simd_sub(self, rhs: Vector<T, N>) -> Self::Output {
@@ -780,10 +770,7 @@ impl_eq_mint! {
 }
 
 #[cfg(feature = "simd")]
-impl<T: SimdElement, const N: usize> From<Simd<T, N>> for Point<T, N>
-where
-    LaneCount<N>: SupportedLaneCount,
-{
+impl<T: SimdElement, const N: usize> From<Simd<T, N>> for Point<T, N> {
     #[inline]
     fn from(value: Simd<T, N>) -> Self {
         Self::new(value.to_array())
@@ -791,10 +778,7 @@ where
 }
 
 #[cfg(feature = "simd")]
-impl<T: SimdElement, const N: usize> From<Point<T, N>> for Simd<T, N>
-where
-    LaneCount<N>: SupportedLaneCount,
-{
+impl<T: SimdElement, const N: usize> From<Point<T, N>> for Simd<T, N> {
     #[inline]
     fn from(value: Point<T, N>) -> Self {
         Self::from_array(value.to_array())

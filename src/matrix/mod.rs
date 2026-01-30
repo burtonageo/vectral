@@ -26,7 +26,7 @@ use crate::{
 #[cfg(feature = "nightly")]
 use core::cmp::{Ordering, max_by};
 #[cfg(feature = "simd")]
-use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
+use core::simd::{Simd, SimdElement};
 use core::{
     borrow::{Borrow, BorrowMut},
     convert::{AsMut, AsRef},
@@ -1900,7 +1900,6 @@ impl<T, const A: usize, const B: usize, const C: usize> SimdMul<Matrix<T, B, C>>
 where
     T: Zero + ClosedAdd + ClosedMul + SimdElement,
     Simd<T, B>: ClosedMul,
-    LaneCount<B>: SupportedLaneCount,
 {
     type Output = Matrix<T, A, C>;
     #[inline]
@@ -1929,7 +1928,6 @@ impl<T, const ROWS: usize, const COLS: usize> SimdMul<Vector<T, COLS>> for Matri
 where
     T: Zero + ClosedAdd + ClosedMul + SimdElement,
     Simd<T, COLS>: ClosedMul,
-    LaneCount<COLS>: SupportedLaneCount,
 {
     type Output = Vector<T, ROWS>;
     #[inline]
@@ -1950,7 +1948,6 @@ impl<T, const ROWS: usize, const COLS: usize> SimdMul<T> for Matrix<T, ROWS, COL
 where
     T: Zero + ClosedAdd + ClosedMul + SimdElement,
     Simd<T, { ROWS * COLS }>: ClosedMul,
-    LaneCount<{ ROWS * COLS }>: SupportedLaneCount,
 {
     type Output = Matrix<T, ROWS, COLS>;
     #[inline]
@@ -1968,7 +1965,6 @@ impl<T, const ROWS: usize, const COLS: usize> SimdAdd<Matrix<T, ROWS, COLS>>
 where
     T: SimdElement,
     Simd<T, { ROWS * COLS }>: ClosedAdd,
-    LaneCount<{ ROWS * COLS }>: SupportedLaneCount,
 {
     type Output = Matrix<T, ROWS, COLS>;
     #[inline]
@@ -1987,7 +1983,6 @@ impl<T, const ROWS: usize, const COLS: usize> SimdSub<Matrix<T, ROWS, COLS>>
 where
     T: SimdElement,
     Simd<T, { ROWS * COLS }>: ClosedSub,
-    LaneCount<{ ROWS * COLS }>: SupportedLaneCount,
 {
     type Output = Matrix<T, ROWS, COLS>;
     #[inline]

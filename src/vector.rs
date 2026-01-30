@@ -27,7 +27,7 @@ use crate::{
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
 #[cfg(feature = "simd")]
-use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
+use core::simd::{Simd, SimdElement};
 use core::{
     array::{self, IntoIter},
     borrow::{Borrow, BorrowMut},
@@ -428,7 +428,6 @@ impl<T, const N: usize> Vector<T, N> {
 impl<T: SimdElement, const N: usize> SimdMul for Vector<T, N>
 where
     Simd<T, N>: ClosedMul,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     #[inline]
@@ -444,7 +443,6 @@ where
 impl<T: SimdElement, const N: usize> SimdMul<T> for Vector<T, N>
 where
     Simd<T, N>: ClosedMul,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     #[inline]
@@ -460,7 +458,6 @@ where
 impl<T: SimdElement, const N: usize> SimdDiv for Vector<T, N>
 where
     Simd<T, N>: ClosedDiv,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     #[inline]
@@ -476,7 +473,6 @@ where
 impl<T: SimdElement, const N: usize> SimdDiv<T> for Vector<T, N>
 where
     Simd<T, N>: ClosedDiv,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     #[inline]
@@ -492,7 +488,6 @@ where
 impl<T: SimdElement, const N: usize> SimdAdd for Vector<T, N>
 where
     Simd<T, N>: ClosedAdd,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     #[inline]
@@ -508,7 +503,6 @@ where
 impl<T: SimdElement, const N: usize> SimdAdd<T> for Vector<T, N>
 where
     Simd<T, N>: ClosedAdd,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     #[inline]
@@ -524,7 +518,6 @@ where
 impl<T: SimdElement, const N: usize> SimdSub for Vector<T, N>
 where
     Simd<T, N>: ClosedSub,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     #[inline]
@@ -540,7 +533,6 @@ where
 impl<T: SimdElement, const N: usize> SimdSub<T> for Vector<T, N>
 where
     Simd<T, N>: ClosedSub,
-    LaneCount<N>: SupportedLaneCount,
 {
     type Output = Self;
     #[inline]
@@ -555,7 +547,6 @@ where
 #[cfg(feature = "simd")]
 impl<T: SimdElement + ClosedAdd + Zero, const N: usize> Vector<T, N>
 where
-    LaneCount<N>: SupportedLaneCount,
     Simd<T, N>: ClosedMul,
 {
     #[must_use]
@@ -670,7 +661,6 @@ impl<T: Copy + ClosedMul + ClosedSub + ClosedNeg> Vector3<T> {
 #[cfg(feature = "simd")]
 impl<T: SimdElement + ClosedNeg> Vector3<T>
 where
-    LaneCount<3>: SupportedLaneCount,
     Simd<T, 3>: ClosedMul + ClosedSub,
 {
     #[must_use]
@@ -1074,10 +1064,7 @@ impl<T, const N: usize> From<Point<T, N>> for Vector<T, N> {
 }
 
 #[cfg(feature = "simd")]
-impl<T: SimdElement, const N: usize> From<Simd<T, N>> for Vector<T, N>
-where
-    LaneCount<N>: SupportedLaneCount,
-{
+impl<T: SimdElement, const N: usize> From<Simd<T, N>> for Vector<T, N> {
     #[inline]
     fn from(value: Simd<T, N>) -> Self {
         Self::new(value.to_array())
