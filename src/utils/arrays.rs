@@ -223,7 +223,7 @@ pub const fn expand_to<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
 }
 
 #[inline]
-pub const fn reverse<T, const N: usize>(array: &mut  [T; N]) {
+pub const fn reverse<T, const N: usize>(array: &mut [T; N]) {
     if N <= 1 {
         return;
     }
@@ -231,10 +231,7 @@ pub const fn reverse<T, const N: usize>(array: &mut  [T; N]) {
     let (mut front, mut end) = (0, N - 1);
     while front < end {
         unsafe {
-            ptr::swap(
-                array.as_mut_ptr().add(front),
-                array.as_mut_ptr().add(end),
-            );
+            ptr::swap(array.as_mut_ptr().add(front), array.as_mut_ptr().add(end));
         }
         front += 1;
         end -= 1;
