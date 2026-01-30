@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{const_assert_larger, const_assert_smaller};
+use crate::{const_assert_larger_or_equal, const_assert_smaller, const_assert_smaller_or_equal};
 use core::{
     mem::{self, ManuallyDrop, MaybeUninit},
     ptr,
 };
-use std::mem::transmute_copy;
 
 /// Zips two arrays together and applies the function `f` to each memberwise element, returning a fixed
 /// size array of the results.
@@ -145,12 +144,13 @@ pub fn shrink_to<const NEW_LEN: usize, T, const OLD_LEN: usize>(
     unsafe {
         ptr::copy_nonoverlapping(array.as_ptr(), data.as_mut_ptr().cast(), NEW_LEN);
 
+        // Drop trailing items from the old array
         {
             let slice = &mut array[NEW_LEN..OLD_LEN];
             ptr::drop_in_place(slice);
         }
 
-        let _array = ManuallyDrop::new(array);
+        mem::forget(array);
         MaybeUninit::assume_init(data)
     }
 }
@@ -160,7 +160,7 @@ pub fn shrink_to<const NEW_LEN: usize, T, const OLD_LEN: usize>(
 pub const fn shrink_to_copy<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
     array: [T; OLD_LEN],
 ) -> [T; NEW_LEN] {
-    const_assert_smaller!(NEW_LEN, OLD_LEN);
+    const_assert_smaller_or_equal!(NEW_LEN, OLD_LEN);
 
     let mut data = MaybeUninit::<[T; NEW_LEN]>::uninit();
     unsafe {
@@ -186,18 +186,19 @@ pub const fn expand<T, const N: usize>(array: [T; N], to_append: T) -> [T; N + 1
     concat(array, [to_append])
 }
 
-/// Expands the array, inserting `NEW_LEN` - `OLD_LEN` instances of the value `to_append` at the end of the array.
+/// Expands the array, inserting `NEW_LEN` - `OLD_LEN` instances of the value `to_append` at
+/// the end of the array.
 ///
 /// # Notes
 ///
-/// A static assertion is used to ensure that `NEW_LEN` is always bigger than `OLD_LEN`.
+/// A static assertion is used to ensure that `NEW_LEN` is always bigger than or equal to `OLD_LEN`.
 #[must_use]
 #[inline(always)]
 pub const fn expand_to<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
     array: [T; OLD_LEN],
     to_append: T,
 ) -> [T; NEW_LEN] {
-    const_assert_larger!(NEW_LEN, OLD_LEN);
+    const_assert_larger_or_equal!(NEW_LEN, OLD_LEN);
 
     let mut data = MaybeUninit::<[T; NEW_LEN]>::uninit();
 
@@ -221,18 +222,49 @@ pub const fn expand_to<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
     }
 }
 
+#[inline]
+pub const fn reverse<T, const N: usize>(array: &mut  [T; N]) {
+    if N <= 1 {
+        return;
+    }
+
+    let (mut front, mut end) = (0, N - 1);
+    while front < end {
+        unsafe {
+            ptr::swap(
+                array.as_mut_ptr().add(front),
+                array.as_mut_ptr().add(end),
+            );
+        }
+        front += 1;
+        end -= 1;
+    }
+}
+
+#[must_use]
+#[inline]
+pub const fn reversed<T, const N: usize>(array: [T; N]) -> [T; N] {
+    let mut reversed = [const { MaybeUninit::uninit() }; N];
+    unsafe {
+        ptr::copy_nonoverlapping(array.as_ptr(), reversed.as_mut_ptr().cast::<T>(), N);
+    }
+
+    reverse(&mut reversed);
+    mem::forget(array);
+
+    unsafe { MaybeUninit::array_assume_init(reversed) }
+}
+
 #[must_use]
 #[inline]
 pub const fn resize<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
     array: [T; OLD_LEN],
     to_append: T,
 ) -> [T; NEW_LEN] {
-    if NEW_LEN > OLD_LEN {
+    if NEW_LEN >= OLD_LEN {
         expand_to::<NEW_LEN, T, OLD_LEN>(array, to_append)
-    } else if NEW_LEN < OLD_LEN {
-        shrink_to_copy::<NEW_LEN, T, OLD_LEN>(array)
     } else {
-        unsafe { transmute_copy(&array) }
+        shrink_to_copy::<NEW_LEN, T, OLD_LEN>(array)
     }
 }
 
