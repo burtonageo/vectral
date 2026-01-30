@@ -4,8 +4,8 @@ use crate::{
     const_assert_larger,
     point::Point,
     utils::{
-        array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
-        expand_to,
+        array_assume_init, array_get_checked, array_get_mut_checked, array_get_unchecked,
+        array_get_unchecked_mut, expand_to,
         num::{
             ClosedAdd, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Zero,
             checked::{CheckedDiv, CheckedMul},
@@ -603,7 +603,7 @@ impl<T, const N: usize> Vector<MaybeUninit<T>, N> {
     #[inline]
     pub const unsafe fn assume_init(self) -> Vector<T, N> {
         Vector {
-            data: unsafe { MaybeUninit::array_assume_init(self.data) },
+            data: unsafe { array_assume_init(self.data) },
         }
     }
 }

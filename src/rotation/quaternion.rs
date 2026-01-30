@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::utils::{
-    array_get_unchecked,
+    array_assume_init, array_get_unchecked,
     num::{
         Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
         checked::{CheckedAddAssign, CheckedDiv, CheckedMul},
@@ -81,7 +81,7 @@ impl<T> Quaternion<T> {
 
         let _vector = ManuallyDrop::new(vector);
 
-        let vector = unsafe { Vector3::new(MaybeUninit::array_assume_init(vector_part)) };
+        let vector = unsafe { Vector3::new(array_assume_init(vector_part)) };
 
         Self {
             v: vector,
@@ -914,11 +914,7 @@ mod tests {
     #[cfg(any(feature = "std", feature = "libm"))]
     #[test]
     fn test_convert() {
-        let epsilon = if cfg!(miri) {
-            1e-14
-        } else {
-            1e-15
-        };
+        let epsilon = if cfg!(miri) { 1e-14 } else { 1e-15 };
 
         let (angle, axis) = (
             Angle::<f64>::quarter(),

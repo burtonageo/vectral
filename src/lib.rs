@@ -2,7 +2,6 @@
 
 #![cfg_attr(not(any(test, feature = "std")), no_std)]
 #![cfg_attr(feature = "nightly", allow(incomplete_features))]
-#![feature(maybe_uninit_array_assume_init)]
 #![cfg_attr(feature = "nightly", feature(f16, f128, generic_const_exprs))]
 #![cfg_attr(feature = "simd", feature(portable_simd))]
 #![allow(clippy::missing_safety_doc)]

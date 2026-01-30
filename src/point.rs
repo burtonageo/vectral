@@ -13,10 +13,8 @@ use crate::{
 };
 use crate::{
     utils::{
-        array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
-    },
-    utils::{
-        expand_to,
+        array_assume_init, array_get_checked, array_get_mut_checked, array_get_unchecked,
+        array_get_unchecked_mut, expand_to,
         num::{
             ClosedAdd, ClosedMul, Sqrt, Zero,
             checked::{CheckedDiv, CheckedMul},
@@ -288,7 +286,7 @@ impl<T, const N: usize> Point<MaybeUninit<T>, N> {
     #[inline]
     pub unsafe fn assume_init(self) -> Point<T, N> {
         Point {
-            data: unsafe { MaybeUninit::array_assume_init(self.data) },
+            data: unsafe { array_assume_init(self.data) },
         }
     }
 }

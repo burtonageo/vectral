@@ -34,7 +34,7 @@ where
         }
     }
 
-    unsafe { MaybeUninit::array_assume_init(result) }
+    unsafe { array_assume_init(result) }
 }
 
 /// Zips two fixed-size arrays together, returning a fixed size array of tuples.
@@ -75,7 +75,7 @@ pub const fn zip<T, U, const N: usize>(lhs: [T; N], rhs: [U; N]) -> [(T, U); N] 
 
     let _arrays = (ManuallyDrop::new(lhs), ManuallyDrop::new(rhs));
 
-    unsafe { MaybeUninit::array_assume_init(zipped) }
+    unsafe { array_assume_init(zipped) }
 }
 
 #[must_use]
@@ -100,8 +100,8 @@ pub const fn unzip<T, U, const N: usize>(array: [(T, U); N]) -> ([T; N], [U; N])
     mem::forget(array);
 
     unsafe {
-        let lhs = MaybeUninit::array_assume_init(lhs);
-        let rhs = MaybeUninit::array_assume_init(rhs);
+        let lhs = array_assume_init(lhs);
+        let rhs = array_assume_init(rhs);
         (lhs, rhs)
     }
 }
@@ -192,6 +192,17 @@ pub const fn expand<T, const N: usize>(array: [T; N], to_append: T) -> [T; N + 1
 /// # Notes
 ///
 /// A static assertion is used to ensure that `NEW_LEN` is always bigger than or equal to `OLD_LEN`.
+///
+/// # Examples
+///
+/// ```
+/// # use vectral::utils::expand_to;
+///
+/// let data = [1, 2, 3, 4];
+/// let expanded = expand_to::<6, _, _>(data, 0);
+///
+/// assert_eq!(expanded, [1, 2, 3, 4, 0, 0]);
+/// ```
 #[must_use]
 #[inline(always)]
 pub const fn expand_to<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
@@ -200,25 +211,19 @@ pub const fn expand_to<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
 ) -> [T; NEW_LEN] {
     const_assert_larger_or_equal!(NEW_LEN, OLD_LEN);
 
-    let mut data = MaybeUninit::<[T; NEW_LEN]>::uninit();
+    let mut data = [const { MaybeUninit::uninit() }; NEW_LEN];
 
     unsafe {
+        let (left, right) = data.as_mut_slice().split_at_mut(OLD_LEN);
+
         ptr::copy_nonoverlapping(
             array.as_ptr().cast::<T>(),
-            data.as_mut_ptr().cast(),
+            left.as_mut_ptr().cast(),
             OLD_LEN,
         );
-        let mut i = OLD_LEN;
-        while i < NEW_LEN {
-            ptr::write(
-                data.as_mut_ptr().cast::<T>().add(i),
-                mem::transmute_copy(&to_append),
-            );
-            i += 1;
-        }
 
-        let _ = ManuallyDrop::new((to_append, array));
-        data.assume_init()
+        fill_copy(right, MaybeUninit::new(to_append));
+        array_assume_init(data)
     }
 }
 
@@ -249,7 +254,7 @@ pub const fn reversed<T, const N: usize>(array: [T; N]) -> [T; N] {
     reverse(&mut reversed);
     mem::forget(array);
 
-    unsafe { MaybeUninit::array_assume_init(reversed) }
+    unsafe { array_assume_init(reversed) }
 }
 
 #[must_use]
@@ -306,7 +311,18 @@ pub const fn copied<T: Copy, const N: usize>(array: [&'_ T; N]) -> [T; N] {
         i += 1;
     }
 
-    unsafe { MaybeUninit::array_assume_init(result) }
+    unsafe { array_assume_init(result) }
+}
+
+#[inline]
+pub const fn fill_copy<T: Copy>(slice: &mut [T], element: T) {
+    let mut i = 0;
+    while i < slice.len() {
+        unsafe {
+            *array_get_unchecked_mut(slice, i) = element;
+        }
+        i += 1;
+    }
 }
 
 #[cfg(feature = "nightly")]
@@ -389,14 +405,27 @@ pub(crate) const unsafe fn array_get_unchecked_mut<T>(array: &mut [T], index: us
     unsafe { &mut *array.as_mut_ptr().add(index) }
 }
 
+#[must_use]
+#[inline]
+pub(crate) const unsafe fn array_assume_init<T, const N: usize>(
+    array: [MaybeUninit<T>; N],
+) -> [T; N] {
+    let mut result = MaybeUninit::<[T; N]>::uninit();
+
+    unsafe {
+        ptr::copy_nonoverlapping::<[T; N]>(array.as_ptr().cast(), result.as_mut_ptr().cast(), 1);
+        MaybeUninit::assume_init(result)
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::{
         array,
         sync::atomic::{AtomicUsize, Ordering},
     };
 
-    use super::*;
     #[test]
     fn test_zip() {
         let a = [1, 2, 3, 4, 5];

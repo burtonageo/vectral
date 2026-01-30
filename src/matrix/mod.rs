@@ -6,7 +6,8 @@ use crate::{
     point::Point3,
     rotation::{angle::Angle, quaternion::Quaternion},
     utils::{
-        array_get_checked, array_get_mut_checked, array_get_unchecked, array_get_unchecked_mut,
+        array_assume_init, array_get_checked, array_get_mut_checked, array_get_unchecked,
+        array_get_unchecked_mut,
         num::{
             Abs, Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig,
             Zero,
@@ -641,7 +642,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             row += 1;
         }
 
-        unsafe { MaybeUninit::array_assume_init(col) }
+        unsafe { array_assume_init(col) }
     }
 
     /// Applies the given function `f` to every element of the `Matrix`, returning
@@ -1193,7 +1194,7 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             row += 1;
         }
 
-        unsafe { MaybeUninit::array_assume_init(col) }
+        unsafe { array_assume_init(col) }
     }
 
     /// Returns a copy of the row at `n`.
@@ -1228,7 +1229,7 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             );
         }
 
-        unsafe { MaybeUninit::array_assume_init(row) }
+        unsafe { array_assume_init(row) }
     }
 
     #[must_use]
@@ -1376,7 +1377,7 @@ impl<T, const N: usize> Matrix<T, N, N> {
             i += 1;
         }
 
-        unsafe { MaybeUninit::array_assume_init(diagonal) }
+        unsafe { array_assume_init(diagonal) }
     }
 
     /// Returns a slice of references to the rightwards diagonal of the matrix (starting at the
@@ -1394,7 +1395,7 @@ impl<T, const N: usize> Matrix<T, N, N> {
             col = col.saturating_sub(1);
         }
 
-        unsafe { MaybeUninit::array_assume_init(diagonal) }
+        unsafe { array_assume_init(diagonal) }
     }
 
     /// Returns a slice of mutable references to the rightwards diagonal of the matrix (starting at the
@@ -1412,7 +1413,7 @@ impl<T, const N: usize> Matrix<T, N, N> {
             i += 1;
         }
 
-        unsafe { MaybeUninit::array_assume_init(diagonal) }
+        unsafe { array_assume_init(diagonal) }
     }
 
     #[must_use]
@@ -1429,7 +1430,7 @@ impl<T, const N: usize> Matrix<T, N, N> {
             col = col.saturating_sub(1);
         }
 
-        unsafe { MaybeUninit::array_assume_init(diagonal) }
+        unsafe { array_assume_init(diagonal) }
     }
 
     /// Sets the rightwards diagonal of the matrix (starting at the top left) to the given
@@ -1526,7 +1527,7 @@ impl<T: Copy, const N: usize> Matrix<T, N, N> {
             i += 1;
         }
 
-        unsafe { MaybeUninit::array_assume_init(diagonal) }
+        unsafe { array_assume_init(diagonal) }
     }
 
     #[must_use]
@@ -1543,7 +1544,7 @@ impl<T: Copy, const N: usize> Matrix<T, N, N> {
             col = col.saturating_sub(1);
         }
 
-        unsafe { MaybeUninit::array_assume_init(diagonal) }
+        unsafe { array_assume_init(diagonal) }
     }
 
     #[cfg(feature = "nightly")]
