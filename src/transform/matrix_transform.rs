@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use crate::utils::num::{
+    Abs, Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
+    checked::{CheckedAddAssign, CheckedDiv},
+};
 use crate::{
     matrix::{Matrix, Matrix4, TransformHomogeneous},
     point::Point,
@@ -7,17 +11,14 @@ use crate::{
     transform::{Transform, Translate},
     vector::{Vector, Vector3},
 };
-use crate::utils::num::{
-    checked::{CheckedAddAssign, CheckedDiv}, Abs, Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero
-};
-use core::ops::{AddAssign, DivAssign, SubAssign};
 #[cfg(feature = "nightly")]
 use core::ops::Neg;
+use core::ops::{AddAssign, DivAssign, SubAssign};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MatrixTransform<T = f32, const DIM: usize = 3>
 where
-    Matrix<T, { DIM + 1 }, { DIM + 1 }>: Sized,
+    [T; DIM + 1]: Sized,
 {
     matrix: Matrix<T, { DIM + 1 }, { DIM + 1 }>,
     inverse: Matrix<T, { DIM + 1 }, { DIM + 1 }>,
@@ -25,7 +26,7 @@ where
 
 impl<T, const DIM: usize> MatrixTransform<T, DIM>
 where
-    Matrix<T, { DIM + 1 }, { DIM + 1 }>: Sized,
+    [T; DIM + 1]: Sized,
 {
     #[must_use]
     #[inline]
