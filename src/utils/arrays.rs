@@ -245,16 +245,9 @@ pub const fn reverse<T, const N: usize>(array: &mut [T; N]) {
 
 #[must_use]
 #[inline]
-pub const fn reversed<T, const N: usize>(array: [T; N]) -> [T; N] {
-    let mut reversed = [const { MaybeUninit::uninit() }; N];
-    unsafe {
-        ptr::copy_nonoverlapping(array.as_ptr(), reversed.as_mut_ptr().cast::<T>(), N);
-    }
-
-    reverse(&mut reversed);
-    mem::forget(array);
-
-    unsafe { array_assume_init(reversed) }
+pub const fn reversed<T, const N: usize>(mut array: [T; N]) -> [T; N] {
+    reverse(&mut array);
+    array
 }
 
 #[must_use]
