@@ -336,13 +336,25 @@ pub const fn concat<T, const N0: usize, const N1: usize>(
     unsafe { array_assume_init(result) }
 }
 
+/// Split the array at the `IDX` into two arrays.
+///
+/// # Examples
+///
+/// ```
+/// # use vectral::utils::split;
+/// let data = [1, 2, 3, 4, 5, 6];
+/// let (first, second): ([_; 4], [_; _]) = split::<4, _, _>(data);
+///
+/// assert_eq!(&first, &[1, 2, 3, 4]);
+/// assert_eq!(&second, &[5, 6]);
+/// ```
 #[cfg(feature = "nightly")]
 #[must_use]
 #[inline(always)]
 pub const fn split<const IDX: usize, T, const SIZE: usize>(
     array: [T; SIZE],
 ) -> ([T; IDX], [T; SIZE - IDX]) {
-    const_assert_smaller!(IDX, SIZE);
+    const_assert_smaller_or_equal!(IDX, SIZE);
 
     let (mut lhs, mut rhs) = (
         [const { MaybeUninit::uninit() }; _],
@@ -350,12 +362,9 @@ pub const fn split<const IDX: usize, T, const SIZE: usize>(
     );
 
     unsafe {
-        ptr::copy_nonoverlapping(array.as_ptr(), lhs.as_mut_ptr().cast::<T>(), IDX);
-        ptr::copy_nonoverlapping(
-            array.as_ptr().add(IDX),
-            rhs.as_mut_ptr().cast::<T>(),
-            SIZE - IDX,
-        );
+        let (lhs_src, rhs_src) = array.as_slice().split_at_unchecked(IDX);
+        ptr::copy_nonoverlapping(lhs_src.as_ptr(), lhs.as_mut_ptr().cast(), lhs_src.len());
+        ptr::copy_nonoverlapping(rhs_src.as_ptr(), rhs.as_mut_ptr().cast(), rhs_src.len());
 
         let _ = ManuallyDrop::new(array);
 
@@ -470,6 +479,12 @@ mod tests {
 
         const JOINED: [i32; 10] = concat(FST, SND);
         assert_eq!(JOINED, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+
+        const SPLIT_FIRST_EMPTY: ([i32; 0], [i32; 10]) = split::<0, _, _>(JOINED);
+        const SPLIT_SECOND_EMPTY: ([i32; 10], [i32; 0]) = split::<10, _, _>(JOINED);
+
+        assert_eq!(SPLIT_FIRST_EMPTY.0, SPLIT_SECOND_EMPTY.1);
+        assert_eq!(SPLIT_FIRST_EMPTY.1, SPLIT_SECOND_EMPTY.0);
 
         const SPLIT: ([i32; 5], [i32; 5]) = split(JOINED);
         assert_eq!(FST, SPLIT.0);
