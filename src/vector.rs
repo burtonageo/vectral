@@ -868,7 +868,6 @@ impl<T: Zero, const N: usize> Zero for Vector<T, N> {
 impl<T, const N: usize> TransformHomogeneous<N> for Vector<T, N>
 where
     T: Zero + One + PartialEq + Copy + DivAssign + ClosedMul + ClosedAdd,
-    Matrix<T, { N + 1 }, { N + 1 }>: Sized,
 {
     type Scalar = T;
 

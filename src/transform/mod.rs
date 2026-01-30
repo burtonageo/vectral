@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{matrix::Matrix, point::Point, vector::Vector, rotation::Rotation};
+use crate::{matrix::Matrix, point::Point, rotation::Rotation, vector::Vector};
 
 pub mod matrix_transform;
 
-pub trait Transform<const DIM: usize>
-where
-    Matrix<Self::Scalar, { DIM + 1 }, { DIM + 1 }>: Sized,
-{
+pub trait Transform<const DIM: usize> {
     type Scalar;
     type Rotation: Rotation<DIM, Scalar = Self::Scalar>;
 
@@ -43,10 +40,7 @@ where
     fn transform_vector(&self, vector: Vector<Self::Scalar, DIM>) -> Vector<Self::Scalar, DIM>;
 }
 
-pub trait Translate<const DIM: usize>
-where
-    Matrix<Self::Scalar, { DIM + 1 }, { DIM + 1 }>: Sized,
-{
+pub trait Translate<const DIM: usize> {
     type Scalar;
     #[must_use]
     fn translated<T: Transform<DIM, Scalar = Self::Scalar>>(&self, transform: &T) -> Self;

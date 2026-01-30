@@ -205,10 +205,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
-    pub const fn as_flattened_array(&self) -> &[T; ROWS * COLS]
-    where
-        [T; ROWS * COLS]: Sized,
-    {
+    pub const fn as_flattened_array(&self) -> &[T; ROWS * COLS] {
         unsafe { &*(self as *const _ as *const [T; ROWS * COLS]) }
     }
 
@@ -262,10 +259,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[cfg(feature = "nightly")]
     #[must_use]
     #[inline]
-    pub const fn as_mut_flattened_array(&mut self) -> &mut [T; ROWS * COLS]
-    where
-        [T; ROWS * COLS]: Sized,
-    {
+    pub const fn as_mut_flattened_array(&mut self) -> &mut [T; ROWS * COLS] {
         unsafe { &mut *(self as *mut _ as *mut [T; ROWS * COLS]) }
     }
 
@@ -853,10 +847,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     pub const fn concat_horizontal<const NEW_COLS: usize>(
         self,
         matrix: Matrix<T, ROWS, NEW_COLS>,
-    ) -> Matrix<T, ROWS, { COLS + NEW_COLS }>
-    where
-        Matrix<T, ROWS, { COLS + NEW_COLS }>: Sized,
-    {
+    ) -> Matrix<T, ROWS, { COLS + NEW_COLS }> {
         let mut concat_matrix = Matrix::uninit();
 
         let mut row = 0;
@@ -917,10 +908,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     pub const fn concat_vertical<const NEW_ROWS: usize>(
         self,
         matrix: Matrix<T, NEW_ROWS, COLS>,
-    ) -> Matrix<T, { ROWS + NEW_ROWS }, COLS>
-    where
-        Matrix<T, { ROWS + NEW_ROWS }, COLS>: Sized,
-    {
+    ) -> Matrix<T, { ROWS + NEW_ROWS }, COLS> {
         let mut concat_matrix: Matrix<MaybeUninit<T>, _, COLS> = Matrix::uninit();
 
         let mut row = 0;
@@ -1634,10 +1622,7 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         self,
         removed_row: usize,
         removed_col: usize,
-    ) -> Matrix<T, { ROWS - 1 }, { COLS - 1 }>
-    where
-        Matrix<T, { ROWS - 1 }, { COLS - 1 }>: Sized,
-    {
+    ) -> Matrix<T, { ROWS - 1 }, { COLS - 1 }> {
         let mut return_matrix = Matrix::splat(const { MaybeUninit::uninit() });
         let cofactor_matrix = Matrix::cofactor_shifted_uninit(self, removed_row, removed_col);
 
@@ -2202,10 +2187,7 @@ pub type Matrix4<T = f32> = Matrix<T, 4, 4>;
 pub type Matrix3<T = f32> = Matrix<T, 3, 3>;
 
 #[cfg(feature = "nightly")]
-impl<T: One + Zero, const N: usize> Matrix<T, N, N>
-where
-    Vector<T, { N - 1 }>: Sized,
-{
+impl<T: One + Zero, const N: usize> Matrix<T, N, N> {
     /// Create a new translation matrix from the given `offset`, used for transforming
     /// the positions of vectors in homogeneous space.
     ///

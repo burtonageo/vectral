@@ -7,10 +7,7 @@ pub mod angle;
 pub mod quaternion;
 
 #[cfg(feature = "nightly")]
-pub trait Rotation<const DIM: usize>
-where
-    Matrix<Self::Scalar, { DIM + 1 }, { DIM + 1 }>: Sized,
-{
+pub trait Rotation<const DIM: usize> {
     type Scalar;
 
     #[must_use]

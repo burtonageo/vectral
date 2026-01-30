@@ -18,7 +18,7 @@ use core::ops::{AddAssign, DivAssign, SubAssign};
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MatrixTransform<T = f32, const DIM: usize = 3>
 where
-    [T; DIM + 1]: Sized,
+    Matrix<T, { DIM + 1 }, { DIM + 1 }>: Sized,
 {
     matrix: Matrix<T, { DIM + 1 }, { DIM + 1 }>,
     inverse: Matrix<T, { DIM + 1 }, { DIM + 1 }>,
@@ -26,7 +26,7 @@ where
 
 impl<T, const DIM: usize> MatrixTransform<T, DIM>
 where
-    [T; DIM + 1]: Sized,
+    Matrix<T, { DIM + 1 }, { DIM + 1 }>: Sized,
 {
     #[must_use]
     #[inline]
