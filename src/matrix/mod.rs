@@ -2347,6 +2347,21 @@ impl<T: Zero + One + Trig + Copy + ClosedNeg> Matrix4<T> {
     }
 }
 
+impl<T: Trig + One + ClosedNeg + Zero + Copy> Matrix3<T> {
+    #[must_use]
+    #[inline]
+    pub fn rotation_2d(angle: Angle<T>) -> Self {
+        let mut mat = Matrix::identity();
+        let (sin, cos) = T::sin_cos(angle.in_radians());
+        let c0 = [cos, sin, T::ZERO];
+        let c1 = [sin.neg(), cos, T::ZERO];
+
+        mat.set_col(0, c0);
+        mat.set_col(1, c1);
+        mat
+    }
+}
+
 impl<T: Trig + One + ClosedDiv + ClosedAdd + ClosedMul + ClosedSub + Zero> Matrix4<T> {
     /// Returns a 3D rotation matrix which will transform objects by `angle` around
     /// the given `axis` vector.
