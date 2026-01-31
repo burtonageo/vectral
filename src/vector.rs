@@ -10,7 +10,7 @@ use crate::{
             ClosedAdd, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Zero,
             checked::{CheckedDiv, CheckedMul},
         },
-        reversed, shrink_to, sum, zip_map,
+        shrink_to, sum, zip_map,
     },
 };
 #[cfg(feature = "nightly")]
@@ -32,7 +32,7 @@ use core::{
     array::{self, IntoIter},
     borrow::{Borrow, BorrowMut},
     fmt,
-    mem::{self, ManuallyDrop, MaybeUninit},
+    mem::{ManuallyDrop, MaybeUninit},
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
     ptr,
     slice::{self, Iter, IterMut},
@@ -391,27 +391,18 @@ impl<T, const N: usize> Vector<T, N> {
         self.data.iter_mut()
     }
 
-    /// Reverses the elements in the `Vector`.
+    /// Reverses the elements in the `Vector` in-place.
     ///
     /// # Example
     ///
     /// ```
     /// use vectral::vector::Vector;
     ///
-    /// let vec = Vector::new([1, 2, 3, 4, 5]);
-    /// let rev = vec.reversed();
+    /// let mut vec = Vector::new([1, 2, 3, 4, 5]);
+    /// vec.reverse();
     ///
-    /// assert_eq!(rev.to_array(), [5, 4, 3, 2, 1]);
+    /// assert_eq!(vec.to_array(), [5, 4, 3, 2, 1]);
     /// ```
-    #[must_use]
-    #[inline]
-    pub const fn reversed(self) -> Vector<T, N> {
-        let reversed = unsafe { reversed(ptr::read(&self.data)) };
-        mem::forget(self);
-
-        Vector { data: reversed }
-    }
-
     #[inline]
     pub const fn reverse(&mut self) {
         self.data.reverse();

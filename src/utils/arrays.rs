@@ -227,29 +227,6 @@ pub const fn expand_to<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
     }
 }
 
-#[inline]
-pub const fn reverse<T, const N: usize>(array: &mut [T; N]) {
-    if N <= 1 {
-        return;
-    }
-
-    let (mut front, mut end) = (0, N - 1);
-    while front < end {
-        unsafe {
-            ptr::swap(array.as_mut_ptr().add(front), array.as_mut_ptr().add(end));
-        }
-        front += 1;
-        end -= 1;
-    }
-}
-
-#[must_use]
-#[inline]
-pub const fn reversed<T, const N: usize>(mut array: [T; N]) -> [T; N] {
-    reverse(&mut array);
-    array
-}
-
 #[must_use]
 #[inline]
 pub const fn resize<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
@@ -365,9 +342,10 @@ pub const fn split<const IDX: usize, T, const SIZE: usize>(
         let (lhs_src, rhs_src) = array.as_slice().split_at_unchecked(IDX);
         ptr::copy_nonoverlapping(lhs_src.as_ptr(), lhs.as_mut_ptr().cast(), lhs_src.len());
         ptr::copy_nonoverlapping(rhs_src.as_ptr(), rhs.as_mut_ptr().cast(), rhs_src.len());
+    }
 
-        let _ = ManuallyDrop::new(array);
-
+    mem::forget(array);
+    unsafe {
         (array_assume_init(lhs), array_assume_init(rhs))
     }
 }
