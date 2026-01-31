@@ -2241,6 +2241,62 @@ impl<T: One + Zero, const N: usize> Matrix<T, N, N> {
     }
 }
 
+impl<T: One + Zero> Matrix<T, 4, 4> {
+    #[must_use]
+    #[inline]
+    pub fn translation_3d(offset: Vector<T, 3>) -> Self {
+        let mut mat = Matrix::identity();
+        let col = mat.col_mut(3);
+
+        for (mat_elem, v_elem) in col.into_iter().zip(offset.to_array()) {
+            *mat_elem = v_elem;
+        }
+
+        mat
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn scaling_3d(scale: Vector<T, 3>) -> Self {
+        let mut mat = Matrix::identity();
+        let diag = mat.rightwards_diagonal_mut();
+
+        for (mat_elem, v_elem) in diag.into_iter().zip(scale.to_array()) {
+            *mat_elem = v_elem;
+        }
+
+        mat
+    }
+}
+
+impl<T: One + Zero> Matrix<T, 3, 3> {
+    #[must_use]
+    #[inline]
+    pub fn translation_2d(offset: Vector<T, 2>) -> Self {
+        let mut mat = Matrix::identity();
+        let col = mat.col_mut(2);
+
+        for (mat_elem, v_elem) in col.into_iter().zip(offset.to_array()) {
+            *mat_elem = v_elem;
+        }
+
+        mat
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn scaling_2d(scale: Vector<T, 2>) -> Self {
+        let mut mat = Matrix::identity();
+        let diag = mat.rightwards_diagonal_mut();
+
+        for (mat_elem, v_elem) in diag.into_iter().zip(scale.to_array()) {
+            *mat_elem = v_elem;
+        }
+
+        mat
+    }
+}
+
 impl<T: Zero + One + Trig + Copy + ClosedNeg> Matrix4<T> {
     /// Returns a 3D rotation matrix which will transform objects by `angle` around
     /// the X-axis.
