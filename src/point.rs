@@ -4,7 +4,7 @@
 use crate::{
     matrix::{Matrix, TransformHomogeneous},
     transform::{Transform, Translate},
-    utils::{expand, num::One, shrink},
+    utils::{concat, num::One, shrink},
 };
 #[cfg(feature = "simd")]
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
 use crate::{
     utils::{
         array_assume_init, array_get_checked, array_get_mut_checked, array_get_unchecked,
-        array_get_unchecked_mut, expand_to,
+        array_get_unchecked_mut, expand_to_copy,
         num::{
             ClosedAdd, ClosedMul, Sqrt, Zero,
             checked::{CheckedDiv, CheckedMul},
@@ -91,7 +91,7 @@ impl<T: Copy, const N: usize> Point<T, N> {
     #[inline]
     pub const fn expand_to<const N1: usize>(self, value: T) -> Point<T, N1> {
         Point {
-            data: expand_to(self.data, value),
+            data: expand_to_copy(self.data, value),
         }
     }
 }
@@ -266,7 +266,7 @@ impl<T, const N: usize> Point<T, N> {
         let data = unsafe { ptr::read(&self.data) };
         let _self = ManuallyDrop::new(self);
         Point {
-            data: expand(data, to_append),
+            data: concat(data, [to_append]),
         }
     }
 

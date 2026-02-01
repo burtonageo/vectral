@@ -3,7 +3,7 @@
 use crate::{const_assert_larger_or_equal, const_assert_smaller, const_assert_smaller_or_equal};
 use core::{
     mem::{self, ManuallyDrop, MaybeUninit},
-    ptr,
+    ptr, slice,
 };
 
 /// Zips two arrays together and applies the function `f` to each memberwise element, returning a fixed
@@ -169,23 +169,6 @@ pub const fn shrink_to_copy<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>
     }
 }
 
-/// Expands the array, inserting the value `to_append` into the end of the array.
-///
-/// # Examples
-///
-/// ```
-/// # use vectral::utils::expand;
-/// let array = [1, 2, 3];
-/// let expanded = expand(array, 4);
-/// assert_eq!(expanded, [1, 2, 3, 4]);
-/// ```
-#[cfg(feature = "nightly")]
-#[must_use]
-#[inline(always)]
-pub const fn expand<T, const N: usize>(array: [T; N], to_append: T) -> [T; N + 1] {
-    concat(array, [to_append])
-}
-
 /// Expands the array, inserting `NEW_LEN` - `OLD_LEN` instances of the value `to_append` at
 /// the end of the array.
 ///
@@ -205,7 +188,7 @@ pub const fn expand<T, const N: usize>(array: [T; N], to_append: T) -> [T; N + 1
 /// ```
 #[must_use]
 #[inline(always)]
-pub const fn expand_to<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
+pub const fn expand_to_copy<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
     array: [T; OLD_LEN],
     to_append: T,
 ) -> [T; NEW_LEN] {
@@ -228,15 +211,65 @@ pub const fn expand_to<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
 }
 
 #[must_use]
+#[inline(always)]
+pub fn expand_to<const NEW_LEN: usize, T: Clone, const OLD_LEN: usize>(
+    array: [T; OLD_LEN],
+    to_append: T,
+) -> [T; NEW_LEN] {
+    const_assert_larger_or_equal!(NEW_LEN, OLD_LEN);
+
+    let mut data = const { MaybeUninit::<[T; NEW_LEN]>::uninit() };
+
+    unsafe {
+        let (left, right) = {
+            let lp = data.as_mut_ptr().cast::<MaybeUninit<T>>();
+            let rp = lp.add(OLD_LEN);
+            (
+                slice::from_raw_parts_mut(lp, OLD_LEN),
+                slice::from_raw_parts_mut(rp, NEW_LEN - OLD_LEN),
+            )
+        };
+
+        for (slot, data) in left.into_iter().zip(array.into_iter()) {
+            slot.write(data);
+        }
+
+        let mut iter = right.into_iter();
+        for slot in iter.by_ref().take((NEW_LEN - OLD_LEN).saturating_sub(1)) {
+            slot.write(to_append.clone());
+        }
+
+        if let Some(slot) = iter.next() {
+            slot.write(to_append);
+        }
+
+        MaybeUninit::assume_init(data)
+    }
+}
+
+#[must_use]
 #[inline]
-pub const fn resize<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
+pub const fn resize_copy<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
+    array: [T; OLD_LEN],
+    to_append: T,
+) -> [T; NEW_LEN] {
+    if NEW_LEN >= OLD_LEN {
+        expand_to_copy::<NEW_LEN, T, OLD_LEN>(array, to_append)
+    } else {
+        shrink_to_copy::<NEW_LEN, T, OLD_LEN>(array)
+    }
+}
+
+#[must_use]
+#[inline]
+pub fn resize<const NEW_LEN: usize, T: Clone, const OLD_LEN: usize>(
     array: [T; OLD_LEN],
     to_append: T,
 ) -> [T; NEW_LEN] {
     if NEW_LEN >= OLD_LEN {
         expand_to::<NEW_LEN, T, OLD_LEN>(array, to_append)
     } else {
-        shrink_to_copy::<NEW_LEN, T, OLD_LEN>(array)
+        shrink_to::<NEW_LEN, T, OLD_LEN>(array)
     }
 }
 
@@ -345,9 +378,7 @@ pub const fn split<const IDX: usize, T, const SIZE: usize>(
     }
 
     mem::forget(array);
-    unsafe {
-        (array_assume_init(lhs), array_assume_init(rhs))
-    }
+    unsafe { (array_assume_init(lhs), array_assume_init(rhs)) }
 }
 
 #[must_use]

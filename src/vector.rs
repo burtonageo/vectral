@@ -5,7 +5,7 @@ use crate::{
     point::Point,
     utils::{
         array_assume_init, array_get_checked, array_get_mut_checked, array_get_unchecked,
-        array_get_unchecked_mut, expand_to,
+        array_get_unchecked_mut, expand_to_copy,
         num::{
             ClosedAdd, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Zero,
             checked::{CheckedDiv, CheckedMul},
@@ -17,7 +17,7 @@ use crate::{
 use crate::{
     matrix::{Matrix, TransformHomogeneous},
     transform::{Transform, Translate},
-    utils::{concat, expand, shrink, split},
+    utils::{concat, shrink, split},
 };
 #[cfg(feature = "simd")]
 use crate::{
@@ -369,7 +369,7 @@ impl<T, const N: usize> Vector<T, N> {
         let data = unsafe { ptr::read(&self.data) };
         let _self = ManuallyDrop::new(self);
         Vector {
-            data: expand(data, to_append),
+            data: concat(data, [to_append]),
         }
     }
 
@@ -732,7 +732,7 @@ impl<T: Copy, const N: usize> Vector<T, N> {
     #[inline]
     pub const fn expand_to<const N1: usize>(self, value: T) -> Vector<T, N1> {
         Vector {
-            data: expand_to(self.data, value),
+            data: expand_to_copy(self.data, value),
         }
     }
 
