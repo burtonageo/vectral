@@ -181,6 +181,24 @@ where
     }
 }
 
+impl<T: SimdElement + ClosedAdd + Zero + Sqrt + Div, const N: usize> SimdValue<Vector<T, N>>
+where
+    Simd<T, N>: ClosedMul + ClosedDiv,
+{
+    #[inline]
+    pub fn normalize(&mut self) {
+        let len = self.len();
+        self /= SimdValue(Vector::splat(len));
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn normalized(mut self) -> Self {
+        self.normalize();
+        self
+    }
+}
+
 impl<T: SimdElement + ClosedNeg> SimdValue<Vector<T>>
 where
     Simd<T, 3>: ClosedMul + ClosedSub,
