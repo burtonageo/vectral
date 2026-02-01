@@ -2740,7 +2740,7 @@ impl<T: fmt::Debug, const ROWS: usize, const COLS: usize> fmt::Debug
     for IntoElements<T, ROWS, COLS>
 {
     #[inline]
-    fn fmt(&self, fmtr: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, fmtr: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmtr.write_str("Matrix")?;
         fmtr.debug_list().entries(self.as_slice()).finish()?;
         Ok(())
