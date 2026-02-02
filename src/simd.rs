@@ -10,6 +10,12 @@ use core::{
     ops::{Add, Deref, DerefMut, Div, Mul, Sub},
     simd::{Simd, SimdElement},
 };
+#[cfg(feature = "serde")]
+use serde_core::{
+    de::{Deserialize, Deserializer},
+    ser::{Serialize, Serializer},
+};
+use std::ops::DivAssign;
 
 pub trait SimdMul<U = Self>: Copy {
     type Output;
@@ -209,5 +215,21 @@ where
     #[inline]
     pub fn cross<I: Into<SimdValue<Vector<T>>>>(self, rhs: I) -> Self {
         SimdValue(self.0.simd_cross(rhs))
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<T: Serialize> Serialize for SimdValue<T> {
+    #[inline]
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.0.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for SimdValue<T> {
+    #[inline]
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        T::deserialize(deserializer).map(SimdValue)
     }
 }
