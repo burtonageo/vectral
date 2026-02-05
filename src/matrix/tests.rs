@@ -229,11 +229,7 @@ fn test_matrix_transform() {
 #[cfg_attr(miri, ignore = "🐌 takes too long by default on miri")]
 #[test]
 fn test_rotation_matrices() {
-    let epsilon = if cfg!(miri) {
-        1e-14
-    } else {
-        1e-15
-    };
+    let epsilon = if cfg!(miri) { 1e-14 } else { 1e-15 };
 
     let mut angle = Angle::<f64>::zero();
     while angle < Angle::full() {
@@ -555,18 +551,42 @@ fn test_inverse() {
     let rotation = Matrix::x_axis_rotation(Angle::<f64>::half());
     let inverse = rotation.inverse();
 
-    approx::assert_relative_eq!(rotation, inverse, epsilon = 1e-15);
+    approx::assert_relative_eq!(rotation.transpose(), inverse);
+
+    let rotation = Matrix::axis_rotation_3d(
+        Angle::<f64>::three_quarters(),
+        Vector::new([1.0, 5.0, 3.0]).normalized(),
+    );
+    let inverse = rotation.inverse();
+
+    approx::assert_relative_eq!(rotation.transpose(), inverse);
+
+    let matrix = Matrix::new([
+        [1.0, 2.0, 3.0, 4.0],
+        [5.0, 6.0, 7.0, 8.0],
+        [1.0, 2.0, 3.0, 4.0],
+        [5.0, 6.0, 7.0, 8.0],
+    ]);
+
+    let matrix_2 = Matrix::new([
+        [05.0, -2.0, 02.0, 7.0],
+        [01.0, 00.0, 00.0, 3.0],
+        [-3.0, 01.0, 05.0, 0.0],
+        [03.0, -1.0, -9.0, 4.0],
+    ]);
+
+    let inv = matrix_2.inverse();
+
+    let res = matrix_2 * matrix;
+    let res_2 = inv * res;
+    approx::assert_relative_eq!(res_2, matrix, epsilon = 1e-14);
 }
 
 #[cfg(feature = "nightly")]
 #[cfg(any(feature = "std", feature = "libm"))]
 #[test]
 fn test_decompose() {
-    let epsilon = if cfg!(miri) {
-        1e-14
-    } else {
-        1e-15
-    };
+    let epsilon = if cfg!(miri) { 1e-14 } else { 1e-15 };
     let rot = Quaternion::from_angle_axis(
         Angle::Degrees(21.0),
         Vector3::new([0.7, 0.3, 0.4]).normalized(),
@@ -583,7 +603,11 @@ fn test_decompose() {
     let (decomp_translation, decomp_scale, decomp_rot, w) =
         mat.decompose_homogeneous_transform_3d::<Quaternion<_>>();
     assert_eq!(translation, decomp_translation);
-    approx::assert_abs_diff_eq!(rot.into_vector(), decomp_rot.into_vector(), epsilon = epsilon);
+    approx::assert_abs_diff_eq!(
+        rot.into_vector(),
+        decomp_rot.into_vector(),
+        epsilon = epsilon
+    );
     approx::assert_abs_diff_eq!(scale, decomp_scale, epsilon = epsilon);
     assert_eq!(w, 1.0);
 }
