@@ -13,7 +13,10 @@ use crate::{
 };
 #[cfg(feature = "nightly")]
 use core::ops::Neg;
-use core::ops::{AddAssign, DivAssign, SubAssign};
+use core::{
+    mem,
+    ops::{AddAssign, DivAssign, SubAssign},
+};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MatrixTransform<T = f32, const DIM: usize = 3>
@@ -236,6 +239,12 @@ where
         let (translation, scale, rotation, ..) =
             Matrix::decompose_homogeneous_transform_3d::<Self::Rotation>(self.matrix);
         (translation, scale, rotation)
+    }
+
+    #[inline]
+    fn inverse(mut self) -> Self {
+        mem::swap(&mut self.matrix, &mut self.inverse);
+        self
     }
 
     #[inline]

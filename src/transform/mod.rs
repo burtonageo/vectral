@@ -28,6 +28,9 @@ pub trait Transform<const DIM: usize> {
     );
 
     #[must_use]
+    fn inverse(self) -> Self;
+
+    #[must_use]
     fn get_homogeneous(&self) -> Matrix<Self::Scalar, { DIM + 1 }, { DIM + 1 }>;
 
     #[must_use]
