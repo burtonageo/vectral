@@ -100,6 +100,14 @@ impl<T: Zero, const N: usize> Zero for Point<T, N> {
     const ZERO: Self = Self::new(Zero::ZERO);
 }
 
+impl<T: Zero, const N: usize> Point<T, N> {
+    #[must_use]
+    #[inline]
+    pub const fn origin() -> Self {
+        Self::ZERO
+    }
+}
+
 impl<T, const N: usize> Point<T, N> {
     pub const LENGTH: usize = N;
 
