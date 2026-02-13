@@ -268,10 +268,10 @@ where
     }
 }
 
-impl<T: Copy + ClosedAdd + ClosedMul + Zero, const DIM: usize> Translate<DIM>
-    for MatrixTransform<T, DIM>
+impl<T, const DIM: usize> Translate<DIM> for MatrixTransform<T, DIM>
 where
     Matrix<T, { DIM + 1 }, { DIM + 1 }>: Sized,
+    T: Copy + ClosedAdd + ClosedMul + Zero,
 {
     type Scalar = T;
     #[inline]
