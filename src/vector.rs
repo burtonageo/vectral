@@ -3,11 +3,12 @@
 use crate::{
     const_assert_larger,
     point::Point,
+    rotation::angle::Angle,
     utils::{
         array_assume_init, array_get_checked, array_get_mut_checked, array_get_unchecked,
         array_get_unchecked_mut, expand_to_copy,
         num::{
-            ClosedAdd, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Zero,
+            ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
             checked::{CheckedDiv, CheckedMul},
         },
         shrink_to, sum, zip_map,
@@ -22,7 +23,6 @@ use crate::{
 #[cfg(feature = "simd")]
 use crate::{
     simd::{SimdAdd, SimdDiv, SimdMul, SimdSub, SimdValue},
-    utils::num::ClosedDiv,
 };
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
@@ -438,6 +438,20 @@ impl<T, const N: usize> Vector<T, N> {
     pub fn split<const IDX: usize>(self) -> (Vector<T, IDX>, Vector<T, { N - IDX }>) {
         let (l, r) = split(self.data);
         (Vector::new(l), Vector::new(r))
+    }
+}
+
+impl<T, const N: usize> Vector<T, N>
+where
+    T: ClosedAdd + ClosedMul + ClosedDiv + Sqrt + Trig + Zero,
+{
+    /// Returns the angle between two vectors.
+    #[must_use]
+    #[inline]
+    pub fn angle_between(self, other: Self) -> Angle<T> {
+        let a = self;
+        let b = other;
+        Angle::Radians(T::acos(a.dot(b) / a.len() * b.len()))
     }
 }
 
@@ -1424,5 +1438,15 @@ mod tests {
         let v = Vector::<_, 5>::X * 60.0;
         let len = v.len();
         assert_eq!(len, 60.0);
+    }
+
+    #[test]
+    fn test_angle_between() {
+        let y = Vector::<f64, 3>::Y;
+        let x = Vector::<f64, 3>::X;
+        let neg_y = -y;
+
+        assert_eq!(Vector::angle_between(y, x), Angle::quarter());
+        assert_eq!(Vector::angle_between(y, neg_y), Angle::half());
     }
 }
