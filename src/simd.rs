@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
-    utils::num::{ClosedAdd, ClosedMul, ClosedNeg, ClosedSub, Sqrt, Zero},
+    rotation::angle::Angle,
+    utils::num::{ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, Sqrt, Trig, Zero},
     vector::Vector,
 };
 use core::{
@@ -183,7 +184,7 @@ where
     #[must_use]
     #[inline]
     pub fn len(self) -> T {
-        self.0.simd_len()
+        self.0.simd_len().sqrt()
     }
 }
 
@@ -215,6 +216,20 @@ where
     #[inline]
     pub fn cross<I: Into<SimdValue<Vector<T>>>>(self, rhs: I) -> Self {
         SimdValue(self.0.simd_cross(rhs))
+    }
+}
+
+impl<T, const N: usize> SimdValue<Vector<T, N>>
+where
+    T: SimdElement + ClosedAdd + ClosedMul + ClosedDiv + Sqrt + Trig + Zero,
+    Simd<T, N>: ClosedMul,
+{
+    #[must_use]
+    #[inline]
+    pub fn angle_between(self, other: Self) -> Angle<T> {
+        let a = self;
+        let b = other;
+        Angle::Radians(T::acos(a.dot(b) / a.len() * b.len()))
     }
 }
 
