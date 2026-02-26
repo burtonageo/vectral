@@ -6,7 +6,10 @@ use core::{
         NonZeroI8, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI128, NonZeroIsize, NonZeroU8,
         NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU128, NonZeroUsize, Saturating, Wrapping,
     },
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, Sub, SubAssign},
+    ops::{
+        Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, Shl, ShlAssign, Shr, ShrAssign,
+        Sub, SubAssign,
+    },
 };
 
 pub mod checked;
@@ -581,3 +584,52 @@ macro_rules! impl_abs_for_unsigned_types {
 impl_abs_for_unsigned_types! {
     u8, u16, u32, u64, u128, usize,
 }
+
+pub trait Scalar:
+    Bounded
+    + ClosedAdd
+    + ClosedDiv
+    + ClosedMul
+    + ClosedSub
+    + AddAssign
+    + DivAssign
+    + MulAssign
+    + SubAssign
+    + One
+    + PartialEq
+    + PartialOrd
+    + Zero
+{
+}
+
+impl<T> Scalar for T where
+    T: Bounded
+        + ClosedAdd
+        + ClosedDiv
+        + ClosedMul
+        + ClosedSub
+        + AddAssign
+        + DivAssign
+        + MulAssign
+        + SubAssign
+        + One
+        + PartialEq
+        + PartialOrd
+        + Zero
+{
+}
+
+pub trait FloatScalar: Scalar + Trig + Float + Signed {}
+impl<T: Scalar + Trig + Float + Signed> FloatScalar for T {}
+
+pub trait IntScalar:
+    Scalar + Shl<Self, Output = Self> + Shr<Self, Output = Self> + ShlAssign + ShrAssign
+{
+}
+impl<T> IntScalar for T where
+    T: Scalar + Shl<Self, Output = Self> + Shr<Self, Output = Self> + ShlAssign + ShrAssign
+{
+}
+
+pub trait SignedIntScalar: IntScalar + Signed {}
+impl<T: IntScalar + Signed> SignedIntScalar for T {}

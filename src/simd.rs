@@ -2,7 +2,10 @@
 
 use crate::{
     rotation::angle::Angle,
-    utils::num::{ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, Sqrt, Trig, Zero},
+    utils::num::{
+        ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, FloatScalar, IntScalar, Scalar,
+        Sqrt, Trig, Zero,
+    },
     vector::Vector,
 };
 use core::{
@@ -248,3 +251,12 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for SimdValue<T> {
         T::deserialize(deserializer).map(SimdValue)
     }
 }
+
+pub trait SimdScalar: Scalar + SimdElement {}
+impl<T: Scalar + SimdElement> SimdScalar for T {}
+
+pub trait SimdFloatScalar: FloatScalar + SimdElement {}
+impl<T: FloatScalar + SimdElement> SimdFloatScalar for T {}
+
+pub trait SimdIntScalar: IntScalar + SimdElement {}
+impl<T: IntScalar + SimdElement> SimdIntScalar for T {}
