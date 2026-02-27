@@ -2,6 +2,7 @@
 
 use crate::utils::num::checked::{CheckedAddAssign, CheckedDiv};
 use core::{
+    cmp::Ordering,
     num::{
         NonZeroI8, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI128, NonZeroIsize, NonZeroU8,
         NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU128, NonZeroUsize, Saturating, Wrapping,
@@ -28,40 +29,78 @@ impl<T: Sized + Div<Output = Self>> ClosedDiv for T {}
 impl<T: Sized + Neg<Output = Self>> ClosedNeg for T {}
 impl<T: Sized + Rem<Output = Self>> ClosedRem for T {}
 
-pub trait Arithmetic:
-    ClosedAdd
+pub trait Scalar:
+    Bounded
+    + ClosedAdd
     + ClosedDiv
     + ClosedMul
-    + ClosedRem
+    + ClosedSub
     + AddAssign
-    + SubAssign
     + DivAssign
     + MulAssign
+    + SubAssign
+    + One
     + PartialEq
     + PartialOrd
-    + One
     + Zero
 {
 }
 
-impl<T> Arithmetic for T where
-    T: ClosedAdd
+impl<T> Scalar for T where
+    T: Bounded
+        + ClosedAdd
         + ClosedDiv
         + ClosedMul
-        + ClosedRem
+        + ClosedSub
         + AddAssign
-        + SubAssign
         + DivAssign
         + MulAssign
+        + SubAssign
+        + One
         + PartialEq
         + PartialOrd
-        + One
         + Zero
 {
 }
 
-pub trait Signed: Arithmetic + Abs + ClosedNeg {}
-impl<T: Arithmetic + Abs + ClosedNeg> Signed for T {}
+pub trait IntScalar:
+    Scalar + Shl<Self, Output = Self> + Shr<Self, Output = Self> + ShlAssign + ShrAssign
+{
+}
+impl<T> IntScalar for T where
+    T: Scalar + Shl<Self, Output = Self> + Shr<Self, Output = Self> + ShlAssign + ShrAssign
+{
+}
+
+pub trait Signed: Scalar + Abs + ClosedNeg {
+    #[must_use]
+    #[inline]
+    fn is_negative(self) -> bool {
+        self < Self::ZERO
+    }
+
+    #[must_use]
+    #[inline]
+    fn sign(self) -> Self {
+        match self.partial_cmp(&Self::ZERO) {
+            Some(Ordering::Less) => Self::ONE.neg(),
+            Some(Ordering::Greater) => Self::ONE,
+            _ => Self::ZERO,
+        }
+    }
+}
+impl<T: Scalar + Abs + ClosedNeg> Signed for T {}
+
+pub trait SignedIntScalar: IntScalar + Signed {}
+impl<T: IntScalar + Signed> SignedIntScalar for T {}
+
+pub trait Sqrt: Copy {
+    #[must_use]
+    fn sqrt(self) -> Self;
+}
+
+pub trait FloatScalar: Scalar + Trig + Float + Signed {}
+impl<T: Scalar + Trig + Float + Signed> FloatScalar for T {}
 
 pub trait Float: Signed + FromFloat + Trig + Sqrt {}
 impl<T> Float for T where T: Signed + FromFloat + Trig + Sqrt {}
@@ -75,11 +114,6 @@ where
 {
     let inv_t = U::ONE - t;
     (start * inv_t) + (target * t)
-}
-
-pub trait Sqrt: Copy {
-    #[must_use]
-    fn sqrt(self) -> Self;
 }
 
 pub trait FromFloat<FloatType = f32> {
@@ -584,52 +618,3 @@ macro_rules! impl_abs_for_unsigned_types {
 impl_abs_for_unsigned_types! {
     u8, u16, u32, u64, u128, usize,
 }
-
-pub trait Scalar:
-    Bounded
-    + ClosedAdd
-    + ClosedDiv
-    + ClosedMul
-    + ClosedSub
-    + AddAssign
-    + DivAssign
-    + MulAssign
-    + SubAssign
-    + One
-    + PartialEq
-    + PartialOrd
-    + Zero
-{
-}
-
-impl<T> Scalar for T where
-    T: Bounded
-        + ClosedAdd
-        + ClosedDiv
-        + ClosedMul
-        + ClosedSub
-        + AddAssign
-        + DivAssign
-        + MulAssign
-        + SubAssign
-        + One
-        + PartialEq
-        + PartialOrd
-        + Zero
-{
-}
-
-pub trait FloatScalar: Scalar + Trig + Float + Signed {}
-impl<T: Scalar + Trig + Float + Signed> FloatScalar for T {}
-
-pub trait IntScalar:
-    Scalar + Shl<Self, Output = Self> + Shr<Self, Output = Self> + ShlAssign + ShrAssign
-{
-}
-impl<T> IntScalar for T where
-    T: Scalar + Shl<Self, Output = Self> + Shr<Self, Output = Self> + ShlAssign + ShrAssign
-{
-}
-
-pub trait SignedIntScalar: IntScalar + Signed {}
-impl<T: IntScalar + Signed> SignedIntScalar for T {}
