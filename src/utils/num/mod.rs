@@ -79,6 +79,7 @@ pub trait Signed: Scalar + Abs + ClosedNeg {
         self < Self::ZERO
     }
 
+    #[doc(alias = "signum")]
     #[must_use]
     #[inline]
     fn sign(self) -> Self {
