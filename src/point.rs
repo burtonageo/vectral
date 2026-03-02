@@ -1,22 +1,19 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+#[cfg(feature = "simd")]
+use crate::simd::{SimdAdd, SimdDiv, SimdMul, SimdSub};
 #[cfg(feature = "nightly")]
 use crate::{
     matrix::{Matrix, TransformHomogeneous},
     transform::{Transform, Translate},
-    utils::{concat, num::One, shrink},
-};
-#[cfg(feature = "simd")]
-use crate::{
-    simd::{SimdAdd, SimdDiv, SimdMul, SimdSub},
-    utils::num::{ClosedDiv, ClosedSub},
+    utils::{concat, shrink},
 };
 use crate::{
     utils::{
         array_assume_init, array_get_checked, array_get_mut_checked, array_get_unchecked,
         array_get_unchecked_mut, expand_to_copy,
         num::{
-            ClosedAdd, ClosedMul, Sqrt, Zero,
+            ClosedAdd, ClosedDiv, ClosedMul, ClosedSub, One, Sqrt, Zero,
             checked::{CheckedDiv, CheckedMul},
         },
         shrink_to, zip_map,
@@ -231,6 +228,15 @@ impl<T, const N: usize> Point<T, N> {
 
     #[must_use]
     #[inline]
+    pub fn distance_squared_to<U: Sub<T>>(self, other: Point<U, N>) -> U::Output
+    where
+        U::Output: ClosedMul + Copy + ClosedAdd + Zero,
+    {
+        self.vector_to(other).len_squared()
+    }
+
+    #[must_use]
+    #[inline]
     pub fn vector_to<U: Sub<T>>(self, other: Point<U, N>) -> Vector<U::Output, N> {
         other - self
     }
@@ -286,6 +292,16 @@ impl<T, const N: usize> Point<T, N> {
     #[inline]
     pub fn iter_mut(&mut self) -> IterMut<'_, T> {
         self.data.iter_mut()
+    }
+}
+
+impl<T: Copy + One + ClosedAdd + ClosedDiv + ClosedSub, const N: usize> Point<T, N> {
+    #[must_use]
+    #[inline]
+    pub fn midpoint(self, other: Point<T, N>) -> Point<T, N> {
+        let mut v = self.vector_to(other);
+        v = v / (T::ONE + T::ONE);
+        self + v
     }
 }
 
