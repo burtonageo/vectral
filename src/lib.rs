@@ -239,6 +239,7 @@ macro_rules! impl_eq_mint {
 
 pub mod fields;
 pub mod matrix;
+pub mod num;
 pub mod point;
 pub mod rotation;
 pub mod utils;

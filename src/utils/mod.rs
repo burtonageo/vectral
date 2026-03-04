@@ -81,7 +81,12 @@ pub mod assertions {
 }
 
 pub mod arrays;
-pub mod num;
+
+#[deprecated = "use the top-level `vectral::num` module"]
+pub mod num {
+    pub use crate::num::*;
+}
+
 
 /// Analogous to the [`Iterator::sum()`] method, but which uses [`Zero`] and [`ClosedAdd`] instead of
 /// the [`Sum`] trait.
