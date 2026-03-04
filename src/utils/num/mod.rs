@@ -131,12 +131,19 @@ pub trait FromFloat<FloatType = f32> {
     fn from_float_round(float_type: FloatType) -> Self;
 }
 
-pub trait Abs: Copy {
+pub trait AbsDiff<Rhs = Self>: Sub<Rhs> {
+    #[must_use]
+    fn abs_diff(self, rhs: Rhs) -> Self::Output;
+} 
+
+pub trait Abs: Copy + AbsDiff<Self, Output = Self> {
     #[must_use]
     fn abs(self) -> Self;
+}
 
+pub trait CopySign: Abs + Neg {
     #[must_use]
-    fn abs_diff(self, rhs: Self) -> Self;
+    fn copysign(self, rhs: Self) -> Self;
 }
 
 #[doc(alias = "1")]
@@ -567,15 +574,17 @@ macro_rules! impl_abs_for_signed_types {
         $($ty:ty),* $(,)?
     ) => {
         $(
+            impl AbsDiff for $ty {
+                #[inline]
+                fn abs_diff(self, rhs: Self) -> Self {
+                    (self - rhs).abs()
+                }
+            }
+
             impl Abs for $ty {
                 #[inline]
                 fn abs(self) -> Self {
                     <$ty>::abs(self)
-                }
-
-                #[inline]
-                fn abs_diff(self, rhs: Self) -> Self {
-                    (self - rhs).abs()
                 }
             }
         )*
@@ -592,17 +601,34 @@ impl_abs_for_signed_types! {
     f16, f128,
 }
 
-macro_rules! impl_abs_for_unsigned_types {
+macro_rules! impl_copysign_for_float_types {
+    ($($ty:ty),* $(,)?) => {
+        $(
+            impl CopySign for $ty {
+                #[inline]
+                fn copysign(self, rhs: Self) -> Self {
+                    <$ty>::copysign(self, rhs)
+                }
+            }
+        )*
+    };
+}
+
+impl_copysign_for_float_types! {
+    f32, f64,
+}
+
+#[cfg(feature = "nightly")]
+impl_copysign_for_float_types! {
+    f16, f128,
+}
+
+macro_rules! impl_abs_diff_for_unsigned_types {
     (
         $($ty:ty),* $(,)?
     ) => {
         $(
-            impl Abs for $ty {
-                #[inline]
-                fn abs(self) -> Self {
-                    self
-                }
-
+            impl AbsDiff for $ty {
                 #[inline]
                 fn abs_diff(self, rhs: Self) -> Self {
                     if self > rhs {
@@ -616,6 +642,6 @@ macro_rules! impl_abs_for_unsigned_types {
     };
 }
 
-impl_abs_for_unsigned_types! {
+impl_abs_diff_for_unsigned_types! {
     u8, u16, u32, u64, u128, usize,
 }
