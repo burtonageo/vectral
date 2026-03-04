@@ -136,7 +136,7 @@ pub trait AbsDiff<Rhs = Self>: Sub<Rhs> {
     fn abs_diff(self, rhs: Rhs) -> Self::Output;
 } 
 
-pub trait Abs: Copy + AbsDiff<Self, Output = Self> {
+pub trait Abs: Copy {
     #[must_use]
     fn abs(self) -> Self;
 }

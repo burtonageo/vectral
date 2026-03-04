@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+#[cfg(feature = "simd")]
+use crate::simd::{SimdAdd, SimdDiv, SimdMul, SimdSub, SimdValue};
 use crate::{
     const_assert_larger,
+    num::{Abs, AbsDiff, CopySign},
     point::Point,
     rotation::angle::Angle,
     utils::{
@@ -19,10 +22,6 @@ use crate::{
     matrix::{Matrix, TransformHomogeneous},
     transform::{Transform, Translate},
     utils::{concat, shrink, split},
-};
-#[cfg(feature = "simd")]
-use crate::{
-    simd::{SimdAdd, SimdDiv, SimdMul, SimdSub, SimdValue},
 };
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
@@ -452,6 +451,31 @@ where
         let a = self;
         let b = other;
         Angle::Radians(T::acos(a.dot(b) / a.len() * b.len()))
+    }
+}
+
+impl<T: AbsDiff<U>, U, const N: usize> AbsDiff<Vector<U, N>> for Vector<T, N> {
+    #[inline]
+    fn abs_diff(self, rhs: Vector<U, N>) -> Self::Output {
+        Vector::new(zip_map(self.to_array(), rhs.to_array(), |x, y| {
+            AbsDiff::abs_diff(x, y)
+        }))
+    }
+}
+
+impl<T: Abs, const N: usize> Abs for Vector<T, N> {
+    #[inline]
+    fn abs(self) -> Self {
+        self.map(Abs::abs)
+    }
+}
+
+impl<T: CopySign, const N: usize> CopySign for Vector<T, N> {
+    #[inline]
+    fn copysign(self, rhs: Self) -> Self {
+        Vector::new(zip_map(self.to_array(), rhs.to_array(), |x, y| {
+            x.copysign(y)
+        }))
     }
 }
 
