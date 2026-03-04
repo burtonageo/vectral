@@ -72,7 +72,7 @@ impl<T> IntScalar for T where
 {
 }
 
-pub trait Signed: Scalar + Abs + ClosedNeg {
+pub trait Signed: Scalar + Abs + CopySign + ClosedNeg {
     #[must_use]
     #[inline]
     fn is_negative(self) -> bool {
@@ -90,7 +90,7 @@ pub trait Signed: Scalar + Abs + ClosedNeg {
         }
     }
 }
-impl<T: Scalar + Abs + ClosedNeg> Signed for T {}
+impl<T: Scalar + Abs + ClosedNeg + CopySign> Signed for T {}
 
 pub trait SignedIntScalar: IntScalar + Signed {}
 impl<T: IntScalar + Signed> SignedIntScalar for T {}
