@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 #[cfg(feature = "nightly")]
+use crate::matrix::Matrix;
 use crate::{
-    matrix::Matrix,
     num::{ClosedAdd, ClosedDiv, ClosedMul, ClosedSub, Zero},
     point::Point,
     vector::Vector,
@@ -19,9 +19,6 @@ pub trait Rotation<const DIM: usize> {
 
     #[must_use]
     fn inverse(self) -> Self;
-
-    #[must_use]
-    fn transform_point(&self, point: Point<Self::Scalar, DIM>) -> Point<Self::Scalar, DIM>;
 
     #[must_use]
     fn transform_vector(&self, vector: Vector<Self::Scalar, DIM>) -> Vector<Self::Scalar, DIM>;

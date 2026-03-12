@@ -1,23 +1,20 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+#[cfg(feature = "nightly")]
+use crate::rotation::HomogenousRotation;
+use crate::utils::{
+    array_assume_init, array_get_unchecked,
+    num::{
+        Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
+        checked::{CheckedAddAssign, CheckedDiv, CheckedMul},
+        lerp, rat,
+    },
+    shrink_to, sum, zip,
+};
 use crate::{
     matrix::Matrix4,
-    rotation::angle::Angle,
+    rotation::{Rotation, angle::Angle},
     vector::{Vector, Vector3, Vector4},
-};
-#[cfg(feature = "nightly")]
-use crate::{matrix::TransformHomogeneous, point::Point, rotation::Rotation};
-use crate::{
-    rotation::HomogenousRotation,
-    utils::{
-        array_assume_init, array_get_unchecked,
-        num::{
-            Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
-            checked::{CheckedAddAssign, CheckedDiv, CheckedMul},
-            lerp, rat,
-        },
-        shrink_to, sum, zip,
-    },
 };
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
@@ -320,7 +317,6 @@ where
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<T> Rotation<3> for Quaternion<T>
 where
     T: Bounded
@@ -356,16 +352,12 @@ where
     }
 
     #[inline]
-    fn transform_point(&self, point: Point<Self::Scalar, 3>) -> Point<Self::Scalar, 3> {
-        point.transform_homogeneous(Matrix4::rotation_3d(*self))
-    }
-
-    #[inline]
     fn transform_vector(&self, vector: Vector<Self::Scalar, 3>) -> Vector<Self::Scalar, 3> {
-        vector.transform_homogeneous(Matrix4::rotation_3d(*self))
+        self * vector
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<T> HomogenousRotation<3> for Quaternion<T>
 where
     T: Bounded
@@ -410,6 +402,37 @@ where
             v: Vector::cross(self.v, rhs.v) + Mul::mul(rhs.v, self.w) + Mul::mul(self.v, rhs.w),
             w: self.w * rhs.w - Vector::dot(self.v, rhs.v),
         }
+    }
+}
+
+impl<T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<Vector<T, 3>>
+    for Quaternion<T>
+{
+    type Output = Vector<T, 3>;
+    #[inline]
+    fn mul(self, rhs: Vector<T, 3>) -> Self::Output {
+        let t = Vector::cross(self.v, rhs) * (T::ONE + T::ONE);
+        rhs + (t * self.w) + Vector::cross(self.v, t)
+    }
+}
+
+impl<'q, T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<Vector<T, 3>>
+    for &'q Quaternion<T>
+{
+    type Output = Vector<T, 3>;
+    #[inline]
+    fn mul(self, rhs: Vector<T, 3>) -> Self::Output {
+        Mul::mul(*self, rhs)
+    }
+}
+
+impl<'q, 'v, T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<&'v Vector<T, 3>>
+    for &'q Quaternion<T>
+{
+    type Output = Vector<T, 3>;
+    #[inline]
+    fn mul(self, rhs: &'v Vector<T, 3>) -> Self::Output {
+        Mul::mul(*self, *rhs)
     }
 }
 
