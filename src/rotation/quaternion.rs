@@ -1,14 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::utils::{
-    array_assume_init, array_get_unchecked,
-    num::{
-        Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
-        checked::{CheckedAddAssign, CheckedDiv, CheckedMul},
-        lerp, rat,
-    },
-    shrink_to, sum, zip,
-};
 use crate::{
     matrix::Matrix4,
     rotation::angle::Angle,
@@ -16,6 +7,18 @@ use crate::{
 };
 #[cfg(feature = "nightly")]
 use crate::{matrix::TransformHomogeneous, point::Point, rotation::Rotation};
+use crate::{
+    rotation::HomogenousRotation,
+    utils::{
+        array_assume_init, array_get_unchecked,
+        num::{
+            Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
+            checked::{CheckedAddAssign, CheckedDiv, CheckedMul},
+            lerp, rat,
+        },
+        shrink_to, sum, zip,
+    },
+};
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
 use core::{
@@ -361,7 +364,26 @@ where
     fn transform_vector(&self, vector: Vector<Self::Scalar, 3>) -> Vector<Self::Scalar, 3> {
         vector.transform_homogeneous(Matrix4::rotation_3d(*self))
     }
+}
 
+impl<T> HomogenousRotation<3> for Quaternion<T>
+where
+    T: Bounded
+        + CheckedDiv
+        + CheckedAddAssign
+        + Trig
+        + ClosedNeg
+        + ClosedAdd
+        + ClosedDiv
+        + ClosedMul
+        + ClosedSub
+        + Copy
+        + DivAssign
+        + One
+        + PartialOrd
+        + Sqrt
+        + Zero,
+{
     #[inline]
     fn from_homogeneous(matrix: Matrix4<Self::Scalar>) -> Self {
         Self::from_matrix(matrix)
@@ -803,9 +825,9 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Quaternion<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::rotation::quaternion::Quaternion;
     #[cfg(feature = "nightly")]
-    use crate::{matrix::Matrix, rotation::Rotation};
+    use crate::matrix::Matrix;
+    use crate::rotation::quaternion::Quaternion;
     #[cfg(any(feature = "std", feature = "libm"))]
     use crate::{matrix::Matrix4, rotation::angle::Angle, vector::Vector};
     use core::{
@@ -826,6 +848,8 @@ mod tests {
     #[cfg(all(any(feature = "std", feature = "libm"), feature = "nightly"))]
     #[test]
     fn test_conjugate() {
+        use crate::rotation::HomogenousRotation;
+
         let q1 = Quaternion::from_angle_axis(Angle::<f64>::three_quarters(), Vector::X);
         let q2 = Quaternion::from_angle_axis(Angle::<f64>::three_quarters().neg(), Vector::X);
 

@@ -11,7 +11,6 @@ use crate::{
 pub mod angle;
 pub mod quaternion;
 
-#[cfg(feature = "nightly")]
 pub trait Rotation<const DIM: usize> {
     type Scalar;
 
@@ -29,7 +28,10 @@ pub trait Rotation<const DIM: usize> {
 
     #[must_use]
     fn slerp(self, target: Self, time: Self::Scalar) -> Self;
+}
 
+#[cfg(feature = "nightly")]
+pub trait HomogenousRotation<const DIM: usize>: Rotation<DIM> {
     #[must_use]
     fn from_homogeneous(matrix: Matrix<Self::Scalar, { DIM + 1 }, { DIM + 1 }>) -> Self;
 
@@ -40,7 +42,6 @@ pub trait Rotation<const DIM: usize> {
     fn get_homogeneous(&self) -> Matrix<Self::Scalar, { DIM + 1 }, { DIM + 1 }>;
 }
 
-#[cfg(feature = "nightly")]
 #[must_use]
 #[inline]
 pub fn rotate_point_around<T, R, const N: usize>(

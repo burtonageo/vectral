@@ -20,7 +20,7 @@ use crate::{
 };
 #[cfg(feature = "nightly")]
 use crate::{
-    rotation::Rotation,
+    rotation::{HomogenousRotation},
     utils::{flatten, shrink_to, shrink_to_copy},
     vector::Vector4,
 };
@@ -2600,7 +2600,7 @@ where
     #[doc(alias = "polar_decompose")]
     #[must_use]
     #[inline]
-    pub fn decompose_homogeneous_transform_3d<R: Rotation<3, Scalar = T>>(
+    pub fn decompose_homogeneous_transform_3d<R: HomogenousRotation<3, Scalar = T>>(
         mut self,
     ) -> (Vector3<T>, Vector3<T>, R, T) {
         let translation = Vector::new(self.col(3)).shrink_to();
@@ -2635,7 +2635,7 @@ where
             count += 1;
         }
 
-        let rotation = Rotation::from_homogeneous(rot_mat);
+        let rotation = HomogenousRotation::from_homogeneous(rot_mat);
         let scale =
             Vector::new((self * rot_mat.transpose()).rightwards_diagonal()).shrink_to::<3>();
 
