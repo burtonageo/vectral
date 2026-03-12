@@ -908,6 +908,21 @@ mod tests {
     }
 
     #[test]
+    fn test_rotate_vector() {
+        let quat = Quaternion::from_angle_axis(Angle::Degrees(45.0), Vector::Y).normalized();
+        let vector = Vector::<f64, 3>::Z;
+
+        let rotation_matrix = Matrix4::rotation_3d(quat);
+        let r1 = {
+            let v = vector * quat;
+            Vector::new([v.x, v.y, v.z, 1.0])
+        };
+        let r2 =  Vector::new([vector.x, vector.y, vector.z, 1.0]) * rotation_matrix;
+
+        assert_eq!(r1, r2);
+    }
+
+    #[test]
     fn test_conjugate_complex_type() {
         static NUM_INSTANCES: AtomicU32 = AtomicU32::new(0);
 
