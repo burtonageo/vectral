@@ -6,7 +6,7 @@ use crate::{
     const_assert_larger,
     num::{Abs, AbsDiff, CopySign},
     point::Point,
-    rotation::angle::Angle,
+    rotation::{angle::Angle, quaternion::Quaternion},
     utils::{
         array_assume_init, array_get_checked, array_get_mut_checked, array_get_unchecked,
         array_get_unchecked_mut, expand_to_copy,
@@ -934,6 +934,34 @@ impl<T: Mul + Copy, const N: usize> Mul<T> for Vector<T, N> {
     }
 }
 
+impl<T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<Quaternion<T>>
+    for Vector<T, 3>
+{
+    type Output = Vector<T, 3>;
+    #[inline]
+    fn mul(self, rhs: Quaternion<T>) -> Self::Output {
+        Mul::mul(rhs, self)
+    }
+}
+
+impl<T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> MulAssign<Quaternion<T>>
+    for Vector<T, 3>
+{
+    #[inline]
+    fn mul_assign(&mut self, rhs: Quaternion<T>) {
+        *self = Mul::mul(*self, rhs);
+    }
+}
+
+impl<'q, T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> MulAssign<&'q Quaternion<T>>
+    for Vector<T, 3>
+{
+    #[inline]
+    fn mul_assign(&mut self, rhs: &'q Quaternion<T>) {
+        *self = Mul::mul(*self, *rhs);
+    }
+}
+
 impl<T: Copy + CheckedMul, const N: usize> CheckedMul<T> for Vector<T, N> {
     #[inline]
     fn checked_mul(self, rhs: T) -> Option<Self::Output> {
@@ -950,9 +978,9 @@ impl<T: Copy + CheckedMul, const N: usize> CheckedMul<T> for Vector<T, N> {
     }
 }
 
-impl<T: MulAssign<U>, U: Copy, const N: usize> MulAssign<U> for Vector<T, N> {
+impl<T: MulAssign + Copy, const N: usize> MulAssign<T> for Vector<T, N> {
     #[inline]
-    fn mul_assign(&mut self, rhs: U) {
+    fn mul_assign(&mut self, rhs: T) {
         for elem in &mut self.data {
             elem.mul_assign(rhs);
         }
