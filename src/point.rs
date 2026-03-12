@@ -245,7 +245,7 @@ impl<T, const N: usize> Point<T, N> {
     #[inline]
     pub fn direction_to<U: Sub<T>>(self, other: Point<U, N>) -> Vector<U::Output, N>
     where
-        U::Output: ClosedMul + Copy + ClosedAdd + CheckedDiv<Output = U::Output> + Zero + Sqrt,
+        U::Output: ClosedMul + Copy + ClosedAdd + ClosedDiv + Zero + Sqrt,
     {
         Vector::normalized(self.vector_to(other))
     }

@@ -667,14 +667,19 @@ where
 
 impl<T, const N: usize> Vector<T, N>
 where
-    T: ClosedMul + Copy + ClosedAdd + CheckedDiv<Output = T> + Zero + Sqrt,
+    T: ClosedDiv + ClosedMul + Copy + ClosedAdd + Div + Sqrt + Zero,
 {
     #[must_use]
     #[inline]
     pub fn normalized(self) -> Vector<T, N> {
-        self.normalized_checked().unwrap_or(Zero::ZERO)
+        self / self.len()
     }
+}
 
+impl<T, const N: usize> Vector<T, N>
+where
+    T: ClosedMul + Copy + ClosedAdd + CheckedDiv<Output = T> + Zero + Sqrt,
+{
     #[must_use]
     #[inline]
     pub fn normalized_checked(self) -> Option<Vector<T, N>> {
