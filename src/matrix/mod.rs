@@ -20,7 +20,7 @@ use crate::{
 };
 #[cfg(feature = "nightly")]
 use crate::{
-    rotation::{HomogenousRotation},
+    rotation::HomogenousRotation,
     utils::{flatten, shrink_to, shrink_to_copy},
     vector::Vector4,
 };
@@ -2389,23 +2389,23 @@ impl<T: Copy + ClosedAdd + ClosedMul + ClosedSub + One + Zero> Matrix4<T> {
         let mut matrix = Matrix::identity();
 
         let col_1 = [
-            one - (two * (sq(q.v.y) + sq(q.v.z))),
-            two * ((q.v.x * q.v.y) - (q.v.z * q.w)),
-            two * ((q.v.x * q.v.z) + (q.v.y * q.w)),
+            one - (two * (sq(q.v.y)) - (two * sq(q.v.z))),
+            (two * q.v.x * q.v.y) + (two * q.v.z * q.w),
+            (two * q.v.x * q.v.z) - (two * q.v.y * q.w),
             Zero::ZERO,
         ];
 
         let col_2 = [
-            two * ((q.v.x * q.v.y) + (q.v.z * q.w)),
-            one - (two * (sq(q.v.x) + sq(q.v.z))),
-            two * ((q.v.y * q.v.z) - (q.v.x * q.w)),
+            (two * q.v.x * q.v.y) - (two * q.v.z * q.w),
+            one - (two * sq(q.v.x)) - (two * sq(q.v.z)),
+            (two * q.v.y * q.v.z) + (two * q.v.x * q.w),
             Zero::ZERO,
         ];
 
         let col_3 = [
-            two * ((q.v.x * q.v.z) - (q.v.y * q.w)),
-            two * ((q.v.y * q.v.z) + (q.v.x * q.w)),
-            one - (two * (sq(q.v.x) + sq(q.v.y))),
+            (two * q.v.x * q.v.z) + (two * q.v.y * q.w),
+            (two * q.v.y * q.v.z) - (two * q.v.x * q.w),
+            one - (two * sq(q.v.x)) - (two * sq(q.v.y)),
             Zero::ZERO,
         ];
 
