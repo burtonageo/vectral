@@ -2307,8 +2307,8 @@ impl<T: Zero + One + Trig + Copy + ClosedNeg> Matrix4<T> {
 
         let mut result = Matrix::identity();
         result[1][1] = cos_t;
-        result[1][2] = sin_t;
-        result[2][1] = -sin_t;
+        result[1][2] = -sin_t;
+        result[2][1] = sin_t;
         result[2][2] = cos_t;
 
         result
@@ -2323,8 +2323,8 @@ impl<T: Zero + One + Trig + Copy + ClosedNeg> Matrix4<T> {
 
         let mut result = Matrix::identity();
         result[0][0] = cos_t;
-        result[0][2] = -sin_t;
-        result[2][0] = sin_t;
+        result[0][2] = sin_t;
+        result[2][0] = -sin_t;
         result[2][2] = cos_t;
 
         result
@@ -2339,8 +2339,8 @@ impl<T: Zero + One + Trig + Copy + ClosedNeg> Matrix4<T> {
 
         let mut result = Matrix::identity();
         result[0][0] = cos_t;
-        result[0][1] = sin_t;
-        result[1][0] = -sin_t;
+        result[0][1] = -sin_t;
+        result[1][0] = sin_t;
         result[1][1] = cos_t;
 
         result
@@ -2390,7 +2390,7 @@ impl<T: Copy + ClosedAdd + ClosedMul + ClosedSub + One + Zero> Matrix4<T> {
         let mut matrix = Matrix::identity();
 
         let col_1 = [
-            one - two * (sq(q.v.y)) - (two * sq(q.v.z)),
+            one - (two * sq(q.v.y)) - (two * sq(q.v.z)),
             (two * q.v.x * q.v.y) + (two * q.v.z * q.w),
             (two * q.v.x * q.v.z) - (two * q.v.y * q.w),
             Zero::ZERO,

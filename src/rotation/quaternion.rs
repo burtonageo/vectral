@@ -259,15 +259,14 @@ where
 
         if trace > T::ZERO {
             let two = T::ONE + T::ONE;
-            let half = T::ONE / two;
             let mut s = (trace + T::ONE).sqrt();
             let w = s / two;
-            s = half / s;
+            s = s * two;
 
             let v = [
-                (m[1][2] - m[2][1]) * s,
-                (m[2][0] - m[0][2]) * s,
-                (m[0][1] - m[1][0]) * s,
+                (m[2][1] - m[1][2]) / s,
+                (m[0][2] - m[2][0]) / s,
+                (m[1][0] - m[0][1]) / s,
             ];
 
             Quaternion::from_components(v, w)
