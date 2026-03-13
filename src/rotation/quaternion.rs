@@ -328,7 +328,6 @@ where
         + ClosedMul
         + ClosedSub
         + Copy
-        + DivAssign
         + One
         + PartialOrd
         + Sqrt
