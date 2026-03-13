@@ -283,6 +283,15 @@ fn test_rotation_matrices() {
     let back_to_quat = Quaternion::from_matrix(mat);
 
     approx::assert_relative_eq!(quat, back_to_quat, epsilon = epsilon);
+
+    let quat = Quaternion::from_angle_axis(
+        Angle::Degrees(-21.0),
+        Vector3::new([-0.7, -0.3, -0.4]).normalized(),
+    );
+    let mat = Matrix::rotation_3d(quat);
+    let back_to_quat = Quaternion::from_matrix(mat);
+
+    approx::assert_relative_eq!(quat, back_to_quat, epsilon = epsilon);
 }
 
 #[cfg(feature = "nightly")]
