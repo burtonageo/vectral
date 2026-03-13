@@ -849,10 +849,15 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Quaternion<T> {
 mod tests {
     #[cfg(feature = "nightly")]
     use crate::matrix::Matrix;
-    use crate::rotation::quaternion::Quaternion;
     #[cfg(any(feature = "std", feature = "libm"))]
     use crate::{matrix::Matrix4, rotation::angle::Angle, vector::Vector};
+    use crate::{
+        num::{Scalar, Signed, Sqrt},
+        rotation::quaternion::Quaternion,
+        vector::Vector3,
+    };
     use core::{
+        fmt,
         ops::Neg,
         sync::atomic::{AtomicU32, Ordering},
     };
@@ -908,17 +913,37 @@ mod tests {
 
     #[test]
     fn test_rotate_vector() {
+        fn assert_vector_rotation<T: Scalar + Signed + fmt::Debug + Sqrt + approx::AbsDiffEq>(
+            quat: Quaternion<T>,
+            vector_to_rotate: Vector3<T>,
+        ) where
+            T::Epsilon: Copy,
+        {
+            let rotation_matrix = Matrix4::rotation_3d(quat);
+            let r1 = {
+                let v = vector_to_rotate * quat;
+                Vector::new([v.x, v.y, v.z, T::ONE])
+            };
+
+            let r2 = Vector::new([
+                vector_to_rotate.x,
+                vector_to_rotate.y,
+                vector_to_rotate.z,
+                T::ONE,
+            ]) * rotation_matrix;
+
+            approx::assert_abs_diff_eq!(r1, r2);
+        }
+
         let quat = Quaternion::from_angle_axis(Angle::Degrees(45.0), Vector::Y).normalized();
         let vector = Vector::<f64, 3>::Z;
 
-        let rotation_matrix = Matrix4::rotation_3d(quat);
-        let r1 = {
-            let v = vector * quat;
-            Vector::new([v.x, v.y, v.z, 1.0])
-        };
-        let r2 = Vector::new([vector.x, vector.y, vector.z, 1.0]) * rotation_matrix;
+        assert_vector_rotation(quat, vector);
 
-        assert_eq!(r1, r2);
+        let quat = Quaternion::new(0.2, 0.6, 0.8, 1.0).normalized();
+        let vector = Vector::new([2.0, 1.0, 3.7]).normalized();
+
+        assert_vector_rotation(quat, vector);
     }
 
     #[test]

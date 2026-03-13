@@ -2377,6 +2377,7 @@ impl<T: Copy + ClosedAdd + ClosedMul + ClosedSub + One + Zero> Matrix4<T> {
     #[must_use]
     #[inline]
     pub fn rotation_3d(q: Quaternion<T>) -> Self {
+        // https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm
         let one = T::ONE;
         let two = T::ONE + T::ONE;
 
@@ -2389,7 +2390,7 @@ impl<T: Copy + ClosedAdd + ClosedMul + ClosedSub + One + Zero> Matrix4<T> {
         let mut matrix = Matrix::identity();
 
         let col_1 = [
-            one - (two * (sq(q.v.y)) - (two * sq(q.v.z))),
+            one - two * (sq(q.v.y)) - (two * sq(q.v.z)),
             (two * q.v.x * q.v.y) + (two * q.v.z * q.w),
             (two * q.v.x * q.v.z) - (two * q.v.y * q.w),
             Zero::ZERO,
