@@ -444,48 +444,114 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         unsafe { self.as_mut_ptr().add((row * COLS) + col) }
     }
 
-    /// Sets the column of the `Matrix` at `col_idx` to the given `col`.
+    /// Sets the column of the `Matrix` at `col_idx` to the given `col`,
+    /// returning the previous column.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let mut matrix = Matrix::new([
+    ///     [1, 2, 3],
+    ///     [4, 5, 6],
+    /// ]);
+    ///
+    /// let old_col = matrix.set_col(2, [4, 7]);
+    /// assert_eq!(old_col, [3, 6]);
+    /// assert_eq!(matrix, Matrix::new([
+    ///     [1, 2, 4],
+    ///     [4, 5, 7],
+    /// ]));
+    /// ```
     #[track_caller]
     #[inline]
-    pub fn set_col(&mut self, col_idx: usize, col: [T; ROWS]) {
-        match self.try_set_col(col_idx, col) {
-            Ok(_) => (),
-            Err(_) => panic!("Column index out of bounds"),
+    pub const fn set_col(&mut self, col_idx: usize, mut col: [T; ROWS]) -> [T; ROWS] {
+        // @TODO: Implement this in terms of `try_set_col()` when const dtors are
+        // more supported.
+        if col_idx >= COLS {
+            panic!("Column index out of bounds");
         }
+
+        let mut i = 0;
+        while i < COLS {
+            unsafe {
+                mem::swap(
+                    self.get_unchecked_mut(i, col_idx),
+                    col.as_mut_ptr().add(i).as_mut_unchecked(),
+                );
+            }
+            i += 1;
+        }
+
+        col
     }
 
     #[inline]
-    pub fn try_set_col(&mut self, col_idx: usize, col: [T; ROWS]) -> Result<(), [T; ROWS]> {
+    pub const fn try_set_col(
+        &mut self,
+        col_idx: usize,
+        mut col: [T; ROWS],
+    ) -> Result<[T; ROWS], [T; ROWS]> {
         if col_idx >= COLS {
             return Err(col);
         }
 
-        let col = ManuallyDrop::new(col);
-        for i in 0..COLS {
+        let mut i = 0;
+        while i < COLS {
             unsafe {
-                *self.get_unchecked_mut(i, col_idx) = ptr::read(col.get_unchecked(i));
+                mem::swap(
+                    self.get_unchecked_mut(i, col_idx),
+                    col.as_mut_ptr().add(i).as_mut_unchecked(),
+                );
             }
+            i += 1;
         }
 
-        Ok(())
+        Ok(col)
     }
 
+    /// Sets the row of the `Matrix` at `row_idx` to the given `row`,
+    /// returning the previous row.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let mut matrix = Matrix::new([
+    ///     [1, 2, 3],
+    ///     [4, 5, 6],
+    /// ]);
+    ///
+    /// let old_row = matrix.set_row(1, [7, 8, 9]);
+    /// assert_eq!(old_row, [4, 5, 6]);
+    /// assert_eq!(matrix, Matrix::new([
+    ///     [1, 2, 3],
+    ///     [7, 8, 9],
+    /// ]));
+    /// ```
     #[track_caller]
     #[inline]
-    pub fn set_row(&mut self, row_idx: usize, row: [T; COLS]) {
-        self.data[row_idx] = row;
+    pub const fn set_row(&mut self, row_idx: usize, mut row: [T; COLS]) -> [T; COLS] {
+        mem::swap(&mut self.data[row_idx], &mut row);
+        row
     }
 
     #[inline]
-    pub fn try_set_row(&mut self, row_idx: usize, mut row: [T; COLS]) -> Result<(), [T; COLS]> {
+    pub const fn try_set_row(
+        &mut self,
+        row_idx: usize,
+        mut row: [T; COLS],
+    ) -> Result<[T; COLS], [T; COLS]> {
         if row_idx >= ROWS {
             return Err(row);
         }
 
-        let matrix_row = unsafe { self.data.get_unchecked_mut(row_idx) };
+        let matrix_row = unsafe { self.data.as_mut_ptr().add(row_idx).as_mut_unchecked() };
         mem::swap(&mut row, matrix_row);
 
-        Ok(())
+        Ok(row)
     }
 
     /// Returns a new `Matrix` where each element is a reference to the corresponding element
