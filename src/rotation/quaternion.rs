@@ -414,8 +414,8 @@ impl<T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<Vector<T
     }
 }
 
-impl<'q, T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<Vector<T, 3>>
-    for &'q Quaternion<T>
+impl<T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<Vector<T, 3>>
+    for &'_ Quaternion<T>
 {
     type Output = Vector<T, 3>;
     #[inline]
@@ -424,8 +424,8 @@ impl<'q, T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<Vect
     }
 }
 
-impl<'q, 'v, T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<&'v Vector<T, 3>>
-    for &'q Quaternion<T>
+impl<'v, T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<&'v Vector<T, 3>>
+    for &'_ Quaternion<T>
 {
     type Output = Vector<T, 3>;
     #[inline]

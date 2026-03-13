@@ -433,7 +433,7 @@ impl<T: Add<U>, U, const N: usize> Add<Vector<U, N>> for Point<T, N> {
 impl<T: AddAssign<U>, U, const N: usize> AddAssign<Vector<U, N>> for Point<T, N> {
     #[inline]
     fn add_assign(&mut self, rhs: Vector<U, N>) {
-        for (l, r) in self.data.iter_mut().zip(rhs.into_iter()) {
+        for (l, r) in self.data.iter_mut().zip(rhs) {
             l.add_assign(r);
         }
     }
@@ -450,7 +450,7 @@ impl<T: Sub<U>, U, const N: usize> Sub<Vector<U, N>> for Point<T, N> {
 impl<T: SubAssign<U>, U, const N: usize> SubAssign<Vector<U, N>> for Point<T, N> {
     #[inline]
     fn sub_assign(&mut self, rhs: Vector<U, N>) {
-        for (l, r) in self.data.iter_mut().zip(rhs.into_iter()) {
+        for (l, r) in self.data.iter_mut().zip(rhs) {
             l.sub_assign(r);
         }
     }
@@ -467,7 +467,7 @@ impl<T: Sub<U>, U, const N: usize> Sub<Point<U, N>> for Point<T, N> {
 impl<T: SubAssign<U>, U, const N: usize> SubAssign<Point<U, N>> for Point<T, N> {
     #[inline]
     fn sub_assign(&mut self, rhs: Point<U, N>) {
-        for (l, r) in self.data.iter_mut().zip(rhs.into_iter()) {
+        for (l, r) in self.data.iter_mut().zip(rhs) {
             l.sub_assign(r);
         }
     }

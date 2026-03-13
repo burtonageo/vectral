@@ -230,11 +230,11 @@ pub fn expand_to<const NEW_LEN: usize, T: Clone, const OLD_LEN: usize>(
             )
         };
 
-        for (slot, data) in left.into_iter().zip(array.into_iter()) {
+        for (slot, data) in left.iter_mut().zip(array) {
             slot.write(data);
         }
 
-        let mut iter = right.into_iter();
+        let mut iter = right.iter_mut();
         for slot in iter.by_ref().take((NEW_LEN - OLD_LEN).saturating_sub(1)) {
             slot.write(to_append.clone());
         }

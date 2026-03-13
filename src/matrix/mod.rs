@@ -3250,7 +3250,7 @@ impl<T: Clone, const ROWS: usize, const COLS: usize> matrixcompare_core::DenseAc
 {
     #[inline]
     fn fetch_single(&self, row: usize, col: usize) -> T {
-        (&self[row][col]).clone()
+        self[row][col].clone()
     }
 }
 
