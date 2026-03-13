@@ -219,16 +219,15 @@ where
     }
 }
 
-impl<T> Quaternion<T>
-where
-    T: ClosedMul + Copy + ClosedAdd + CheckedDiv<Output = T> + Zero + Sqrt,
-{
+impl<T: ClosedMul + Copy + ClosedAdd + ClosedDiv + Zero + Sqrt> Quaternion<T> {
     #[must_use]
     #[inline]
     pub fn normalized(self) -> Quaternion<T> {
-        self.normalized_checked().unwrap_or(self)
+        self / Self::dot(self, self).sqrt()
     }
+}
 
+impl<T: ClosedMul + Copy + ClosedAdd + CheckedDiv<Output = T> + Zero + Sqrt> Quaternion<T> {
     #[must_use]
     #[inline]
     pub fn normalized_checked(self) -> Option<Quaternion<T>> {
@@ -917,7 +916,7 @@ mod tests {
             let v = vector * quat;
             Vector::new([v.x, v.y, v.z, 1.0])
         };
-        let r2 =  Vector::new([vector.x, vector.y, vector.z, 1.0]) * rotation_matrix;
+        let r2 = Vector::new([vector.x, vector.y, vector.z, 1.0]) * rotation_matrix;
 
         assert_eq!(r1, r2);
     }
