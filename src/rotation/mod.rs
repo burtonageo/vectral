@@ -9,7 +9,9 @@ use crate::{
 };
 
 pub mod angle;
-pub mod quaternion;
+pub mod quaternion {
+    pub use crate::quaternion::*;
+}
 
 pub trait Rotation<const DIM: usize> {
     type Scalar;
