@@ -3225,7 +3225,7 @@ unsafe impl<T: bytemuck::Pod, const ROWS: usize, const COLS: usize> bytemuck::Po
 }
 
 #[cfg(feature = "matrixcompare")]
-impl<T: Copy, const ROWS: usize, const COLS: usize> matrixcompare_core::Matrix<T>
+impl<T: Clone, const ROWS: usize, const COLS: usize> matrixcompare_core::Matrix<T>
     for Matrix<T, ROWS, COLS>
 {
     #[inline]
@@ -3245,12 +3245,12 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> matrixcompare_core::Matrix<T
 }
 
 #[cfg(feature = "matrixcompare")]
-impl<T: Copy, const ROWS: usize, const COLS: usize> matrixcompare_core::DenseAccess<T>
+impl<T: Clone, const ROWS: usize, const COLS: usize> matrixcompare_core::DenseAccess<T>
     for Matrix<T, ROWS, COLS>
 {
     #[inline]
     fn fetch_single(&self, row: usize, col: usize) -> T {
-        self[row][col]
+        (&self[row][col]).clone()
     }
 }
 
@@ -3258,7 +3258,7 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> matrixcompare_core::DenseAcc
 impl<T: approx::AbsDiffEq, const ROWS: usize, const COLS: usize> approx::AbsDiffEq
     for Matrix<T, ROWS, COLS>
 where
-    T::Epsilon: Copy,
+    T::Epsilon: Clone,
 {
     type Epsilon = T::Epsilon;
 
@@ -3272,7 +3272,7 @@ where
         self.as_slice()
             .iter()
             .zip(other.as_slice())
-            .all(|(x, y)| x.abs_diff_eq(y, epsilon))
+            .all(|(x, y)| x.abs_diff_eq(y, epsilon.clone()))
     }
 }
 
@@ -3280,7 +3280,7 @@ where
 impl<T: approx::RelativeEq, const ROWS: usize, const COLS: usize> approx::RelativeEq
     for Matrix<T, ROWS, COLS>
 where
-    T::Epsilon: Copy,
+    T::Epsilon: Clone,
 {
     #[inline]
     fn default_max_relative() -> Self::Epsilon {
@@ -3297,7 +3297,7 @@ where
         self.as_slice()
             .iter()
             .zip(other.as_slice())
-            .all(|(x, y)| x.relative_eq(y, epsilon, max_relative))
+            .all(|(x, y)| x.relative_eq(y, epsilon.clone(), max_relative.clone()))
     }
 }
 
@@ -3317,7 +3317,7 @@ where
         self.as_slice()
             .iter()
             .zip(other.as_slice())
-            .all(|(x, y)| x.ulps_eq(y, epsilon, max_ulps))
+            .all(|(x, y)| x.ulps_eq(y, epsilon.clone(), max_ulps.clone()))
     }
 }
 

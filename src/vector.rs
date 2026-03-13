@@ -1280,7 +1280,7 @@ unsafe impl<T: bytemuck::Pod, const N: usize> bytemuck::Pod for Vector<T, N> {}
 #[cfg(feature = "approx")]
 impl<T: approx::AbsDiffEq, const N: usize> approx::AbsDiffEq for Vector<T, N>
 where
-    T::Epsilon: Copy,
+    T::Epsilon: Clone,
 {
     type Epsilon = T::Epsilon;
 
@@ -1293,14 +1293,14 @@ where
     fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
         self.iter()
             .zip(other.iter())
-            .all(|(x, y)| x.abs_diff_eq(y, epsilon))
+            .all(|(x, y)| x.abs_diff_eq(y, epsilon.clone()))
     }
 }
 
 #[cfg(feature = "approx")]
 impl<T: approx::RelativeEq, const N: usize> approx::RelativeEq for Vector<T, N>
 where
-    T::Epsilon: Copy,
+    T::Epsilon: Clone,
 {
     #[inline]
     fn default_max_relative() -> Self::Epsilon {
@@ -1316,14 +1316,14 @@ where
     ) -> bool {
         self.iter()
             .zip(other.iter())
-            .all(|(x, y)| x.relative_eq(y, epsilon, max_relative))
+            .all(|(x, y)| x.relative_eq(y, epsilon.clone(), max_relative.clone()))
     }
 }
 
 #[cfg(feature = "approx")]
 impl<T: approx::UlpsEq, const N: usize> approx::UlpsEq for Vector<T, N>
 where
-    T::Epsilon: Copy,
+    T::Epsilon: Clone,
 {
     #[inline]
     fn default_max_ulps() -> u32 {
@@ -1334,7 +1334,7 @@ where
     fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
         self.iter()
             .zip(other.iter())
-            .all(|(x, y)| x.ulps_eq(y, epsilon, max_ulps))
+            .all(|(x, y)| x.ulps_eq(y, epsilon.clone(), max_ulps))
     }
 }
 

@@ -661,7 +661,7 @@ unsafe impl<T: bytemuck::Pod> bytemuck::Pod for Quaternion<T> {}
 #[cfg(feature = "approx")]
 impl<T: approx::AbsDiffEq> approx::AbsDiffEq for Quaternion<T>
 where
-    T::Epsilon: Copy,
+    T::Epsilon: Clone,
 {
     type Epsilon = T::Epsilon;
 
@@ -672,14 +672,14 @@ where
 
     #[inline]
     fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
-        self.v.abs_diff_eq(&other.v, epsilon) && self.w.abs_diff_eq(&other.w, epsilon)
+        self.v.abs_diff_eq(&other.v, epsilon.clone()) && self.w.abs_diff_eq(&other.w, epsilon)
     }
 }
 
 #[cfg(feature = "approx")]
 impl<T: approx::RelativeEq> approx::RelativeEq for Quaternion<T>
 where
-    T::Epsilon: Copy,
+    T::Epsilon: Clone,
 {
     #[inline]
     fn default_max_relative() -> Self::Epsilon {
@@ -693,7 +693,7 @@ where
         epsilon: Self::Epsilon,
         max_relative: Self::Epsilon,
     ) -> bool {
-        self.v.relative_eq(&other.v, epsilon, max_relative)
+        self.v.relative_eq(&other.v, epsilon.clone(), max_relative.clone())
             && self.w.relative_eq(&other.w, epsilon, max_relative)
     }
 }
@@ -701,7 +701,7 @@ where
 #[cfg(feature = "approx")]
 impl<T: approx::UlpsEq> approx::UlpsEq for Quaternion<T>
 where
-    T::Epsilon: Copy,
+    T::Epsilon: Clone,
 {
     #[inline]
     fn default_max_ulps() -> u32 {
@@ -710,7 +710,7 @@ where
 
     #[inline]
     fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
-        self.v.ulps_eq(&other.v, epsilon, max_ulps) && self.w.ulps_eq(&other.w, epsilon, max_ulps)
+        self.v.ulps_eq(&other.v, epsilon.clone(), max_ulps) && self.w.ulps_eq(&other.w, epsilon, max_ulps)
     }
 }
 
