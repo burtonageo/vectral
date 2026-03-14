@@ -293,12 +293,6 @@ pub const fn flatten<T, const N0: usize, const N1: usize>(array: [[T; N0]; N1]) 
 
 #[must_use]
 #[inline(always)]
-pub fn cloned<T: Clone, const N: usize>(array: [&'_ T; N]) -> [T; N] {
-    array.map(Clone::clone)
-}
-
-#[must_use]
-#[inline(always)]
 pub const fn copied<T: Copy, const N: usize>(array: [&'_ T; N]) -> [T; N] {
     let mut result = [const { MaybeUninit::uninit() }; _];
 
