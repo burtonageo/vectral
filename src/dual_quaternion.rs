@@ -12,7 +12,11 @@ use crate::{
     rotation::quaternion::Quaternion,
     vector::Vector,
 };
+#[cfg(feature = "serde")]
+use core::marker::PhantomData;
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+#[cfg(feature = "serde")]
+use serde_core::de;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -340,6 +344,195 @@ where
     #[inline]
     fn from(value: Matrix<T, 4, 4>) -> Self {
         DualQuaternion::from_matrix(value)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<T: serde_core::Serialize> serde_core::Serialize for DualQuaternion<T> {
+    fn serialize<S: serde_core::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde_core::ser::SerializeStruct;
+
+        let mut s = serializer.serialize_struct("DualQuaternion", 2)?;
+        s.serialize_field("dual", &self.dual)?;
+        s.serialize_field("real", &self.real)?;
+        s.end()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T: de::Deserialize<'de>> de::Deserialize<'de> for DualQuaternion<T> {
+    #[inline]
+    fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        enum Field {
+            Real,
+            Dual,
+        }
+
+        impl<'de> de::Deserialize<'de> for Field {
+            #[inline]
+            fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+                struct FieldVisitor;
+
+                impl de::Visitor<'_> for FieldVisitor {
+                    type Value = Field;
+
+                    #[inline]
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                        formatter.write_str("`real` or `dual`")
+                    }
+
+                    #[inline]
+                    fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                        match v {
+                            "real" => Ok(Field::Real),
+                            "dual" => Ok(Field::Dual),
+                            _ => return Err(de::Error::unknown_field(v, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        struct Visitor<T>(PhantomData<DualQuaternion<T>>);
+
+        impl<'de, T: de::Deserialize<'de>> de::Visitor<'de> for Visitor<T> {
+            type Value = DualQuaternion<T>;
+            #[inline]
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("struct DualQuaternion")
+            }
+
+            #[inline]
+            fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+                let real = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let dual = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+
+                Ok(DualQuaternion { real, dual })
+            }
+
+            #[inline]
+            fn visit_map<A: de::MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+                let mut fields = [None, None];
+
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Real => {
+                            if fields[0].is_some() {
+                                return Err(de::Error::duplicate_field("real"));
+                            }
+                            fields[0] = Some(map.next_value::<Quaternion<T>>()?);
+                        }
+                        Field::Dual => {
+                            if fields[1].is_some() {
+                                return Err(de::Error::duplicate_field("dual"));
+                            }
+                            fields[1] = Some(map.next_value::<Quaternion<T>>()?);
+                        }
+                    }
+                }
+
+                let [real, dual] = fields;
+                let real = real.ok_or_else(|| de::Error::missing_field("real"))?;
+                let dual = dual.ok_or_else(|| de::Error::missing_field("dual"))?;
+
+                Ok(DualQuaternion { real, dual })
+            }
+        }
+
+        const FIELDS: &'static [&'static str] = &["real", "dual"];
+        deserializer.deserialize_struct("DualQuaternion", FIELDS, Visitor::<T>(PhantomData))
+    }
+}
+
+#[cfg(feature = "mint")]
+impl<T> From<(mint::Quaternion<T>, mint::Quaternion<T>)> for DualQuaternion<T>
+where
+    T: ClosedAdd + ClosedMul + ClosedDiv + Copy + Sqrt + Zero,
+{
+    #[inline]
+    fn from((real, dual): (mint::Quaternion<T>, mint::Quaternion<T>)) -> Self {
+        Self::new(From::from(real), From::from(dual))
+    }
+}
+
+#[cfg(feature = "mint")]
+impl<T> From<[mint::Quaternion<T>; 2]> for DualQuaternion<T>
+where
+    T: ClosedAdd + ClosedMul + ClosedDiv + Copy + Sqrt + Zero,
+{
+    #[inline]
+    fn from([real, dual]: [mint::Quaternion<T>; 2]) -> Self {
+        Self::new(From::from(real), From::from(dual))
+    }
+}
+
+#[cfg(feature = "bytemuck")]
+unsafe impl<T: bytemuck::Pod> bytemuck::Pod for DualQuaternion<T> {}
+
+#[cfg(feature = "bytemuck")]
+unsafe impl<T: bytemuck::Zeroable> bytemuck::Zeroable for DualQuaternion<T> {}
+
+#[cfg(feature = "approx")]
+impl<T: approx::AbsDiffEq> approx::AbsDiffEq for DualQuaternion<T>
+where
+    T::Epsilon: Clone,
+{
+    type Epsilon = T::Epsilon;
+    #[inline]
+    fn default_epsilon() -> Self::Epsilon {
+        T::default_epsilon()
+    }
+
+    #[inline]
+    fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
+        self.real.abs_diff_eq(&other.real, epsilon.clone())
+            && self.dual.abs_diff_eq(&other.dual, epsilon)
+    }
+}
+
+#[cfg(feature = "approx")]
+impl<T: approx::RelativeEq> approx::RelativeEq for DualQuaternion<T>
+where
+    T::Epsilon: Clone,
+{
+    #[inline]
+    fn default_max_relative() -> Self::Epsilon {
+        T::default_max_relative()
+    }
+
+    #[inline]
+    fn relative_eq(
+        &self,
+        other: &Self,
+        epsilon: Self::Epsilon,
+        max_relative: Self::Epsilon,
+    ) -> bool {
+        self.real
+            .relative_eq(&other.real, epsilon.clone(), max_relative.clone())
+            && self.dual.relative_eq(&other.dual, epsilon, max_relative)
+    }
+}
+
+#[cfg(feature = "approx")]
+impl<T: approx::UlpsEq> approx::UlpsEq for DualQuaternion<T>
+where
+    T::Epsilon: Clone,
+{
+    #[inline]
+    fn default_max_ulps() -> u32 {
+        T::default_max_ulps()
+    }
+
+    #[inline]
+    fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
+        self.real.ulps_eq(&other.real, epsilon.clone(), max_ulps)
+            && self.dual.ulps_eq(&other.dual, epsilon, max_ulps)
     }
 }
 
