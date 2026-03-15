@@ -69,7 +69,7 @@ impl<T: Copy + One + Zero + ClosedAdd + ClosedDiv> DualQuaternion<T> {
     }
 }
 
-impl<T: ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + One + Zero>
+impl<T: Copy +  ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + One + Zero>
     DualQuaternion<T>
 {
     #[must_use]
@@ -136,7 +136,7 @@ impl<T> DualQuaternion<T> {
     }
 }
 
-impl<T: ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + Zero + One>
+impl<T: Copy + ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + Zero + One>
     DualQuaternion<T>
 {
     #[must_use]
@@ -145,11 +145,7 @@ impl<T: ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + Zero 
         let t = (self.dual * (T::ONE + T::ONE)) * Quaternion::conjugated(self.real);
         t.v
     }
-}
 
-impl<T: ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + Zero + One>
-    DualQuaternion<T>
-{
     #[must_use]
     #[inline]
     pub fn to_matrix(self) -> Matrix<T, 4, 4> {
@@ -201,7 +197,7 @@ impl<T: ClosedNeg> DualQuaternion<T> {
     }
 }
 
-impl<T: ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + Zero> Mul
+impl<T: Copy + ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + Zero> Mul
     for DualQuaternion<T>
 {
     type Output = DualQuaternion<T>;

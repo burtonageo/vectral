@@ -2492,7 +2492,15 @@ impl<T: Copy + ClosedAdd + ClosedMul + ClosedSub + One + Zero> Matrix4<T> {
 
 impl<T> Matrix4<T>
 where
-    T: ClosedAdd + ClosedMul + CheckedDiv<Output = T> + ClosedSub + Sqrt + One + Zero + ClosedNeg,
+    T: Copy
+        + ClosedAdd
+        + ClosedMul
+        + CheckedDiv<Output = T>
+        + ClosedSub
+        + Sqrt
+        + One
+        + Zero
+        + ClosedNeg,
 {
     #[must_use]
     #[inline]

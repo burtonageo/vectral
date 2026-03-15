@@ -95,7 +95,7 @@ impl<T: Scalar + Abs + ClosedNeg + CopySign> Signed for T {}
 pub trait SignedIntScalar: IntScalar + Signed {}
 impl<T: IntScalar + Signed> SignedIntScalar for T {}
 
-pub trait Sqrt: Copy {
+pub trait Sqrt {
     #[must_use]
     fn sqrt(self) -> Self;
 }
