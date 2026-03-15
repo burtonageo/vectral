@@ -3282,10 +3282,6 @@ macro_rules! impl_matrix_conversions {
 unsafe impl<T: bytemuck::Zeroable, const ROWS: usize, const COLS: usize> bytemuck::Zeroable
     for Matrix<T, ROWS, COLS>
 {
-    #[inline]
-    fn zeroed() -> Self {
-        Matrix::from_fn(|_, _| bytemuck::Zeroable::zeroed())
-    }
 }
 
 #[cfg(feature = "bytemuck")]
