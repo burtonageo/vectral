@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 // Sources:
 // - http://wscg.zcu.cz/wscg2012/short/A29-full.pdf
 // - https://github.com/bobbens/libdq/blob/master/dq.h#L293
