@@ -567,7 +567,7 @@ mod tests {
         let dual_quat: DualQuaternion<f64> = DualQuaternion::from_rotation(rotation_1)
             * DualQuaternion::from_rotation(rotation_2)
             * DualQuaternion::from_position(offset.into());
-        assert_relative_eq!(dual_quat.to_matrix(), matrix, epsilon = 1e-8);
+        assert_relative_eq!(dual_quat.to_matrix(), matrix, epsilon = 1e-13);
 
         let pure_translation = DualQuaternion::from_position(offset.into());
         let trans_matrix = Matrix::translation_3d(offset);
