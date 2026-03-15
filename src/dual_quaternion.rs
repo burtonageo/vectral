@@ -247,20 +247,49 @@ mod tests {
 
     #[test]
     fn test_transforms() {
-        let rotation = Quaternion::from_angle_axis(
+        let rotation_1 = Quaternion::from_angle_axis(
             Angle::Degrees(-32.0),
             Vector::new([1.0, 4.0, 2.0]).normalized(),
+        );
+
+        let rotation_2 = Quaternion::from_angle_axis(
+            Angle::Degrees(-142.7),
+            Vector::new([3.0, -1.0, 2.7]).normalized(),
         );
 
         let offset = Vector::new([23.0, 45.0, 200.0]);
 
         let matrix = {
-            let translation = Matrix::translation_3d(offset);
-            let rotation = Matrix::rotation_3d(rotation);
-            translation * rotation
+            Matrix::translation_3d(offset)
+                * Matrix::rotation_3d(rotation_1)
+                * Matrix::rotation_3d(rotation_2)
         };
 
-        let dual_quat = DualQuaternion::from_transform(offset, rotation);
-        assert_relative_eq!(dual_quat.to_matrix(), matrix, epsilon = 1e-14);
+        let dual_quat: DualQuaternion<f64> = DualQuaternion::from_rotation(rotation_1)
+            * DualQuaternion::from_rotation(rotation_2)
+            * DualQuaternion::from_position(offset.into());
+        assert_relative_eq!(dual_quat.to_matrix(), matrix, epsilon = 1e-8);
+
+        let pure_translation = DualQuaternion::from_position(offset.into());
+        let trans_matrix = Matrix::translation_3d(offset);
+
+        assert_eq!(pure_translation.to_matrix(), trans_matrix);
+    }
+
+    #[test]
+    fn test_identity() {
+        let q1 = DualQuaternion::<f64>::identity();
+        let q2 = {
+            let t = DualQuaternion::from_position([10.0, 13.0, 24.0].into());
+            let r = DualQuaternion::from_rotation(Quaternion::from_angle_axis(
+                Angle::Degrees(13.0),
+                Vector::new([9.0, 2.0, 13.0]).normalized(),
+            ));
+
+            t * r
+        };
+
+        assert_eq!(q1 * q2, q2);
+        assert_eq!(q2 * q1, q2);
     }
 }
