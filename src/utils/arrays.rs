@@ -2,7 +2,7 @@
 
 use crate::{const_assert_larger_or_equal, const_assert_smaller, const_assert_smaller_or_equal};
 use core::{
-    mem::{self, ManuallyDrop, MaybeUninit},
+    mem::{self, ManuallyDrop, MaybeUninit, offset_of},
     ptr, slice,
 };
 
@@ -65,8 +65,8 @@ pub const fn zip<T, U, const N: usize>(lhs: [T; N], rhs: [U; N]) -> [(T, U); N] 
     while i < N {
         unsafe {
             let slot = array_get_unchecked_mut(&mut zipped, i);
-            let lhs = ptr::read(array_get_unchecked(&lhs, i));
-            let rhs = ptr::read(array_get_unchecked(&rhs, i));
+            let lhs = ptr::read(lhs.as_ptr().add(i));
+            let rhs = ptr::read(rhs.as_ptr().add(i));
 
             slot.write((lhs, rhs));
         }
@@ -89,9 +89,13 @@ pub const fn unzip<T, U, const N: usize>(array: [(T, U); N]) -> ([T; N], [U; N])
     let mut i = 0;
     while i < N {
         unsafe {
-            let slot = array_get_unchecked(&array, i);
-            array_get_unchecked_mut(&mut lhs, i).write(ptr::read(&slot.0));
-            array_get_unchecked_mut(&mut rhs, i).write(ptr::read(&slot.1));
+            let slot = array.as_ptr().add(i);
+
+            array_get_unchecked_mut(&mut lhs, i)
+                .write(ptr::read(slot.add(offset_of!((T, U), 0)).cast::<T>()));
+
+            array_get_unchecked_mut(&mut rhs, i)
+                .write(ptr::read(slot.add(offset_of!((T, U), 1)).cast::<U>()));
         }
 
         i += 1;
