@@ -24,7 +24,7 @@ use core::{
     convert::identity,
     mem::{ManuallyDrop, MaybeUninit},
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
-    ptr,
+    ptr, slice,
 };
 #[cfg(feature = "serde")]
 use serde_core::{
@@ -57,7 +57,7 @@ impl<T> Quaternion<T> {
 
     #[must_use]
     #[inline]
-    pub const fn into_vector(self) -> Vector4<T> {
+    pub const fn to_vector(self) -> Vector4<T> {
         let arr = unsafe { ptr::read(&self.v).to_array() };
         let w = unsafe { ptr::read(&self.w) };
 
@@ -67,6 +67,13 @@ impl<T> Quaternion<T> {
 
         let _self = ManuallyDrop::new((self, arr));
         Vector4::new([x, y, z, w])
+    }
+
+    #[deprecated = "use Quaternion::to_vector()"]
+    #[must_use]
+    #[inline]
+    pub const fn into_vector(self) -> Vector4<T> {
+        Self::to_vector(self)
     }
 
     #[must_use]
@@ -87,6 +94,22 @@ impl<T> Quaternion<T> {
             v: vector,
             w: scalar,
         }
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn as_slice(&self) -> &[T] {
+        let len = 4;
+        let ptr = (self as *const Quaternion<_>).cast::<T>();
+        unsafe { slice::from_raw_parts(ptr, len) }
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        let len = 4;
+        let ptr = (self as *mut Quaternion<_>).cast::<T>();
+        unsafe { slice::from_raw_parts_mut(ptr, len) }
     }
 }
 
