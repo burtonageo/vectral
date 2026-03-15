@@ -1968,7 +1968,7 @@ where
                 unsafe {
                     out_matrix
                         .get_unchecked_mut(row, col)
-                        .write((x * y).into_iter().fold(T::ZERO, Add::add));
+                        .write((x * y).to_array().into_iter().fold(T::ZERO, Add::add));
                 }
             }
         }
@@ -1990,7 +1990,7 @@ where
 
         let result = self.data.map(|row| {
             let row = Simd::from_array(row);
-            (row * rhs).into_iter().fold(T::ZERO, Add::add)
+            (row * rhs).to_array().into_iter().fold(T::ZERO, Add::add)
         });
 
         Vector::from(result)
