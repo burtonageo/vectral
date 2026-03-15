@@ -69,7 +69,7 @@ impl<T: Copy + One + Zero + ClosedAdd + ClosedDiv> DualQuaternion<T> {
     }
 }
 
-impl<T: Copy +  ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + One + Zero>
+impl<T: Copy + ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + One + Zero>
     DualQuaternion<T>
 {
     #[must_use]
@@ -347,13 +347,23 @@ where
 
 #[cfg(feature = "serde")]
 impl<T: serde_core::Serialize> serde_core::Serialize for DualQuaternion<T> {
+    #[inline]
     fn serialize<S: serde_core::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        use serde_core::ser::SerializeStruct;
+        if serializer.is_human_readable() {
+            use serde_core::ser::SerializeStruct;
 
-        let mut s = serializer.serialize_struct("DualQuaternion", 2)?;
-        s.serialize_field("dual", &self.dual)?;
-        s.serialize_field("real", &self.real)?;
-        s.end()
+            let mut s = serializer.serialize_struct("DualQuaternion", 2)?;
+            s.serialize_field("dual", &self.dual)?;
+            s.serialize_field("real", &self.real)?;
+            s.end()
+        } else {
+            use serde_core::ser::SerializeTuple;
+
+            let mut s = serializer.serialize_tuple(2)?;
+            s.serialize_element(&self.dual)?;
+            s.serialize_element(&self.real)?;
+            s.end()
+        }
     }
 }
 
@@ -406,14 +416,7 @@ impl<'de, T: de::Deserialize<'de>> de::Deserialize<'de> for DualQuaternion<T> {
 
             #[inline]
             fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
-                let real = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
-                let dual = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-
-                Ok(DualQuaternion { real, dual })
+                collect_with!(seq, &self, [real, dual], Ok(DualQuaternion { real, dual }))
             }
 
             #[inline]

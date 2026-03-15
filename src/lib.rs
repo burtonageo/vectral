@@ -237,6 +237,23 @@ macro_rules! impl_eq_mint {
     };
 }
 
+#[cfg(feature = "serde")]
+macro_rules! collect_with {
+    ($serde_seq:expr, $expected:expr, [ $($elem:ident),* $(,)? ], $then:expr ) => {
+        #[allow(unused)]
+        {
+            let mut i = 0;
+            $(
+                let $elem = $serde_seq.next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(i, $expected))?;
+                i += 1;
+            )*
+
+            $then
+        }
+    };
+}
+
 pub mod dual_quaternion;
 pub mod fields;
 pub mod matrix;

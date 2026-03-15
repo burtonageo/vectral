@@ -727,7 +727,8 @@ where
         epsilon: Self::Epsilon,
         max_relative: Self::Epsilon,
     ) -> bool {
-        self.v.relative_eq(&other.v, epsilon.clone(), max_relative.clone())
+        self.v
+            .relative_eq(&other.v, epsilon.clone(), max_relative.clone())
             && self.w.relative_eq(&other.w, epsilon, max_relative)
     }
 }
@@ -744,7 +745,8 @@ where
 
     #[inline]
     fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
-        self.v.ulps_eq(&other.v, epsilon.clone(), max_ulps) && self.w.ulps_eq(&other.w, epsilon, max_ulps)
+        self.v.ulps_eq(&other.v, epsilon.clone(), max_ulps)
+            && self.w.ulps_eq(&other.w, epsilon, max_ulps)
     }
 }
 
@@ -752,14 +754,18 @@ where
 impl<T: Serialize> Serialize for Quaternion<T> {
     #[inline]
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        use serde_core::ser::SerializeStruct;
+        if serializer.is_human_readable() {
+            use serde_core::ser::SerializeStruct;
 
-        let mut s = serializer.serialize_struct("Quaternion", 4)?;
-        s.serialize_field("x", &self.v.x)?;
-        s.serialize_field("y", &self.v.y)?;
-        s.serialize_field("z", &self.v.z)?;
-        s.serialize_field("w", &self.w)?;
-        s.end()
+            let mut s = serializer.serialize_struct("Quaternion", 4)?;
+            s.serialize_field("x", &self.v.x)?;
+            s.serialize_field("y", &self.v.y)?;
+            s.serialize_field("z", &self.v.z)?;
+            s.serialize_field("w", &self.w)?;
+            s.end()
+        } else {
+            serializer.collect_seq(self.as_slice())
+        }
     }
 }
 
@@ -814,20 +820,7 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Quaternion<T> {
 
             #[inline]
             fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
-                let x = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
-                let y = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let z = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(2, &self))?;
-                let w = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(3, &self))?;
-
-                Ok(Quaternion::new(x, y, z, w))
+                collect_with!(seq, &self, [x, y, z, w], Ok(Quaternion::new(x, y, z, w)))
             }
 
             #[inline]
@@ -889,12 +882,12 @@ mod tests {
         rotation::quaternion::Quaternion,
         vector::Vector3,
     };
+    use approx::assert_relative_eq;
     use core::{
         fmt,
         ops::Neg,
         sync::atomic::{AtomicU32, Ordering},
     };
-    use approx::assert_relative_eq;
 
     #[cfg(any(feature = "std", feature = "libm"))]
     #[test]
@@ -908,7 +901,10 @@ mod tests {
         let q1 = Quaternion::from_angle_axis(Angle::Degrees(22.5), Vector::Z);
         let q2 = Quaternion::from_angle_axis(Angle::Degrees(22.5), Vector::Z);
 
-        assert_relative_eq!(q1 * q2, Quaternion::from_angle_axis(Angle::Degrees(45.0), Vector::Z));
+        assert_relative_eq!(
+            q1 * q2,
+            Quaternion::from_angle_axis(Angle::Degrees(45.0), Vector::Z)
+        );
     }
 
     #[cfg(all(any(feature = "std", feature = "libm"), feature = "nightly"))]
