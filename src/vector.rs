@@ -1503,7 +1503,7 @@ mod tests {
         let x = Vector::<f64, 3>::X;
         let neg_y = -y;
 
-        assert_eq!(Vector::angle_between(y, x), Angle::quarter());
-        assert_eq!(Vector::angle_between(y, neg_y), Angle::half());
+        assert_eq!(Vector::angle_between(y, x), Angle::<f64>::quarter());
+        assert_eq!(Vector::angle_between(y, neg_y), Angle::<f64>::half());
     }
 }
