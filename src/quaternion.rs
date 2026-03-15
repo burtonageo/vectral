@@ -90,6 +90,17 @@ impl<T> Quaternion<T> {
     }
 }
 
+impl<T: Copy> Quaternion<T> {
+    #[must_use]
+    #[inline]
+    pub const fn splat(value: T) -> Self {
+        Self {
+            w: value,
+            v: Vector::splat(value),
+        }
+    }
+}
+
 impl<T> Quaternion<T> {
     #[must_use]
     #[inline]

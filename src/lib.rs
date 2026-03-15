@@ -237,6 +237,7 @@ macro_rules! impl_eq_mint {
     };
 }
 
+pub mod dual_quaternion;
 pub mod fields;
 pub mod matrix;
 pub mod num;
