@@ -361,6 +361,8 @@ impl<T: serde_core::Serialize> serde_core::Serialize for DualQuaternion<T> {
 impl<'de, T: de::Deserialize<'de>> de::Deserialize<'de> for DualQuaternion<T> {
     #[inline]
     fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        use core::fmt;
+
         enum Field {
             Real,
             Dual,
@@ -375,7 +377,7 @@ impl<'de, T: de::Deserialize<'de>> de::Deserialize<'de> for DualQuaternion<T> {
                     type Value = Field;
 
                     #[inline]
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                         formatter.write_str("`real` or `dual`")
                     }
 
@@ -398,7 +400,7 @@ impl<'de, T: de::Deserialize<'de>> de::Deserialize<'de> for DualQuaternion<T> {
         impl<'de, T: de::Deserialize<'de>> de::Visitor<'de> for Visitor<T> {
             type Value = DualQuaternion<T>;
             #[inline]
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("struct DualQuaternion")
             }
 
@@ -444,7 +446,12 @@ impl<'de, T: de::Deserialize<'de>> de::Deserialize<'de> for DualQuaternion<T> {
         }
 
         const FIELDS: &'static [&'static str] = &["real", "dual"];
-        deserializer.deserialize_struct("DualQuaternion", FIELDS, Visitor::<T>(PhantomData))
+
+        if deserializer.is_human_readable() {
+            deserializer.deserialize_struct("DualQuaternion", FIELDS, Visitor::<T>(PhantomData))
+        } else {
+            deserializer.deserialize_seq(Visitor::<T>(PhantomData))
+        }
     }
 }
 
