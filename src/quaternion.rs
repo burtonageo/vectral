@@ -871,6 +871,7 @@ mod tests {
         ops::Neg,
         sync::atomic::{AtomicU32, Ordering},
     };
+    use approx::assert_relative_eq;
 
     #[cfg(any(feature = "std", feature = "libm"))]
     #[test]
@@ -880,6 +881,11 @@ mod tests {
 
         assert_eq!(q1 * q2, q1);
         assert_eq!(q2 * q1, q1);
+
+        let q1 = Quaternion::from_angle_axis(Angle::Degrees(22.5), Vector::Z);
+        let q2 = Quaternion::from_angle_axis(Angle::Degrees(22.5), Vector::Z);
+
+        assert_relative_eq!(q1 * q2, Quaternion::from_angle_axis(Angle::Degrees(45.0), Vector::Z));
     }
 
     #[cfg(all(any(feature = "std", feature = "libm"), feature = "nightly"))]
