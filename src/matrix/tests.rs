@@ -651,3 +651,23 @@ fn test_simd() {
         Matrix::new([[2.0f32, 4.0, 6.0, 8.0], [18.0, 16.0, 14.0, 12.0],])
     )
 }
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_serde() {
+    let matrix = Matrix::new([
+        [1.50, 3.02, 2.0, 9.0],
+        [32.0, 15.0, 8.0, 2.0],
+        [23.2, 8.9, 1.5, 23.4],
+    ]);
+
+    let matrix_string = serde_json::to_string(&matrix).unwrap();
+    let matrix_deserialized = serde_json::from_str::<Matrix<f64, 3, 4>>(&matrix_string).unwrap();
+
+    assert_eq!(&matrix, &matrix_deserialized);
+
+    let matrix_data = rmp_serde::to_vec(&matrix).unwrap();
+    let matrix_deserialized = rmp_serde::from_slice::<Matrix<f64, 3, 4>>(&matrix_data).unwrap();
+
+    assert_eq!(&matrix, &matrix_deserialized);
+}

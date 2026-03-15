@@ -26,6 +26,8 @@ use crate::{
 };
 #[cfg(feature = "nightly")]
 use core::cmp::{Ordering, max_by};
+#[cfg(feature = "serde")]
+use core::marker::PhantomData;
 #[cfg(feature = "simd")]
 use core::simd::{Simd, SimdElement};
 use core::{
@@ -36,6 +38,8 @@ use core::{
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
     ptr, slice,
 };
+#[cfg(feature = "serde")]
+use serde_core::{Deserialize, de};
 
 #[cfg(test)]
 mod tests;
@@ -2696,7 +2700,9 @@ where
                 let lhs_row = shrink_to::<3, _, _>(rot_mat.row(i));
                 let rhs_row = shrink_to::<3, _, _>(rot_next.row(i));
 
-                let n = zip_map(lhs_row, rhs_row, |lhs, rhs| (rhs - lhs).abs()).into_iter().fold(T::ZERO, Add::add);
+                let n = zip_map(lhs_row, rhs_row, |lhs, rhs| (rhs - lhs).abs())
+                    .into_iter()
+                    .fold(T::ZERO, Add::add);
                 norm = max_by(norm, n, |x, y| x.partial_cmp(y).unwrap_or(Ordering::Less));
             }
 
@@ -3409,4 +3415,143 @@ impl_matrix_conversions! {
     col ColumnMatrix3x4 => (3, 4) [x, y, z, w]
     col ColumnMatrix4x2 => (4, 2) [x, y]
     col ColumnMatrix4x3 => (4, 3) [x, y, z]
+}
+
+#[cfg(feature = "serde")]
+impl<T: serde_core::Serialize, const ROWS: usize, const COLS: usize> serde_core::Serialize
+    for Matrix<T, ROWS, COLS>
+{
+    #[inline]
+    fn serialize<S: serde_core::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde_core::ser::SerializeSeq;
+
+        if serializer.is_human_readable() {
+            let mut s = serializer.serialize_seq(Some(ROWS))?;
+
+            for i in 0..ROWS {
+                use serde_core::ser::SerializeSeq;
+
+                let row = &self[i];
+                s.serialize_element(&row[..])?;
+            }
+
+            s.end()
+        } else {
+            let mut s = serializer.serialize_seq(Some(ROWS * COLS))?;
+
+            for item in self.as_slice() {
+                s.serialize_element(item)?;
+            }
+
+            s.end()
+        }
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T: de::Deserialize<'de> + Default, const ROWS: usize, const COLS: usize>
+    de::Deserialize<'de> for Matrix<T, ROWS, COLS>
+{
+    #[inline]
+    fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct MatrixVisitor<T, const ROWS: usize, const COLS: usize>(
+            PhantomData<Matrix<T, ROWS, COLS>>,
+        );
+
+        impl<'de, T: Default + de::Deserialize<'de>, const ROWS: usize, const COLS: usize>
+            de::Visitor<'de> for MatrixVisitor<T, ROWS, COLS>
+        {
+            type Value = Matrix<T, ROWS, COLS>;
+
+            #[inline]
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct Matrix")
+            }
+
+            #[inline]
+            fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+                let mut matrix = Matrix::default();
+
+                struct DataTooShort(usize);
+
+                impl de::Expected for DataTooShort {
+                    #[inline]
+                    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        write!(formatter, "array of length {}", self.0)
+                    }
+                }
+
+                if seq.size_hint().is_some_and(|len| len == ROWS * COLS) {
+                    let matrix_array = matrix.as_mut_slice();
+                    for i in 0..ROWS * COLS {
+                        matrix_array[i] = seq.next_element::<T>()?.ok_or_else(|| {
+                            de::Error::invalid_length(i, &DataTooShort(ROWS * COLS))
+                        })?;
+                    }
+
+                    Ok(matrix)
+                } else {
+                    struct Row<T, const COLS: usize>([T; COLS]);
+
+                    impl<'de, T: Default + Deserialize<'de>, const COLS: usize> de::Deserialize<'de> for Row<T, COLS> {
+                        #[inline]
+                        fn deserialize<D: de::Deserializer<'de>>(
+                            deserializer: D,
+                        ) -> Result<Self, D::Error> {
+                            deserializer.deserialize_seq(RowDeserializer(PhantomData))
+                        }
+                    }
+
+                    struct RowDeserializer<T, const COLS: usize>(PhantomData<[T; COLS]>);
+
+                    impl<'de, T: Default + de::Deserialize<'de>, const COLS: usize> de::Visitor<'de>
+                        for RowDeserializer<T, COLS>
+                    {
+                        type Value = Row<T, COLS>;
+
+                        #[inline]
+                        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                            write!(formatter, "an array of size {}", COLS)
+                        }
+
+                        #[inline]
+                        fn visit_seq<A: de::SeqAccess<'de>>(
+                            self,
+                            mut seq: A,
+                        ) -> Result<Self::Value, A::Error> {
+                            let mut result = core::array::from_fn(|_| Default::default());
+
+                            for i in 0..COLS {
+                                result[i] = seq
+                                    .next_element::<T>()?
+                                    .ok_or_else(|| de::Error::invalid_length(i, &self))?;
+                            }
+
+                            Ok(Row(result))
+                        }
+                    }
+
+                    for row in 0..ROWS {
+                        struct MissingRow<const ROWS: usize>;
+                        impl<const ROWS: usize> de::Expected for MissingRow<ROWS> {
+                            #[inline]
+                            fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                                write!(formatter, "a row of length {}", ROWS)
+                            }
+                        }
+
+                        let row_data = seq
+                            .next_element::<Row<T, COLS>>()?
+                            .ok_or_else(|| de::Error::invalid_length(row, &MissingRow::<ROWS>))?;
+
+                        matrix.set_row(row, row_data.0);
+                    }
+
+                    Ok(matrix)
+                }
+            }
+        }
+
+        deserializer.deserialize_seq(MatrixVisitor::<T, ROWS, COLS>(PhantomData))
+    }
 }

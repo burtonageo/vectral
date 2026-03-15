@@ -40,10 +40,12 @@ approx = ["dep:approx"]
 bytemuck = ["dep:bytemuck"]
 matrixcompare = ["dep:matrixcompare-core"]
 mint = ["dep:mint"]
-serde = ["dep:serde_core"]
+serde = ["dep:serde_core", "mint?/serde"]
 std = []
 
 [dev-dependencies]
 approx = "0.5"
 mint = "0.5.9"
-vectral = { path = ".", features = ["approx", "mint"] }
+vectral = { path = ".", features = ["approx", "mint", "serde"] }
+serde_json = "1.0"
+rmp-serde = "1.3.1"
