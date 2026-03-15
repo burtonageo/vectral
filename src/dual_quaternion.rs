@@ -4,16 +4,21 @@
 
 use crate::{
     matrix::Matrix,
-    num::{ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Zero},
+    num::{
+        ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Zero,
+        checked::{CheckedDiv, CheckedMul},
+    },
+    point::Point,
     rotation::quaternion::Quaternion,
     vector::Vector,
 };
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
+#[repr(C)]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct DualQuaternion<T> {
-    real: Quaternion<T>,
-    dual: Quaternion<T>,
+    pub real: Quaternion<T>,
+    pub dual: Quaternion<T>,
 }
 
 impl<T: Zero + One> DualQuaternion<T> {
@@ -44,20 +49,59 @@ impl<T: ClosedMul + Copy + ClosedAdd + ClosedDiv + Zero + Sqrt> DualQuaternion<T
     }
 }
 
+impl<T: Copy + One + Zero + ClosedAdd + ClosedDiv> DualQuaternion<T> {
+    #[must_use]
+    #[inline]
+    pub fn from_position(point: Point<T, 3>) -> Self {
+        let [x, y, z] = (point / (T::ONE + T::ONE)).to_array();
+        let dual = Quaternion::new(x, y, z, T::ZERO);
+
+        Self {
+            real: Quaternion::identity(),
+            dual,
+        }
+    }
+}
+
 impl<T: ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + One + Zero>
     DualQuaternion<T>
 {
     #[must_use]
     #[inline]
-    pub fn from_transform(offset: Vector<T, 3>, rotation: Quaternion<T>) -> Self {
+    pub fn from_position_rotation(position: Vector<T, 3>, rotation: Quaternion<T>) -> Self {
         let real = rotation.normalized();
 
         let dual = {
-            let q = Quaternion::from_components(offset, T::ZERO) * real;
-            q / (T::ONE + T::ONE)
+            let position = position / (T::ONE + T::ONE);
+            Quaternion::from_components(position, T::ZERO) * real
         };
 
         Self { real, dual }
+    }
+}
+
+impl<T> DualQuaternion<T>
+where
+    T: ClosedAdd
+        + ClosedNeg
+        + Copy
+        + ClosedDiv
+        + ClosedMul
+        + ClosedSub
+        + One
+        + PartialOrd
+        + Zero
+        + Sqrt,
+{
+    #[inline]
+    pub fn from_matrix(matrix: Matrix<T, 4, 4>) -> Self {
+        let translation = {
+            let [x, y, z, ..] = matrix.col(3);
+            Vector::new([x, y, z])
+        };
+
+        let rotation = Quaternion::from_matrix(matrix);
+        Self::from_position_rotation(translation, rotation)
     }
 }
 
@@ -119,6 +163,7 @@ impl<T: ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + Zero 
 }
 
 impl<T: Copy + ClosedAdd + DivAssign + ClosedMul + Zero> DualQuaternion<T> {
+    #[must_use]
     #[inline]
     pub fn normalized(self) -> Self {
         let mag = DualQuaternion::dot(self, self);
@@ -158,7 +203,7 @@ impl<T: ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + Zero>
     fn mul(self, rhs: Self) -> Self::Output {
         Self {
             real: self.real * rhs.real,
-            dual: rhs.dual * self.real + rhs.real * self.dual,
+            dual: (rhs.dual * self.real) + (rhs.real * self.dual),
         }
     }
 }
@@ -212,6 +257,16 @@ impl<T: MulAssign + Copy> MulAssign<T> for DualQuaternion<T> {
     }
 }
 
+impl<T: Copy + CheckedMul> CheckedMul<T> for DualQuaternion<T> {
+    #[inline]
+    fn checked_mul(self, rhs: T) -> Option<Self::Output> {
+        Some(DualQuaternion {
+            real: self.real.checked_mul(rhs)?,
+            dual: self.dual.checked_mul(rhs)?,
+        })
+    }
+}
+
 impl<T: Div + Copy> Div<T> for DualQuaternion<T> {
     type Output = DualQuaternion<T::Output>;
     #[inline]
@@ -231,11 +286,60 @@ impl<T: DivAssign + Copy> DivAssign<T> for DualQuaternion<T> {
     }
 }
 
+impl<T: Copy + CheckedDiv> CheckedDiv<T> for DualQuaternion<T> {
+    #[inline]
+    fn checked_div(self, rhs: T) -> Option<Self::Output> {
+        Some(DualQuaternion {
+            real: self.real.checked_div(rhs)?,
+            dual: self.dual.checked_div(rhs)?,
+        })
+    }
+}
+
 impl<T: SubAssign> SubAssign for DualQuaternion<T> {
     #[inline]
     fn sub_assign(&mut self, rhs: Self) {
         self.real.sub_assign(rhs.real);
         self.dual.sub_assign(rhs.dual);
+    }
+}
+
+impl<T> From<(Quaternion<T>, Quaternion<T>)> for DualQuaternion<T>
+where
+    T: ClosedAdd + ClosedMul + ClosedDiv + Copy + Sqrt + Zero,
+{
+    #[inline]
+    fn from((real, dual): (Quaternion<T>, Quaternion<T>)) -> Self {
+        Self::new(real, dual)
+    }
+}
+
+impl<T> From<[Quaternion<T>; 2]> for DualQuaternion<T>
+where
+    T: ClosedAdd + ClosedMul + ClosedDiv + Copy + Sqrt + Zero,
+{
+    #[inline]
+    fn from([real, dual]: [Quaternion<T>; 2]) -> Self {
+        Self::new(real, dual)
+    }
+}
+
+impl<T> From<Matrix<T, 4, 4>> for DualQuaternion<T>
+where
+    T: ClosedAdd
+        + ClosedNeg
+        + Copy
+        + ClosedDiv
+        + ClosedMul
+        + ClosedSub
+        + One
+        + PartialOrd
+        + Zero
+        + Sqrt,
+{
+    #[inline]
+    fn from(value: Matrix<T, 4, 4>) -> Self {
+        DualQuaternion::from_matrix(value)
     }
 }
 
