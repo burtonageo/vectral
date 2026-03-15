@@ -252,6 +252,13 @@ impl<T, const N: usize> Point<T, N> {
 
     #[must_use]
     #[inline]
+    pub const fn to_vector(self) -> Vector<T, N> {
+        Vector::new(self.to_array())
+    }
+
+    #[deprecated = "use Point::to_vector instead"]
+    #[must_use]
+    #[inline]
     pub const fn into_vector(self) -> Vector<T, N> {
         Vector::new(self.to_array())
     }
