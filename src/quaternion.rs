@@ -9,7 +9,7 @@ use crate::utils::{
         checked::{CheckedAddAssign, CheckedDiv, CheckedMul},
         lerp, rat,
     },
-    shrink_to, sum, zip,
+    shrink_to, zip,
 };
 use crate::{
     matrix::Matrix4,
@@ -250,10 +250,11 @@ where
     #[must_use]
     #[inline]
     pub fn from_matrix(homogeneous_transform: Matrix4<T>) -> Self {
-        let trace = sum(homogeneous_transform
+        let trace = homogeneous_transform
             .rightwards_diagonal()
             .into_iter()
-            .take(3));
+            .take(3)
+            .fold(T::ZERO, Add::add);
 
         let m = &homogeneous_transform;
 

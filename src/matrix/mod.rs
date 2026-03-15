@@ -14,7 +14,7 @@ use crate::{
             checked::{CheckedAddAssign, CheckedDiv},
             n,
         },
-        sum, zip_map,
+        zip_map,
     },
     vector::{Vector, Vector3},
 };
@@ -1836,9 +1836,11 @@ where
                 let y = rhs.col(col);
 
                 unsafe {
-                    out_matrix
-                        .get_unchecked_mut(row, col)
-                        .write(sum(zip_map(x, y, Mul::mul)));
+                    out_matrix.get_unchecked_mut(row, col).write(
+                        zip_map(x, y, Mul::mul)
+                            .into_iter()
+                            .fold(Zero::ZERO, Add::add),
+                    );
                 }
             }
         }
@@ -1966,7 +1968,7 @@ where
                 unsafe {
                     out_matrix
                         .get_unchecked_mut(row, col)
-                        .write(sum((x * y).to_array()));
+                        .write((x * y).into_iter().fold(T::ZERO, Add::add));
                 }
             }
         }
@@ -1988,7 +1990,7 @@ where
 
         let result = self.data.map(|row| {
             let row = Simd::from_array(row);
-            sum((row * rhs).to_array())
+            (row * rhs).into_iter().fold(T::ZERO, Add::add)
         });
 
         Vector::from(result)
@@ -2694,7 +2696,7 @@ where
                 let lhs_row = shrink_to::<3, _, _>(rot_mat.row(i));
                 let rhs_row = shrink_to::<3, _, _>(rot_next.row(i));
 
-                let n = sum(zip_map(lhs_row, rhs_row, |lhs, rhs| (rhs - lhs).abs()));
+                let n = zip_map(lhs_row, rhs_row, |lhs, rhs| (rhs - lhs).abs()).into_iter().fold(T::ZERO, Add::add);
                 norm = max_by(norm, n, |x, y| x.partial_cmp(y).unwrap_or(Ordering::Less));
             }
 
@@ -2725,9 +2727,11 @@ where
     type Output = Vector<T, ROWS>;
     #[inline]
     fn mul(self, rhs: Vector<T, COLS>) -> Self::Output {
-        let result = self
-            .data
-            .map(|row| sum(zip_map(row, rhs.to_array(), Mul::mul)));
+        let result = self.data.map(|row| {
+            zip_map(row, rhs.to_array(), Mul::mul)
+                .into_iter()
+                .fold(T::ZERO, Add::add)
+        });
         Vector::from(result)
     }
 }

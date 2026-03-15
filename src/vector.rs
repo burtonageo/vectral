@@ -14,7 +14,7 @@ use crate::{
             ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
             checked::{CheckedDiv, CheckedMul},
         },
-        shrink_to, sum, zip_map,
+        shrink_to, zip_map,
     },
 };
 #[cfg(feature = "nightly")]
@@ -230,7 +230,7 @@ impl<T, const N: usize> Vector<T, N> {
         T: Mul<U>,
         T::Output: Zero + ClosedAdd,
     {
-        sum(self.into_iter().zip(rhs).map(|(x, y)| x * y))
+        self.into_iter().zip(rhs).map(|(x, y)| x * y).fold(Zero::ZERO, Add::add)
     }
 
     #[must_use]
@@ -608,7 +608,7 @@ where
     #[inline]
     pub fn simd_dot<I: Into<SimdValue<Self>>>(self, rhs: I) -> T {
         let res = (SimdValue(self) * rhs.into()).to_array();
-        sum(res.into_iter())
+        res.into_iter().fold(T::ZERO, Add::add)
     }
 
     #[must_use]
