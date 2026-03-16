@@ -332,7 +332,7 @@ where
 
     #[inline]
     fn transform_homogeneous(self, matrix: Matrix<Self::Scalar, { N + 1 }, { N + 1 }>) -> Self {
-        let vec = self.into_vector().transform_homogeneous(matrix);
+        let vec = self.to_vector().transform_homogeneous(matrix);
         vec.into_point()
     }
 }
