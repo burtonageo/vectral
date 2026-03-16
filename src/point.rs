@@ -634,6 +634,20 @@ impl<T, const N: usize> From<[T; N]> for Point<T, N> {
     }
 }
 
+impl<T: PartialEq<U>, U, const N: usize> PartialEq<[U; N]> for Point<T, N> {
+    #[inline]
+    fn eq(&self, other: &[U; N]) -> bool {
+        PartialEq::eq(self.as_slice(), other)
+    }
+}
+
+impl<T: PartialEq<U>, U, const N: usize> PartialEq<[U]> for Point<T, N> {
+    #[inline]
+    fn eq(&self, other: &[U]) -> bool {
+        PartialEq::eq(self.as_slice(), other)
+    }
+}
+
 #[cfg(feature = "nightly")]
 impl<T, const DIM: usize> Translate<DIM> for Point<T, DIM>
 where

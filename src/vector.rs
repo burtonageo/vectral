@@ -1130,6 +1130,20 @@ impl<T, const N: usize> BorrowMut<[T]> for Vector<T, N> {
     }
 }
 
+impl<T: PartialEq<U>, U, const N: usize> PartialEq<[U; N]> for Vector<T, N> {
+    #[inline]
+    fn eq(&self, other: &[U; N]) -> bool {
+        PartialEq::eq(self.as_slice(), other)
+    }
+}
+
+impl<T: PartialEq<U>, U, const N: usize> PartialEq<[U]> for Vector<T, N> {
+    #[inline]
+    fn eq(&self, other: &[U]) -> bool {
+        PartialEq::eq(self.as_slice(), other)
+    }
+}
+
 impl<T, const N: usize> From<Vector<T, N>> for [T; N] {
     #[inline]
     fn from(value: Vector<T, N>) -> Self {
