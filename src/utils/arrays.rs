@@ -416,12 +416,7 @@ pub(crate) const unsafe fn array_get_unchecked_mut<T>(array: &mut [T], index: us
 pub(crate) const unsafe fn array_assume_init<T, const N: usize>(
     array: [MaybeUninit<T>; N],
 ) -> [T; N] {
-    let mut result = MaybeUninit::<[T; N]>::uninit();
-
-    unsafe {
-        ptr::copy_nonoverlapping::<[T; N]>(array.as_ptr().cast(), result.as_mut_ptr().cast(), 1);
-        MaybeUninit::assume_init(result)
-    }
+    unsafe { mem::transmute_copy(&array) }
 }
 
 #[cfg(test)]
