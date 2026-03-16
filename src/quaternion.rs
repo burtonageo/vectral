@@ -884,7 +884,7 @@ mod tests {
     };
     #[cfg(any(feature = "std", feature = "libm"))]
     use approx::AbsDiffEq;
-    use approx::assert_relative_eq;
+    use approx::{assert_relative_eq, assert_abs_diff_eq};
     use core::{
         fmt,
         ops::Neg,
@@ -894,10 +894,10 @@ mod tests {
     #[cfg(any(feature = "std", feature = "libm"))]
     #[test]
     fn test_quat_multiply() {
-        let epsilon = if cfg!(miri) {
-            <f64 as AbsDiffEq>::default_epsilon()
-        } else {
+        let eps = if cfg!(miri) {
             1e-14
+        } else {
+            <f64 as AbsDiffEq>::default_epsilon()
         };
 
         let q1 = Quaternion::from_components([1.0, 2.0, 4.0], 3.0);
@@ -909,10 +909,10 @@ mod tests {
         let q1 = Quaternion::from_angle_axis(Angle::Degrees(22.5), Vector::Z);
         let q2 = Quaternion::from_angle_axis(Angle::Degrees(22.5), Vector::Z);
 
-        assert_relative_eq!(
+        assert_abs_diff_eq!(
             q1 * q2,
             Quaternion::from_angle_axis(Angle::Degrees(45.0), Vector::Z),
-            epsilon = epsilon,
+            epsilon = eps,
         );
     }
 
