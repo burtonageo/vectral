@@ -69,8 +69,9 @@ impl<T: Copy + One + Zero + ClosedAdd + ClosedDiv> DualQuaternion<T> {
     }
 }
 
-impl<T: Copy + ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + One + Zero>
-    DualQuaternion<T>
+impl<T> DualQuaternion<T>
+where
+    T: Copy + ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + One + Zero,
 {
     #[must_use]
     #[inline]
@@ -136,8 +137,9 @@ impl<T> DualQuaternion<T> {
     }
 }
 
-impl<T: Copy + ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + Zero + One>
-    DualQuaternion<T>
+impl<T> DualQuaternion<T>
+where
+    T: Copy + ClosedAdd + ClosedDiv + ClosedSub + ClosedNeg + ClosedMul + Sqrt + Zero + One,
 {
     #[must_use]
     #[inline]
