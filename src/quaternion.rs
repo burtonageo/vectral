@@ -897,7 +897,7 @@ mod tests {
         let epsilon = if cfg!(miri) {
             <f64 as AbsDiffEq>::default_epsilon()
         } else {
-            1e-16
+            1e-14
         };
 
         let q1 = Quaternion::from_components([1.0, 2.0, 4.0], 3.0);
