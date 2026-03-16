@@ -377,10 +377,17 @@ impl<T, const N: usize> Vector<T, N> {
 
     #[must_use]
     #[inline]
-    pub const fn into_point(self) -> Point<T, N> {
+    pub const fn to_point(self) -> Point<T, N> {
         let point = unsafe { Point::new(ptr::read(&self.data)) };
         let _self = ManuallyDrop::new(self);
         point
+    }
+
+    #[deprecated = "use Vector::to_point()"]
+    #[must_use]
+    #[inline]
+    pub const fn into_point(self) -> Point<T, N> {
+        Vector::to_point(self)
     }
 
     #[inline]
