@@ -888,6 +888,7 @@ impl<'de, T: Deserialize<'de>, const N: usize> Deserialize<'de> for Point<T, N> 
 mod tests {
     use super::*;
     use crate::vector::Vector3;
+    use approx::assert_relative_eq;
 
     #[test]
     fn test_point_direction() {
@@ -896,5 +897,21 @@ mod tests {
 
         assert_eq!(p0.vector_to(p1), Vector3::new([1.0, 0.0, 0.0]));
         assert_eq!(p1.vector_to(p0), Vector3::new([-1.0, 0.0, 0.0]));
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_serde() {
+        let point = Point::new([23.0, 45.0, 128.0, 1421.014, 291.0]);
+
+        let point_string = serde_json::to_string(&point).unwrap();
+        let point_deserialized = serde_json::from_str(&point_string).unwrap();
+
+        assert_relative_eq!(&point, &point_deserialized);
+
+        let point_data = rmp_serde::to_vec(&point).unwrap();
+        let point_deserialized = rmp_serde::from_slice(&point_data).unwrap();
+
+        assert_relative_eq!(&point, &point_deserialized);
     }
 }

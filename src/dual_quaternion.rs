@@ -570,9 +570,12 @@ mod tests {
                 * Matrix::rotation_3d(rotation_2)
         };
 
-        let dual_quat: DualQuaternion<f64> = DualQuaternion::from_rotation(rotation_1)
+        let mut dual_quat: DualQuaternion<f64> = DualQuaternion::from_rotation(rotation_1)
             * DualQuaternion::from_rotation(rotation_2)
             * DualQuaternion::from_position(offset.into());
+        assert_relative_eq!(dual_quat.to_matrix(), matrix, epsilon = 1e-13);
+
+        dual_quat.normalize();
         assert_relative_eq!(dual_quat.to_matrix(), matrix, epsilon = 1e-13);
 
         let pure_translation = DualQuaternion::from_position(offset.into());
@@ -596,5 +599,24 @@ mod tests {
 
         assert_eq!(q1 * q2, q2);
         assert_eq!(q2 * q1, q2);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_serde() {
+        let dual_quaternion = DualQuaternion::new(
+            Quaternion::new(1.0, 4.0, 2.0, 1.0),
+            Quaternion::new(0.0, 40.0, 23.0, 0.0),
+        );
+
+        let dual_quaternion_string = serde_json::to_string(&dual_quaternion).unwrap();
+        let dual_quaternion_deserialized = serde_json::from_str(&dual_quaternion_string).unwrap();
+
+        assert_relative_eq!(&dual_quaternion, &dual_quaternion_deserialized);
+
+        let dual_quaternion_data = rmp_serde::to_vec(&dual_quaternion).unwrap();
+        let dual_quaternion_deserialized = rmp_serde::from_slice(&dual_quaternion_data).unwrap();
+
+        assert_relative_eq!(&dual_quaternion, &dual_quaternion_deserialized);
     }
 }

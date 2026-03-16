@@ -230,7 +230,10 @@ impl<T, const N: usize> Vector<T, N> {
         T: Mul<U>,
         T::Output: Zero + ClosedAdd,
     {
-        self.into_iter().zip(rhs).map(|(x, y)| x * y).fold(Zero::ZERO, Add::add)
+        self.into_iter()
+            .zip(rhs)
+            .map(|(x, y)| x * y)
+            .fold(Zero::ZERO, Add::add)
     }
 
     #[must_use]
@@ -1417,6 +1420,7 @@ impl<'de, T: Deserialize<'de>, const N: usize> Deserialize<'de> for Vector<T, N>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approx::assert_relative_eq;
 
     #[test]
     fn test_swizzle() {
@@ -1505,5 +1509,21 @@ mod tests {
 
         assert_eq!(Vector::angle_between(y, x), Angle::<f64>::quarter());
         assert_eq!(Vector::angle_between(y, neg_y), Angle::<f64>::half());
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_serde() {
+        let vector = Vector::new([23.0, 45.0, 128.0, 1421.014, 291.0]);
+
+        let vector_string = serde_json::to_string(&vector).unwrap();
+        let vector_deserialized = serde_json::from_str(&vector_string).unwrap();
+
+        assert_relative_eq!(&vector, &vector_deserialized);
+
+        let vector_data = rmp_serde::to_vec(&vector).unwrap();
+        let vector_deserialized = rmp_serde::from_slice(&vector_data).unwrap();
+
+        assert_relative_eq!(&vector, &vector_deserialized);
     }
 }

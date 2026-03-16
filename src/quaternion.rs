@@ -1050,4 +1050,20 @@ mod tests {
         approx::assert_relative_eq!(angle, angle_2, epsilon = epsilon);
         approx::assert_relative_eq!(axis, axis_2, epsilon = epsilon);
     }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_serde() {
+        let quaternion = Quaternion::from_angle_axis(Angle::Degrees(42.0), Vector::new([1.0, 3.0, 2.0])).normalized();
+
+        let quaternion_string = serde_json::to_string(&quaternion).unwrap();
+        let quaternion_deserialized = serde_json::from_str(&quaternion_string).unwrap();
+
+        assert_relative_eq!(&quaternion, &quaternion_deserialized);
+
+        let quaternion_data = rmp_serde::to_vec(&quaternion).unwrap();
+        let quaternion_deserialized = rmp_serde::from_slice(&quaternion_data).unwrap();
+
+        assert_relative_eq!(&quaternion, &quaternion_deserialized);
+    }
 }
