@@ -2934,7 +2934,7 @@ macro_rules! impl_matrix_conversion {
         impl<T: approx::AbsDiffEq> approx::AbsDiffEq<mint::$matrix_name<T>>
             for Matrix<T, $rows, $cols>
         where
-            T::Epsilon: Copy,
+            T::Epsilon: Clone,
         {
             type Epsilon = T::Epsilon;
 
@@ -2948,7 +2948,7 @@ macro_rules! impl_matrix_conversion {
                 self.as_slice()
                     .iter()
                     .zip(AsRef::<[T; $rows * $cols]>::as_ref(other))
-                    .all(|(x, y)| x.abs_diff_eq(y, epsilon))
+                    .all(|(x, y)| x.abs_diff_eq(y, epsilon.clone()))
             }
         }
 
@@ -2956,7 +2956,7 @@ macro_rules! impl_matrix_conversion {
         impl<T: approx::AbsDiffEq> approx::AbsDiffEq<Matrix<T, $rows, $cols>>
             for mint::$matrix_name<T>
         where
-            T::Epsilon: Copy,
+            T::Epsilon: Clone,
         {
             type Epsilon = T::Epsilon;
 
@@ -2970,7 +2970,7 @@ macro_rules! impl_matrix_conversion {
                 AsRef::<[T; $rows * $cols]>::as_ref(self)
                     .iter()
                     .zip(other.as_slice())
-                    .all(|(x, y)| x.abs_diff_eq(y, epsilon))
+                    .all(|(x, y)| x.abs_diff_eq(y, epsilon.clone()))
             }
         }
 
@@ -2978,7 +2978,7 @@ macro_rules! impl_matrix_conversion {
         impl<T: approx::RelativeEq> approx::RelativeEq<mint::$matrix_name<T>>
             for Matrix<T, $rows, $cols>
         where
-            T::Epsilon: Copy,
+            T::Epsilon: Clone,
         {
             #[inline]
             fn default_max_relative() -> Self::Epsilon {
@@ -2995,7 +2995,7 @@ macro_rules! impl_matrix_conversion {
                 self.as_slice()
                     .iter()
                     .zip(AsRef::<[T; $rows * $cols]>::as_ref(other))
-                    .all(|(x, y)| x.relative_eq(y, epsilon, max_relative))
+                    .all(|(x, y)| x.relative_eq(y, epsilon.clone(), max_relative.clone()))
             }
         }
 
@@ -3003,7 +3003,7 @@ macro_rules! impl_matrix_conversion {
         impl<T: approx::RelativeEq> approx::RelativeEq<Matrix<T, $rows, $cols>>
             for mint::$matrix_name<T>
         where
-            T::Epsilon: Copy,
+            T::Epsilon: Clone,
         {
             #[inline]
             fn default_max_relative() -> Self::Epsilon {
@@ -3020,7 +3020,7 @@ macro_rules! impl_matrix_conversion {
                 AsRef::<[T; $rows * $cols]>::as_ref(self)
                     .iter()
                     .zip(other.as_slice())
-                    .all(|(x, y)| x.relative_eq(y, epsilon, max_relative))
+                    .all(|(x, y)| x.relative_eq(y, epsilon.clone(), max_relative.clone()))
             }
         }
 
@@ -3028,7 +3028,7 @@ macro_rules! impl_matrix_conversion {
         impl<T: approx::UlpsEq> approx::UlpsEq<mint::$matrix_name<T>>
             for Matrix<T, $rows, $cols>
         where
-            T::Epsilon: Copy,
+            T::Epsilon: Clone,
         {
             #[inline]
             fn default_max_ulps() -> u32 {
@@ -3040,7 +3040,7 @@ macro_rules! impl_matrix_conversion {
                 self.as_slice()
                     .iter()
                     .zip(AsRef::<[T; $rows * $cols]>::as_ref(other))
-                    .all(|(x, y)| x.ulps_eq(y, epsilon, max_ulps))
+                    .all(|(x, y)| x.ulps_eq(y, epsilon.clone(), max_ulps))
             }
         }
 
@@ -3048,7 +3048,7 @@ macro_rules! impl_matrix_conversion {
         impl<T: approx::UlpsEq> approx::UlpsEq<Matrix<T, $rows, $cols>>
             for mint::$matrix_name<T>
         where
-            T::Epsilon: Copy,
+            T::Epsilon: Clone,
         {
             #[inline]
             fn default_max_ulps() -> u32 {
@@ -3060,7 +3060,7 @@ macro_rules! impl_matrix_conversion {
                 AsRef::<[T; $rows * $cols]>::as_ref(self)
                     .iter()
                     .zip(other.as_slice())
-                    .all(|(x, y)| x.ulps_eq(y, epsilon, max_ulps))
+                    .all(|(x, y)| x.ulps_eq(y, epsilon.clone(), max_ulps))
             }
         }
     };
@@ -3118,7 +3118,7 @@ macro_rules! impl_matrix_conversion {
         impl<T: approx::AbsDiffEq> approx::AbsDiffEq<mint::$matrix_name<T>>
             for Matrix<T, $rows, $cols>
         where
-            T::Epsilon: Copy,
+            T::Epsilon: Clone,
         {
             type Epsilon = T::Epsilon;
 
@@ -3132,7 +3132,7 @@ macro_rules! impl_matrix_conversion {
                 let cols: &[[T; $rows]; $cols] = other.as_ref();
                 for i in 0..$cols {
                     for (e1, e2) in cols[i].as_ref().into_iter().zip(self.col_ref(i)) {
-                        if !e1.abs_diff_eq(e2, epsilon) {
+                        if !e1.abs_diff_eq(e2, epsilon.clone()) {
                             return false;
                         }
                     }
@@ -3145,7 +3145,7 @@ macro_rules! impl_matrix_conversion {
         impl<T: approx::AbsDiffEq> approx::AbsDiffEq<Matrix<T, $rows, $cols>>
             for mint::$matrix_name<T>
         where
-            T::Epsilon: Copy,
+            T::Epsilon: Clone,
         {
             type Epsilon = T::Epsilon;
 
@@ -3159,7 +3159,7 @@ macro_rules! impl_matrix_conversion {
                 let cols: &[[T; $rows]; $cols] = self.as_ref();
                 for i in 0..$cols {
                     for (e1, e2) in cols[i].as_ref().into_iter().zip(other.col_ref(i)) {
-                        if !e1.abs_diff_eq(e2, epsilon) {
+                        if !e1.abs_diff_eq(e2, epsilon.clone()) {
                             return false;
                         }
                     }
@@ -3172,7 +3172,7 @@ macro_rules! impl_matrix_conversion {
         impl<T: approx::RelativeEq> approx::RelativeEq<mint::$matrix_name<T>>
             for Matrix<T, $rows, $cols>
         where
-            T::Epsilon: Copy,
+            T::Epsilon: Clone,
         {
             #[inline]
             fn default_max_relative() -> Self::Epsilon {
@@ -3189,7 +3189,7 @@ macro_rules! impl_matrix_conversion {
                 let cols: &[[T; $rows]; $cols] = other.as_ref();
                 for i in 0..$cols {
                     for (e1, e2) in cols[i].as_ref().into_iter().zip(self.col_ref(i)) {
-                        if !e1.relative_eq(e2, epsilon, max_relative) {
+                        if !e1.relative_eq(e2, epsilon.clone(), max_relative.clone()) {
                             return false;
                         }
                     }
@@ -3202,7 +3202,7 @@ macro_rules! impl_matrix_conversion {
         impl<T: approx::RelativeEq> approx::RelativeEq<Matrix<T, $rows, $cols>>
             for mint::$matrix_name<T>
         where
-            T::Epsilon: Copy,
+            T::Epsilon: Clone,
         {
             #[inline]
             fn default_max_relative() -> Self::Epsilon {
@@ -3219,7 +3219,7 @@ macro_rules! impl_matrix_conversion {
                 let cols: &[[T; $rows]; $cols] = self.as_ref();
                 for i in 0..$cols {
                     for (e1, e2) in cols[i].as_ref().into_iter().zip(other.col_ref(i)) {
-                        if !e1.relative_eq(e2, epsilon, max_relative) {
+                        if !e1.relative_eq(e2, epsilon.clone(), max_relative.clone()) {
                             return false;
                         }
                     }
@@ -3232,7 +3232,7 @@ macro_rules! impl_matrix_conversion {
         impl<T: approx::UlpsEq> approx::UlpsEq<mint::$matrix_name<T>>
             for Matrix<T, $rows, $cols>
         where
-            T::Epsilon: Copy,
+            T::Epsilon: Clone,
         {
             #[inline]
             fn default_max_ulps() -> u32 {
@@ -3244,7 +3244,7 @@ macro_rules! impl_matrix_conversion {
                 let cols: &[[T; $rows]; $cols] = other.as_ref();
                 for i in 0..$cols {
                     for (e1, e2) in cols[i].as_ref().into_iter().zip(self.col_ref(i)) {
-                        if !e1.ulps_eq(e2, epsilon, max_ulps) {
+                        if !e1.ulps_eq(e2, epsilon.clone(), max_ulps) {
                             return false;
                         }
                     }
@@ -3257,7 +3257,7 @@ macro_rules! impl_matrix_conversion {
         impl<T: approx::UlpsEq> approx::UlpsEq<Matrix<T, $rows, $cols>>
             for mint::$matrix_name<T>
         where
-            T::Epsilon: Copy,
+            T::Epsilon: Clone,
         {
             #[inline]
             fn default_max_ulps() -> u32 {
@@ -3269,7 +3269,7 @@ macro_rules! impl_matrix_conversion {
                 let cols: &[[T; $rows]; $cols] = self.as_ref();
                 for i in 0..$cols {
                     for (e1, e2) in cols[i].as_ref().into_iter().zip(other.col_ref(i)) {
-                        if !e1.ulps_eq(e2, epsilon, max_ulps) {
+                        if !e1.ulps_eq(e2, epsilon.clone(), max_ulps) {
                             return false;
                         }
                     }
@@ -3385,7 +3385,7 @@ where
 impl<T: approx::UlpsEq, const ROWS: usize, const COLS: usize> approx::UlpsEq
     for Matrix<T, ROWS, COLS>
 where
-    T::Epsilon: Copy,
+    T::Epsilon: Clone,
 {
     #[inline]
     fn default_max_ulps() -> u32 {
