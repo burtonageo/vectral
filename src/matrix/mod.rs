@@ -451,6 +451,11 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// Sets the column of the `Matrix` at `col_idx` to the given `col`,
     /// returning the previous column.
     ///
+    /// # Panics
+    ///
+    /// This method will panic if `col_idx` is larger than the number of columns
+    /// in the matrix.
+    ///
     /// # Examples
     ///
     /// ```
@@ -477,20 +482,52 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             panic!("Column index out of bounds");
         }
 
-        let mut i = 0;
-        while i < COLS {
+        let mut row_idx = 0;
+        while row_idx < ROWS {
             unsafe {
                 mem::swap(
-                    self.get_unchecked_mut(i, col_idx),
-                    col.as_mut_ptr().add(i).as_mut_unchecked(),
+                    self.get_unchecked_mut(row_idx, col_idx),
+                    col.as_mut_ptr().add(row_idx).as_mut_unchecked(),
                 );
             }
-            i += 1;
+            row_idx += 1;
         }
 
         col
     }
 
+    /// Attempts to set the column of the `Matrix` at `col_idx` to the given `col`,
+    /// returning the previous column.
+    ///
+    /// # Errors
+    ///
+    /// This method will return `Err(col)` if `col_idx` is larger than the number of columns
+    /// in the matrix.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let mut matrix = Matrix::new([
+    ///     [1, 2, 3],
+    ///     [4, 5, 6],
+    /// ]);
+    ///
+    /// let old_col = matrix.try_set_col(2, [4, 7]).unwrap();
+    /// assert_eq!(old_col, [3, 6]);
+    /// assert_eq!(matrix, Matrix::new([
+    ///     [1, 2, 4],
+    ///     [4, 5, 7],
+    /// ]));
+    ///
+    /// let err_col = matrix.try_set_col(3, [5, 8]).unwrap_err();
+    /// assert_eq!(err_col, [5, 8]);
+    /// assert_eq!(matrix, Matrix::new([
+    ///     [1, 2, 4],
+    ///     [4, 5, 7],
+    /// ]));
+    /// ```
     #[inline]
     pub const fn try_set_col(
         &mut self,
@@ -501,15 +538,15 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             return Err(col);
         }
 
-        let mut i = 0;
-        while i < COLS {
+        let mut row_idx: usize = 0;
+        while row_idx < ROWS {
             unsafe {
                 mem::swap(
-                    self.get_unchecked_mut(i, col_idx),
-                    col.as_mut_ptr().add(i).as_mut_unchecked(),
+                    self.get_unchecked_mut(row_idx, col_idx),
+                    col.as_mut_ptr().add(row_idx).as_mut_unchecked(),
                 );
             }
-            i += 1;
+            row_idx += 1;
         }
 
         Ok(col)

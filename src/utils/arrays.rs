@@ -92,10 +92,10 @@ pub const fn unzip<T, U, const N: usize>(array: [(T, U); N]) -> ([T; N], [U; N])
             let slot = array.as_ptr().add(i);
 
             array_get_unchecked_mut(&mut lhs, i)
-                .write(ptr::read(slot.add(offset_of!((T, U), 0)).cast::<T>()));
+                .write(ptr::read(slot.byte_add(offset_of!((T, U), 0)).cast::<T>()));
 
             array_get_unchecked_mut(&mut rhs, i)
-                .write(ptr::read(slot.add(offset_of!((T, U), 1)).cast::<U>()));
+                .write(ptr::read(slot.byte_add(offset_of!((T, U), 1)).cast::<U>()));
         }
 
         i += 1;

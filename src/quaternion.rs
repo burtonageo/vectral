@@ -882,6 +882,8 @@ mod tests {
         rotation::quaternion::Quaternion,
         vector::Vector3,
     };
+    #[cfg(any(feature = "std", feature = "libm"))]
+    use approx::AbsDiffEq;
     use approx::assert_relative_eq;
     use core::{
         fmt,
@@ -892,6 +894,12 @@ mod tests {
     #[cfg(any(feature = "std", feature = "libm"))]
     #[test]
     fn test_quat_multiply() {
+        let epsilon = if cfg!(miri) {
+            <f64 as AbsDiffEq>::default_epsilon()
+        } else {
+            1e-16
+        };
+
         let q1 = Quaternion::from_components([1.0, 2.0, 4.0], 3.0);
         let q2 = Quaternion::identity();
 
@@ -903,7 +911,8 @@ mod tests {
 
         assert_relative_eq!(
             q1 * q2,
-            Quaternion::from_angle_axis(Angle::Degrees(45.0), Vector::Z)
+            Quaternion::from_angle_axis(Angle::Degrees(45.0), Vector::Z),
+            epsilon = epsilon,
         );
     }
 
@@ -1054,7 +1063,9 @@ mod tests {
     #[cfg(feature = "serde")]
     #[test]
     fn test_serde() {
-        let quaternion = Quaternion::from_angle_axis(Angle::Degrees(42.0), Vector::new([1.0, 3.0, 2.0])).normalized();
+        let quaternion =
+            Quaternion::from_angle_axis(Angle::Degrees(42.0), Vector::new([1.0, 3.0, 2.0]))
+                .normalized();
 
         let quaternion_string = serde_json::to_string(&quaternion).unwrap();
         let quaternion_deserialized = serde_json::from_str(&quaternion_string).unwrap();

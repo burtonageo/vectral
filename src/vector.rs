@@ -1420,7 +1420,7 @@ impl<'de, T: Deserialize<'de>, const N: usize> Deserialize<'de> for Vector<T, N>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
+    use approx::{AbsDiffEq, assert_abs_diff_eq, assert_relative_eq};
 
     #[test]
     fn test_swizzle() {
@@ -1503,12 +1503,18 @@ mod tests {
 
     #[test]
     fn test_angle_between() {
+        let epsilon = if cfg!(miri) {
+            1e-14
+        } else {
+            <f64 as AbsDiffEq>::default_epsilon()
+        };
+
         let y = Vector::<f64, 3>::Y;
         let x = Vector::<f64, 3>::X;
         let neg_y = -y;
 
-        assert_eq!(Vector::angle_between(y, x), Angle::<f64>::quarter());
-        assert_eq!(Vector::angle_between(y, neg_y), Angle::<f64>::half());
+        assert_abs_diff_eq!(Vector::angle_between(y, x), Angle::<f64>::quarter(), epsilon = epsilon);
+        assert_abs_diff_eq!(Vector::angle_between(y, neg_y), Angle::<f64>::half(), epsilon = epsilon);
     }
 
     #[cfg(feature = "serde")]
