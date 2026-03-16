@@ -226,10 +226,10 @@ fn test_matrix_transform() {
 }
 
 #[cfg(any(feature = "std", feature = "libm"))]
-#[cfg_attr(miri, ignore = "🐌 takes too long by default on miri")]
 #[test]
 fn test_rotation_matrices() {
     let epsilon = if cfg!(miri) { 1e-14 } else { 1e-15 };
+    let step = if cfg!(miri) { Angle::quarter() } else { Angle::Degrees(1.0)};
 
     let mut angle = Angle::<f64>::zero();
     while angle < Angle::full() {
@@ -237,7 +237,7 @@ fn test_rotation_matrices() {
         let matrix_2 = Matrix::axis_rotation_3d(angle, Vector3::X);
 
         approx::assert_relative_eq!(matrix, matrix_2, epsilon = epsilon);
-        angle += Angle::Degrees(1.0);
+        angle += step;
     }
 
     let mut angle = Angle::<f64>::zero();
@@ -246,7 +246,7 @@ fn test_rotation_matrices() {
         let matrix_2 = Matrix::axis_rotation_3d(angle, Vector3::Y);
 
         approx::assert_relative_eq!(matrix, matrix_2, epsilon = epsilon);
-        angle += Angle::Degrees(1.0);
+        angle += step;
     }
 
     let mut angle = Angle::<f64>::zero();
@@ -255,7 +255,7 @@ fn test_rotation_matrices() {
         let matrix_2 = Matrix::axis_rotation_3d(angle, Vector3::Z);
 
         approx::assert_relative_eq!(matrix, matrix_2, epsilon = epsilon);
-        angle += Angle::Degrees(1.0);
+        angle += step;
     }
 
     let test_matrix_quaternion_conversion = |axis: Vector3<f64>| {
@@ -267,7 +267,7 @@ fn test_rotation_matrices() {
 
             approx::assert_relative_eq!(matrix, matrix_2, epsilon = epsilon);
 
-            angle += Angle::Degrees(1.0);
+            angle += step;
         }
     };
 
