@@ -353,15 +353,15 @@ impl<T: serde_core::Serialize> serde_core::Serialize for DualQuaternion<T> {
             use serde_core::ser::SerializeStruct;
 
             let mut s = serializer.serialize_struct("DualQuaternion", 2)?;
-            s.serialize_field("dual", &self.dual)?;
             s.serialize_field("real", &self.real)?;
+            s.serialize_field("dual", &self.dual)?;
             s.end()
         } else {
             use serde_core::ser::SerializeTuple;
 
             let mut s = serializer.serialize_tuple(2)?;
-            s.serialize_element(&self.dual)?;
             s.serialize_element(&self.real)?;
+            s.serialize_element(&self.dual)?;
             s.end()
         }
     }
