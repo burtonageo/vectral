@@ -204,13 +204,13 @@ fn test_matrix_add() {
 fn test_matrix_transform() {
     let origin = Point3::new([1.0, 2.0, 3.0]);
     let offset = Vector3::new([1.0, 1.0, 1.0]);
-    let origin_homogeneous = origin.expand(1.0).into_vector();
+    let origin_homogeneous = origin.expand(1.0).to_vector();
 
     let translation = Matrix::translation(offset);
 
     assert_eq!(
         origin + offset,
-        (translation * origin_homogeneous).shrink().into_point()
+        (translation * origin_homogeneous).shrink().to_point()
     );
     assert_eq!(origin + offset, Point3::new([2.0, 3.0, 4.0]));
 
@@ -303,9 +303,9 @@ fn test_uniform_scaling() {
     let scaling = Matrix::scaling(Vector3::splat(scale_factor));
     assert_eq!(
         Point3::splat(scale_factor),
-        (scaling * point.expand(1.0).into_vector())
+        (scaling * point.expand(1.0).to_vector())
             .shrink()
-            .into_point()
+            .to_point()
     );
 }
 
@@ -613,8 +613,8 @@ fn test_decompose() {
         mat.decompose_homogeneous_transform_3d::<Quaternion<_>>();
     assert_eq!(translation, decomp_translation);
     approx::assert_abs_diff_eq!(
-        rot.into_vector(),
-        decomp_rot.into_vector(),
+        rot.to_vector(),
+        decomp_rot.to_vector(),
         epsilon = epsilon
     );
     approx::assert_abs_diff_eq!(scale, decomp_scale, epsilon = epsilon);
