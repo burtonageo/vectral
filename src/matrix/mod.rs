@@ -2177,7 +2177,7 @@ where
             for col in 0..N {
                 let cofactor_matrix: Matrix<T, N, N> = self.cofactor_shifted(row, col);
                 let cofactor_scalar = cofactor_matrix.det_inner(N - 1);
-                let adjoint_slot = &mut adjoint_mat[row][col];
+                let adjoint_slot = unsafe { adjoint_mat.get_unchecked_mut(row, col) };
 
                 if is_neg {
                     adjoint_slot.write(cofactor_scalar.neg());
