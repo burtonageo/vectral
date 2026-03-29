@@ -6,7 +6,7 @@ use crate::simd::{SimdAdd, SimdDiv, SimdMul, SimdSub};
 use crate::{
     matrix::{Matrix, TransformHomogeneous},
     transform::{Transform, Translate},
-    utils::{concat, shrink},
+    utils::concat,
 };
 use crate::{
     utils::{
@@ -268,7 +268,7 @@ impl<T, const N: usize> Point<T, N> {
     #[inline]
     pub fn shrink(self) -> Point<T, { N - 1 }> {
         Point {
-            data: shrink(self.data),
+            data: shrink_to(self.data),
         }
     }
 

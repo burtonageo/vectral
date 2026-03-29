@@ -110,23 +110,6 @@ pub const fn unzip<T, U, const N: usize>(array: [(T, U); N]) -> ([T; N], [U; N])
     }
 }
 
-/// Shrinks a fixed size array, removing the final element.
-///
-/// Examples
-///
-/// ```
-/// # use vectral::utils::shrink;
-/// let array = [1, 2, 3, 4, 5];
-/// let array = shrink(array);
-/// assert_eq!(array, [1, 2, 3, 4]);
-/// ```
-#[cfg(feature = "nightly")]
-#[must_use]
-#[inline(always)]
-pub fn shrink<T, const N: usize>(array: [T; N]) -> [T; N - 1] {
-    shrink_to(array)
-}
-
 /// Shrinks an array, returning a new array with `NEW_LEN` elements.
 ///
 /// # Examples

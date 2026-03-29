@@ -21,7 +21,7 @@ use crate::{
 use crate::{
     matrix::{Matrix, TransformHomogeneous},
     transform::{Transform, Translate},
-    utils::{concat, shrink, split},
+    utils::{concat, split},
 };
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
@@ -352,7 +352,7 @@ impl<T, const N: usize> Vector<T, N> {
     #[inline]
     pub fn shrink(self) -> Vector<T, { N - 1 }> {
         Vector {
-            data: shrink(self.data),
+            data: shrink_to(self.data),
         }
     }
 
