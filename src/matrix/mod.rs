@@ -2551,12 +2551,7 @@ where
     #[must_use]
     #[inline]
     pub fn look_at_lh(origin: Point3<T>, target: Point3<T>, up: Vector3<T>) -> Self {
-        let mut cam_to_world = {
-            // @TODO: Replace with `Matrix::translation(identity)` when const generics are stable.
-            let mut mat = Matrix::identity();
-            mat.set_col(3, origin.expand_to::<4>(T::ONE).into());
-            mat
-        };
+        let mut cam_to_world = Matrix::translation_3d(origin.to_vector());
 
         let dir = origin.direction_to(target);
         let left = Vector::cross(up.normalized(), dir);
