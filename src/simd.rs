@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
-    rotation::angle::Angle,
-    utils::num::{
+    quaternion::Quaternion, rotation::angle::Angle, utils::num::{
         ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, FloatScalar, IntScalar, Scalar,
         Sqrt, Trig, Zero,
-    },
-    vector::Vector,
+    }, vector::Vector
 };
 use core::{
     borrow::{Borrow, BorrowMut},
@@ -48,6 +46,13 @@ pub trait SimdSub<U = Self>: Copy {
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct SimdValue<T>(pub T);
+
+impl<T> SimdValue<T> {
+    #[inline]
+    pub fn into_inner(self) -> T {
+        self.0
+    }
+}
 
 impl<T> AsRef<T> for SimdValue<T> {
     #[inline]
@@ -233,6 +238,18 @@ where
         let a = self;
         let b = other;
         Angle::Radians(T::acos(a.dot(b) / a.len() * b.len()))
+    }
+}
+
+impl<T> SimdValue<Quaternion<T>>
+where
+    T: SimdElement + ClosedAdd + ClosedMul + Zero + SimdAdd<Output = T>,
+    Simd<T, 3>: ClosedMul,
+{
+    #[must_use]
+    #[inline]
+    pub fn dot<Q: Into<SimdValue<Quaternion<T>>>>(self, rhs: Q) -> T {
+        self.0.simd_dot(rhs.into().0)
     }
 }
 

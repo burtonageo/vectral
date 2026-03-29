@@ -2,22 +2,29 @@
 
 #[cfg(feature = "nightly")]
 use crate::rotation::HomogenousRotation;
-use crate::utils::{
-    array_assume_init, array_get_unchecked,
-    num::{
-        Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
-        checked::{CheckedAddAssign, CheckedDiv, CheckedMul},
-        lerp, rat,
-    },
-    shrink_to, zip,
-};
+#[cfg(feature = "simd")]
+use crate::simd::{SimdAdd, SimdMul};
 use crate::{
     matrix::Matrix4,
     rotation::{Rotation, angle::Angle},
     vector::{Vector, Vector3, Vector4},
 };
+use crate::{
+    simd::SimdSub,
+    utils::{
+        array_assume_init, array_get_unchecked,
+        num::{
+            Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
+            checked::{CheckedAddAssign, CheckedDiv, CheckedMul},
+            lerp, rat,
+        },
+        shrink_to, zip,
+    },
+};
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
+#[cfg(feature = "simd")]
+use core::simd::{Simd, SimdElement};
 use core::{
     array,
     cmp::{self, Ordering},
@@ -133,6 +140,18 @@ impl<T> Quaternion<T> {
         T::Output: Zero + ClosedAdd,
     {
         Vector::dot(self.v, rhs.v) + (self.w * rhs.w)
+    }
+}
+
+impl<T> Quaternion<T>
+where
+    T: SimdElement + ClosedAdd + ClosedMul + Zero + SimdAdd<Output = T>,
+    Simd<T, 3>: ClosedMul,
+{
+    #[must_use]
+    #[inline]
+    pub fn simd_dot(self, rhs: Quaternion<T>) -> T {
+        Vector::simd_dot(self.v, rhs.v).simd_add(self.w * rhs.w)
     }
 }
 
@@ -437,6 +456,27 @@ where
     }
 }
 
+#[cfg(feature = "simd")]
+impl<T> SimdMul for Quaternion<T>
+where
+    T: SimdElement + ClosedNeg + ClosedAdd + Zero + ClosedMul + ClosedSub,
+    Simd<T, 3>: ClosedMul + ClosedAdd + ClosedSub,
+{
+    type Output = Quaternion<T>;
+
+    #[inline]
+    fn simd_mul(self, rhs: Self) -> Self::Output {
+        let v = Vector::simd_cross(self.v, rhs.v)
+            .simd_add(rhs.v.simd_mul(self.w))
+            .simd_add(self.v.simd_mul(rhs.w));
+
+        Quaternion {
+            v,
+            w: self.w * rhs.w - Vector::simd_dot(self.v, rhs.v),
+        }
+    }
+}
+
 impl<T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<Vector<T, 3>>
     for Quaternion<T>
 {
@@ -445,6 +485,20 @@ impl<T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<Vector<T
     fn mul(self, rhs: Vector<T, 3>) -> Self::Output {
         let t = Vector::cross(self.v, rhs) * (T::ONE + T::ONE);
         rhs + (t * self.w) + Vector::cross(self.v, t)
+    }
+}
+
+impl<T: SimdElement + ClosedMul + Zero + ClosedAdd + ClosedNeg + One> SimdMul<Vector<T, 3>>
+    for Quaternion<T>
+where
+    Simd<T, 3>: ClosedMul + ClosedAdd + ClosedSub,
+{
+    type Output = Vector<T, 3>;
+    #[inline]
+    fn simd_mul(self, rhs: Vector<T, 3>) -> Self::Output {
+        let t = Vector::simd_cross(self.v, rhs).simd_mul(T::ONE + T::ONE);
+        rhs.simd_add(t.simd_mul(self.w))
+            .simd_add(Vector::simd_cross(self.v, t))
     }
 }
 
@@ -479,6 +533,20 @@ impl<T: Add> Add<Quaternion<T>> for Quaternion<T> {
     }
 }
 
+impl<T: SimdElement + ClosedAdd> SimdAdd for Quaternion<T>
+where
+    Simd<T, 3>: ClosedAdd,
+{
+    type Output = Quaternion<T>;
+    #[inline]
+    fn simd_add(self, rhs: Self) -> Self::Output {
+        Quaternion {
+            v: self.v.simd_add(rhs.v),
+            w: self.w + rhs.w,
+        }
+    }
+}
+
 impl<T: AddAssign> AddAssign<Quaternion<T>> for Quaternion<T> {
     #[inline]
     fn add_assign(&mut self, rhs: Quaternion<T>) {
@@ -493,6 +561,20 @@ impl<T: Sub> Sub<Quaternion<T>> for Quaternion<T> {
     fn sub(self, rhs: Quaternion<T>) -> Self::Output {
         Quaternion {
             v: self.v - rhs.v,
+            w: self.w - rhs.w,
+        }
+    }
+}
+
+impl<T: SimdElement + ClosedSub> SimdSub for Quaternion<T>
+where
+    Simd<T, 3>: ClosedSub,
+{
+    type Output = Quaternion<T>;
+    #[inline]
+    fn simd_sub(self, rhs: Self) -> Self::Output {
+        Quaternion {
+            v: self.v.simd_sub(rhs.v),
             w: self.w - rhs.w,
         }
     }
@@ -884,7 +966,7 @@ mod tests {
     };
     #[cfg(any(feature = "std", feature = "libm"))]
     use approx::AbsDiffEq;
-    use approx::{assert_relative_eq, assert_abs_diff_eq};
+    use approx::{assert_abs_diff_eq, assert_relative_eq};
     use core::{
         fmt,
         ops::Neg,
