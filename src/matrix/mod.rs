@@ -228,10 +228,10 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// let mut slice = matrix.as_mut_slice();
     /// slice[4] = 9;
     ///
-    /// assert_eq!(matrix, Matrix::new([
+    /// assert_eq!(matrix, [
     ///     [1, 2, 3],
     ///     [4, 9, 6],
-    /// ]));
+    /// ]);
     /// ```
     #[must_use]
     #[inline]
@@ -256,10 +256,10 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// assert_eq!(array, &[1, 2, 3, 4]);
     /// array[2] = 5;
     ///
-    /// assert_eq!(&matrix, &Matrix::new([
+    /// assert_eq!(&matrix, &[
     ///     [1, 2],
     ///     [5, 4],
-    /// ]));
+    /// ]);
     /// ```
     #[cfg(feature = "nightly")]
     #[must_use]
@@ -468,10 +468,10 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// let old_col = matrix.set_col(2, [4, 7]);
     /// assert_eq!(old_col, [3, 6]);
-    /// assert_eq!(matrix, Matrix::new([
+    /// assert_eq!(matrix, [
     ///     [1, 2, 4],
     ///     [4, 5, 7],
-    /// ]));
+    /// ]);
     /// ```
     #[track_caller]
     #[inline]
@@ -516,17 +516,17 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// let old_col = matrix.try_set_col(2, [4, 7]).unwrap();
     /// assert_eq!(old_col, [3, 6]);
-    /// assert_eq!(matrix, Matrix::new([
+    /// assert_eq!(matrix, [
     ///     [1, 2, 4],
     ///     [4, 5, 7],
-    /// ]));
+    /// ]);
     ///
     /// let err_col = matrix.try_set_col(3, [5, 8]).unwrap_err();
     /// assert_eq!(err_col, [5, 8]);
-    /// assert_eq!(matrix, Matrix::new([
+    /// assert_eq!(matrix, [
     ///     [1, 2, 4],
     ///     [4, 5, 7],
-    /// ]));
+    /// ]);
     /// ```
     #[inline]
     pub const fn try_set_col(
@@ -567,10 +567,10 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// let old_row = matrix.set_row(1, [7, 8, 9]);
     /// assert_eq!(old_row, [4, 5, 6]);
-    /// assert_eq!(matrix, Matrix::new([
+    /// assert_eq!(matrix, [
     ///     [1, 2, 3],
     ///     [7, 8, 9],
-    /// ]));
+    /// ]);
     /// ```
     #[track_caller]
     #[inline]
@@ -766,10 +766,10 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// let transformed: Matrix<String, _, _> = matrix.map(|elem| format!("{elem}"));
     ///
-    /// assert_eq!(transformed, Matrix::new([
+    /// assert_eq!(transformed, [
     ///     [1.to_string(), 2.to_string(), 3.to_string(), 4.to_string()],
     ///     [5.to_string(), 6.to_string(), 7.to_string(), 8.to_string()],
-    /// ]));
+    /// ]);
     /// ```
     #[must_use]
     #[inline]
@@ -943,11 +943,11 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///     [11, 12],
     /// ]);
     ///
-    /// assert_eq!(mat1.concat_horizontal(mat2), Matrix::new([
+    /// assert_eq!(mat1.concat_horizontal(mat2), [
     ///     [01, 02, 03, 04],
     ///     [05, 06, 07, 08],
     ///     [09, 10, 11, 12],
-    /// ]));
+    /// ]);
     /// ```
     #[cfg(feature = "nightly")]
     #[must_use]
@@ -1001,14 +1001,14 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///     [11, 12],
     /// ]);
     ///
-    /// assert_eq!(mat1.concat_vertical(mat2), Matrix::new([
+    /// assert_eq!(mat1.concat_vertical(mat2), [
     ///     [01, 02],
     ///     [03, 04],
     ///     [05, 06],
     ///     [07, 08],
     ///     [09, 10],
     ///     [11, 12],
-    /// ]));
+    /// ]);
     /// ```
     #[cfg(feature = "nightly")]
     #[must_use]
@@ -1434,10 +1434,10 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///     [(1, 0), (1, 1)],
     /// ]);
     ///
-    /// assert_eq!(swizzled, Matrix::new([
+    /// assert_eq!(swizzled, [
     ///     [1, 4],
     ///     [5, 6],
-    /// ]));
+    /// ]);
     /// ```
     #[must_use]
     #[inline]
@@ -1716,11 +1716,11 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// let cofactor = matrix.cofactor(1, 2);
     ///
-    /// assert_eq!(cofactor, Matrix::new([
+    /// assert_eq!(cofactor, [
     ///     [01, 02, 04],
     ///     [09, 10, 12],
     ///     [13, 14, 16],
-    /// ]));
+    /// ]);
     /// ```
     #[cfg(feature = "nightly")]
     #[track_caller]
@@ -1810,12 +1810,12 @@ impl<T: Copy + Zero, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS>
     ///
     /// let cofactor = matrix.cofactor_shifted(1, 2);
     ///
-    /// assert_eq!(cofactor, Matrix::new([
+    /// assert_eq!(cofactor, [
     ///     [01, 02, 04, 00],
     ///     [09, 10, 12, 00],
     ///     [13, 14, 16, 00],
     ///     [00, 00, 00, 00],
-    /// ]));
+    /// ]);
     /// ```
     #[track_caller]
     #[must_use]
@@ -1838,12 +1838,12 @@ impl<T: Zero + One, const N: usize> Matrix<T, N, N> {
     /// # use vectral::matrix::Matrix;
     /// let matrix = Matrix::<f64, 4, 4>::identity();
     ///
-    /// assert_eq!(matrix, Matrix::new([
+    /// assert_eq!(matrix, [
     ///     [1.0, 0.0, 0.0, 0.0],
     ///     [0.0, 1.0, 0.0, 0.0],
     ///     [0.0, 0.0, 1.0, 0.0],
     ///     [0.0, 0.0, 0.0, 1.0],
-    /// ]));
+    /// ]);
     /// ```
     #[must_use]
     #[inline]
@@ -2195,6 +2195,15 @@ where
 
         adjoint_mat.transpose_in_place();
         unsafe { Matrix::assume_init(adjoint_mat) }
+    }
+}
+
+impl<T: PartialEq, const ROWS: usize, const COLS: usize> PartialEq<[[T; COLS]; ROWS]>
+    for Matrix<T, ROWS, COLS>
+{
+    #[inline]
+    fn eq(&self, other: &[[T; COLS]; ROWS]) -> bool {
+        PartialEq::eq(&self.data, other)
     }
 }
 
