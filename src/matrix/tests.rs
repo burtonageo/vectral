@@ -229,7 +229,11 @@ fn test_matrix_transform() {
 #[test]
 fn test_rotation_matrices() {
     let epsilon = if cfg!(miri) { 1e-14 } else { 1e-15 };
-    let step = if cfg!(miri) { Angle::quarter() } else { Angle::Degrees(1.0)};
+    let step = if cfg!(miri) {
+        Angle::quarter()
+    } else {
+        Angle::Degrees(1.0)
+    };
 
     let mut angle = Angle::<f64>::zero();
     while angle < Angle::full() {
@@ -612,11 +616,7 @@ fn test_decompose() {
     let (decomp_translation, decomp_scale, decomp_rot, w) =
         mat.decompose_homogeneous_transform_3d::<Quaternion<_>>();
     assert_eq!(translation, decomp_translation);
-    approx::assert_abs_diff_eq!(
-        rot.to_vector(),
-        decomp_rot.to_vector(),
-        epsilon = epsilon
-    );
+    approx::assert_abs_diff_eq!(rot.to_vector(), decomp_rot.to_vector(), epsilon = epsilon);
     approx::assert_abs_diff_eq!(scale, decomp_scale, epsilon = epsilon);
     assert_eq!(w, 1.0);
 }
@@ -633,7 +633,11 @@ fn test_mint_conversions() {
 
     let matrix: Matrix<f64, 2, 3> = mint_matrix.into();
 
-    assert_eq!(matrix, Matrix::new([[1.0, 3.0, 5.0], [2.0, 4.0, 6.0],]));
+    #[rustfmt::skip]
+    assert_eq!(matrix, [
+        [1.0, 3.0, 5.0],
+        [2.0, 4.0, 6.0],
+    ]);
 
     assert_eq!(matrix, mint_matrix);
 }
@@ -646,10 +650,11 @@ fn test_simd() {
     let matrix = SimdValue(matrix);
     let result = matrix * SimdValue(2.0);
 
-    assert_eq!(
-        *result,
-        Matrix::new([[2.0f32, 4.0, 6.0, 8.0], [18.0, 16.0, 14.0, 12.0],])
-    )
+    #[rustfmt::skip]
+    assert_eq!(*result, [
+        [2.0f32, 4.0, 6.0, 8.0],
+        [18.0, 16.0, 14.0, 12.0],
+    ]);
 }
 
 #[cfg(feature = "serde")]
