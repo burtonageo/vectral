@@ -4,6 +4,7 @@ use crate::{const_assert_larger_or_equal, const_assert_smaller, const_assert_sma
 use core::{
     mem::{self, ManuallyDrop, MaybeUninit, offset_of},
     ptr, slice,
+    marker::PhantomData
 };
 
 /// Zips two arrays together and applies the function `f` to each memberwise element, returning a fixed
@@ -65,8 +66,8 @@ pub const fn zip<T, U, const N: usize>(lhs: [T; N], rhs: [U; N]) -> [(T, U); N] 
     while i < N {
         unsafe {
             let slot = array_get_unchecked_mut(&mut zipped, i);
-            let lhs = ptr::read(lhs.as_ptr().add(i));
-            let rhs = ptr::read(rhs.as_ptr().add(i));
+            let lhs = ptr::read(array_get_unchecked(&lhs, i));
+            let rhs = ptr::read(array_get_unchecked(&rhs, i));
 
             slot.write((lhs, rhs));
         }
@@ -78,6 +79,19 @@ pub const fn zip<T, U, const N: usize>(lhs: [T; N], rhs: [U; N]) -> [(T, U); N] 
     unsafe { array_assume_init(zipped) }
 }
 
+/// Unzips an array of tuples, returning a tuple of the unzipped elements.
+///
+/// # Examples
+///
+/// ```
+/// use vectral::utils::arrays::unzip;
+///
+/// let mixed_data = [(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd')];
+///
+/// let (numbers, characters) = unzip(mixed_data);
+/// assert_eq!(&numbers, &[1, 2, 3, 4]);
+/// assert_eq!(&characters, &['a', 'b', 'c', 'd']);
+/// ```
 #[must_use]
 #[inline(always)]
 pub const fn unzip<T, U, const N: usize>(array: [(T, U); N]) -> ([T; N], [U; N]) {
@@ -142,13 +156,30 @@ pub fn shrink_to<const NEW_LEN: usize, T, const OLD_LEN: usize>(
     }
 }
 
+/// Shrinks an array, returning a new array with `NEW_LEN` elements.
+///
+/// # Examples
+///
+/// ```
+/// # use vectral::utils::shrink_to_copy;
+/// let array = [1, 2, 3, 4, 5];
+/// let array: [i32; 2] = shrink_to_copy::<2, _, _>(array);
+/// assert_eq!(array, [1i32, 2]);
+/// ```
 #[must_use]
 #[inline(always)]
 pub const fn shrink_to_copy<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
     array: [T; OLD_LEN],
 ) -> [T; NEW_LEN] {
     const_assert_smaller_or_equal!(NEW_LEN, OLD_LEN);
+    unsafe { shrink_to_copy_impl(array) }
+}
 
+#[must_use]
+#[inline(always)]
+const unsafe fn shrink_to_copy_impl<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
+    array: [T; OLD_LEN],
+) -> [T; NEW_LEN] {
     let mut data = MaybeUninit::<[T; NEW_LEN]>::uninit();
     unsafe {
         ptr::copy_nonoverlapping(array.as_ptr(), data.as_mut_ptr().cast(), NEW_LEN);
@@ -166,10 +197,10 @@ pub const fn shrink_to_copy<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>
 /// # Examples
 ///
 /// ```
-/// # use vectral::utils::expand_to;
+/// # use vectral::utils::expand_to_copy;
 ///
 /// let data = [1, 2, 3, 4];
-/// let expanded = expand_to::<6, _, _>(data, 0);
+/// let expanded = expand_to_copy::<6, _, _>(data, 0);
 ///
 /// assert_eq!(expanded, [1, 2, 3, 4, 0, 0]);
 /// ```
@@ -180,7 +211,14 @@ pub const fn expand_to_copy<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>
     to_append: T,
 ) -> [T; NEW_LEN] {
     const_assert_larger_or_equal!(NEW_LEN, OLD_LEN);
+    unsafe { expand_to_copy_impl(array, to_append) }
+}
 
+#[inline(always)]
+const unsafe fn expand_to_copy_impl<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
+    array: [T; OLD_LEN],
+    to_append: T,
+) -> [T; NEW_LEN] {
     let mut data = [const { MaybeUninit::uninit() }; NEW_LEN];
 
     unsafe {
@@ -197,6 +235,25 @@ pub const fn expand_to_copy<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>
     }
 }
 
+/// Expands the array, inserting `NEW_LEN` - `OLD_LEN` clones of the value `to_append` at
+/// the end of the array.
+///
+/// # Notes
+///
+/// A static assertion is used to ensure that `NEW_LEN` is always bigger than or equal to `OLD_LEN`.
+///
+/// # Examples
+///
+/// ```
+/// # use vectral::utils::expand_to;
+///
+/// let data = ["a", "b", "c", "d"].map(String::from);
+/// let expanded = expand_to::<6, _, _>(data, "f".to_string());
+///
+/// for (elem, expected) in expanded.iter().zip(&["a", "b", "c", "d", "f", "f"]) {
+///     assert_eq!(&elem, expected);
+/// }
+/// ```
 #[must_use]
 #[inline(always)]
 pub fn expand_to<const NEW_LEN: usize, T: Clone, const OLD_LEN: usize>(
@@ -234,6 +291,27 @@ pub fn expand_to<const NEW_LEN: usize, T: Clone, const OLD_LEN: usize>(
     }
 }
 
+/// Returns a new array of size `NEW_LEN`.
+///
+/// If `NEW_LEN` is greater than `OLD_LEN`, the array will be extended by copying `to_append`.
+/// If `NEW_LEN` is less than `OLD_LEN`, the array will be truncated.
+///
+/// # Examples
+///
+/// ```
+/// use vectral::utils::arrays::resize_copy;
+///
+/// let my_data = [1, 2, 3];
+/// 
+/// let shrunk = resize_copy::<1, _, 3>(my_data.clone(), 240);
+/// assert_eq!(shrunk.len(), 1);
+/// assert_eq!(shrunk[0], 1);
+/// 
+/// let extended = resize_copy::<5, _, _>(my_data.clone(), 240);
+/// assert_eq!(extended.len(), 5);
+/// assert_eq!(extended[3], 240);
+/// assert_eq!(extended[4], 240);
+/// ```
 #[must_use]
 #[inline]
 pub const fn resize_copy<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
@@ -241,23 +319,57 @@ pub const fn resize_copy<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
     to_append: T,
 ) -> [T; NEW_LEN] {
     if NEW_LEN >= OLD_LEN {
-        expand_to_copy::<NEW_LEN, T, OLD_LEN>(array, to_append)
+        unsafe { expand_to_copy_impl(array, to_append) }
     } else {
-        shrink_to_copy::<NEW_LEN, T, OLD_LEN>(array)
+        unsafe { shrink_to_copy_impl(array) }
     }
 }
 
+/// Returns a new array of size `NEW_LEN`.
+///
+/// If `NEW_LEN` is greater than `OLD_LEN`, the array will be extended by cloning `to_append`.
+/// If `NEW_LEN` is less than `OLD_LEN`, the array will be truncated.
+///
+/// # Examples
+///
+/// ```
+/// use vectral::utils::arrays::resize;
+///
+/// let my_data = [vec![1], vec![2], vec![3]];
+/// 
+/// let shrunk = resize::<1, _, 3>(my_data.clone(), vec![240]);
+/// assert_eq!(shrunk.len(), 1);
+/// assert_eq!(shrunk[0].as_slice(), &[1]);
+/// 
+/// let extended = resize::<5, _, _>(my_data.clone(), vec![240]);
+/// assert_eq!(extended.len(), 5);
+/// assert_eq!(&extended[3], &[240]);
+/// assert_eq!(&extended[4], &[240]);
+/// ```
 #[must_use]
 #[inline]
 pub fn resize<const NEW_LEN: usize, T: Clone, const OLD_LEN: usize>(
     array: [T; OLD_LEN],
     to_append: T,
 ) -> [T; NEW_LEN] {
-    if NEW_LEN >= OLD_LEN {
-        expand_to::<NEW_LEN, T, OLD_LEN>(array, to_append)
-    } else {
+    fn shrink_to_wrapper<const NEW_LEN: usize, T, const OLD_LEN: usize>(
+        array: [T; OLD_LEN],
+        _: T,
+    ) -> [T; NEW_LEN] {
         shrink_to::<NEW_LEN, T, OLD_LEN>(array)
     }
+
+    struct ChooseFunction<const NEW_LEN: usize, T, const OLD_LEN: usize>(PhantomData<T>);
+
+    impl<const NEW_LEN: usize, const OLD_LEN: usize, T: Clone> ChooseFunction<NEW_LEN, T, OLD_LEN> {
+        const FUNCTION: fn([T; OLD_LEN], T) -> [T; NEW_LEN] = if NEW_LEN >= OLD_LEN {
+            expand_to::<NEW_LEN, T, OLD_LEN>
+        } else {
+            shrink_to_wrapper::<NEW_LEN, T, OLD_LEN>
+        };
+    }
+
+    (ChooseFunction::<NEW_LEN, T, OLD_LEN>::FUNCTION)(array, to_append)
 }
 
 /// Flattens a nested array into a single flat array containing all elements.
@@ -298,6 +410,20 @@ pub const fn copied<T: Copy, const N: usize>(array: [&'_ T; N]) -> [T; N] {
     unsafe { array_assume_init(result) }
 }
 
+/// Fills the given `slice` with copies of `element`.
+///
+/// # Examples
+///
+/// ```
+/// use vectral::utils::arrays::fill_copy;
+/// 
+/// let mut arr = [0u8; 255];
+/// fill_copy(&mut arr, 123);
+///
+/// for item in &arr {
+///     assert_eq!(*item, 123);
+/// }
+/// ```
 #[inline]
 pub const fn fill_copy<T: Copy>(slice: &mut [T], element: T) {
     let mut i = 0;
@@ -309,6 +435,21 @@ pub const fn fill_copy<T: Copy>(slice: &mut [T], element: T) {
     }
 }
 
+/// Concatenates two arrays together, returning a new array containing all elements of `arr_0` followed
+/// by all elements of `arr_1`.
+///
+/// # Examples
+///
+/// ```
+/// use vectral::utils::arrays::concat;
+///
+/// let array_1 = [1.0, 3.0, 5.0];
+/// let array_2 = [7.0, 9.0];
+///
+/// let joined = concat(array_1, array_2);
+///
+/// assert_eq!(&joined, &[1.0, 3.0, 5.0, 7.0, 9.0]);
+/// ```
 #[cfg(feature = "nightly")]
 #[must_use]
 #[inline(always)]
