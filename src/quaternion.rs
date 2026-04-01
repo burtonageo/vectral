@@ -10,7 +10,6 @@ use crate::{
     vector::{Vector, Vector3, Vector4},
 };
 use crate::{
-    simd::SimdSub,
     utils::{
         array_assume_init, array_get_unchecked,
         num::{
@@ -21,6 +20,8 @@ use crate::{
         shrink_to, zip,
     },
 };
+#[cfg(feature =  "simd")]
+use crate::simd::SimdSub;
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
 #[cfg(feature = "simd")]
@@ -143,6 +144,7 @@ impl<T> Quaternion<T> {
     }
 }
 
+#[cfg(feature =  "simd")]
 impl<T> Quaternion<T>
 where
     T: SimdElement + ClosedAdd + ClosedMul + Zero + SimdAdd<Output = T>,
@@ -488,6 +490,7 @@ impl<T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<Vector<T
     }
 }
 
+#[cfg(feature =  "simd")]
 impl<T: SimdElement + ClosedMul + Zero + ClosedAdd + ClosedNeg + One> SimdMul<Vector<T, 3>>
     for Quaternion<T>
 where
@@ -533,6 +536,7 @@ impl<T: Add> Add<Quaternion<T>> for Quaternion<T> {
     }
 }
 
+#[cfg(feature =  "simd")]
 impl<T: SimdElement + ClosedAdd> SimdAdd for Quaternion<T>
 where
     Simd<T, 3>: ClosedAdd,
@@ -566,6 +570,7 @@ impl<T: Sub> Sub<Quaternion<T>> for Quaternion<T> {
     }
 }
 
+#[cfg(feature =  "simd")]
 impl<T: SimdElement + ClosedSub> SimdSub for Quaternion<T>
 where
     Simd<T, 3>: ClosedSub,
