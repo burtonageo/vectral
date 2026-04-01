@@ -645,14 +645,18 @@ fn test_mint_conversions() {
 #[cfg(feature = "simd")]
 #[test]
 fn test_simd() {
-    let matrix = Matrix::new([[1.0f32, 2.0, 3.0, 4.0], [9.0, 8.0, 7.0, 6.0]]);
+    #[rustfmt::skip]
+    let matrix = Matrix::<f32, _, _>::new([
+        [1.0, 2.0, 3.0, 4.0],
+        [9.0, 8.0, 7.0, 6.0],
+    ]);
 
     let matrix = SimdValue(matrix);
     let result = matrix * SimdValue(2.0);
 
     #[rustfmt::skip]
     assert_eq!(*result, [
-        [2.0f32, 4.0, 6.0, 8.0],
+        [2.0, 4.0, 6.0, 8.0],
         [18.0, 16.0, 14.0, 12.0],
     ]);
 }
