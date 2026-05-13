@@ -8,7 +8,7 @@ use core::marker::PhantomData;
 use core::{
     cmp::{self, PartialOrd},
     num::NonZeroUsize,
-    ops::{Add, AddAssign, Neg, Sub, SubAssign},
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 #[cfg(feature = "serde")]
 use serde_core::{
@@ -69,6 +69,48 @@ impl<T: Neg> Neg for Angle<T> {
         match self {
             Self::Degrees(ang) => Angle::Degrees(ang.neg()),
             Self::Radians(ang) => Angle::Radians(ang.neg()),
+        }
+    }
+}
+
+impl<T: Div<U>, U> Div<U> for Angle<T> {
+    type Output = Angle<<T as Div<U>>::Output>;
+    #[inline]
+    fn div(self, rhs: U) -> Self::Output {
+        match self {
+            Self::Degrees(ang) => Angle::Degrees(ang.div(rhs)),
+            Self::Radians(ang) => Angle::Radians(ang.div(rhs)),
+        }
+    }
+}
+
+impl<T: DivAssign<U>, U> DivAssign<U> for Angle<T> {
+    #[inline]
+    fn div_assign(&mut self, rhs: U){
+        match *self {
+            Self::Degrees(ref mut ang) => ang.div_assign(rhs),
+            Self::Radians(ref mut ang) => ang.div_assign(rhs),
+        }
+    }
+}
+
+impl<T: Mul<U>, U> Mul<U> for Angle<T> {
+    type Output = Angle<<T as Mul<U>>::Output>;
+    #[inline]
+    fn mul(self, rhs: U) -> Self::Output {
+        match self {
+            Self::Degrees(ang) => Angle::Degrees(ang.mul(rhs)),
+            Self::Radians(ang) => Angle::Radians(ang.mul(rhs)),
+        }
+    }
+}
+
+impl<T: MulAssign<U>, U> MulAssign<U> for Angle<T> {
+    #[inline]
+    fn mul_assign(&mut self, rhs: U){
+        match *self {
+            Self::Degrees(ref mut ang) => ang.mul_assign(rhs),
+            Self::Radians(ref mut ang) => ang.mul_assign(rhs),
         }
     }
 }
