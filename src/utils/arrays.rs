@@ -2,16 +2,60 @@
 
 use crate::{const_assert_larger_or_equal, const_assert_smaller, const_assert_smaller_or_equal};
 use core::{
+    marker::PhantomData,
     mem::{self, ManuallyDrop, MaybeUninit, offset_of},
     ptr, slice,
-    marker::PhantomData
 };
+
+macro_rules! zip_map_impl {
+    ( $result:ty ; $num:expr ; $func:expr ; $($arrays:ident),* $(,)? ) => {{
+        let mut result = [const { MaybeUninit::<$result>::uninit() }; $num];
+
+        for i in 0..N {
+            unsafe {
+                let slot = result.get_unchecked_mut(i);
+
+                $(
+                    let $arrays = ptr::read(array_get_unchecked(&$arrays, i));
+                )*
+
+                slot.write($func($($arrays),*));
+            }
+        }
+
+        unsafe { array_assume_init(result) }
+    }};
+}
+
+macro_rules! zip_impl {
+    ([($( $generic:ident ),* $(,)?) ; $num:expr], $($arrays:ident),*) => {{
+        let mut zipped = [const { MaybeUninit::<($($generic),*)>::uninit() }; $num];
+
+        let mut i = 0;
+        while i < N {
+            unsafe {
+                let slot = array_get_unchecked_mut(&mut zipped, i);
+
+                $(
+                    let $arrays = ptr::read(array_get_unchecked(&$arrays, i));
+                )*
+
+                slot.write(($( $arrays ),*));
+            }
+            i += 1;
+        }
+
+        let _arrays = ManuallyDrop::new(($($arrays),*));
+
+        unsafe { array_assume_init(zipped) }
+    }};
+}
 
 /// Zips two arrays together and applies the function `f` to each memberwise element, returning a fixed
 /// size array of the results.
 ///
 /// It is preferred to use this function over chaining the [`zip()`] and [`map()`] methods together (e.g.
-/// `zip(array).map(|(x, y)| x + y);`, as it avoids allocating an intermediate array to store the zipped
+/// `zip(array_0, array_1).map(|(x, y)| x + y);`, as it avoids allocating an intermediate array to store the zipped
 /// array.
 ///
 /// [`zip()`]: ./fn.zip.html
@@ -22,20 +66,30 @@ pub fn zip_map<T, U, Res, F, const N: usize>(lhs: [T; N], rhs: [U; N], mut f: F)
 where
     F: FnMut(T, U) -> Res,
 {
-    let (lhs, rhs) = (ManuallyDrop::new(lhs), ManuallyDrop::new(rhs));
-    let mut result = [const { MaybeUninit::<Res>::uninit() }; N];
+    zip_map_impl!( Res ; N ; f ; lhs, rhs, )
+}
 
-    for i in 0..N {
-        unsafe {
-            let slot = result.get_unchecked_mut(i);
-            let lhs = ptr::read(lhs.get_unchecked(i));
-            let rhs = ptr::read(rhs.get_unchecked(i));
-
-            slot.write(f(lhs, rhs));
-        }
-    }
-
-    unsafe { array_assume_init(result) }
+/// Zips three arrays together and applies the function `f` to each memberwise element, returning a fixed
+/// size array of the results.
+///
+/// It is preferred to use this function over chaining the [`zip()`] and [`map()`] methods together (e.g.
+/// `zip3(arr0, arr1, arr2).map(|(x, y, z)| x + y + z);`, as it avoids allocating an intermediate array to store the zipped
+/// array.
+///
+/// [`zip()`]: ./fn.zip.html
+/// [`map()`]: https://doc.rust-lang.org/stable/std/primitive.array.html#method.map
+#[must_use]
+#[inline]
+pub fn zip_map3<T, U, V, Res, F, const N: usize>(
+    a0: [T; N],
+    a1: [U; N],
+    a2: [V; N],
+    mut f: F,
+) -> [Res; N]
+where
+    F: FnMut(T, U, V) -> Res,
+{
+    zip_map_impl!( Res ; N ; f ; a0, a1, a2 )
 }
 
 /// Zips two fixed-size arrays together, returning a fixed size array of tuples.
@@ -46,7 +100,8 @@ where
 /// # Examples
 ///
 /// ```
-/// # use vectral::utils::zip;
+/// use vectral::utils::zip;
+///
 /// let nums = [1, 2, 3];
 /// let chars = ['a', 'b', 'c'];
 ///
@@ -57,26 +112,33 @@ where
 /// ```
 ///
 /// [`zip_map`]: ./fn.zip_map.html
+#[doc(alias = "zip2")]
 #[must_use]
 #[inline(always)]
 pub const fn zip<T, U, const N: usize>(lhs: [T; N], rhs: [U; N]) -> [(T, U); N] {
-    let mut zipped = [const { MaybeUninit::<(T, U)>::uninit() }; N];
+    zip_impl!([(T, U); N], lhs, rhs)
+}
 
-    let mut i = 0;
-    while i < N {
-        unsafe {
-            let slot = array_get_unchecked_mut(&mut zipped, i);
-            let lhs = ptr::read(array_get_unchecked(&lhs, i));
-            let rhs = ptr::read(array_get_unchecked(&rhs, i));
-
-            slot.write((lhs, rhs));
-        }
-        i += 1;
-    }
-
-    let _arrays = (ManuallyDrop::new(lhs), ManuallyDrop::new(rhs));
-
-    unsafe { array_assume_init(zipped) }
+/// Zips three fixed-size arrays together, returning a fixed size array of tuples.
+///
+/// ```
+/// use vectral::utils::zip3;
+///
+/// let nums = [1, 2, 3];
+/// let chars = ['a', 'b', 'c'];
+/// let bools = [true, false, true];
+///
+/// let nums_chars_and_bools: [(i32, char, bool); 3] = zip3(nums, chars, bools);
+/// assert_eq!(nums_chars_and_bools[0], (1, 'a', true));
+/// assert_eq!(nums_chars_and_bools[1], (2, 'b', false));
+/// assert_eq!(nums_chars_and_bools[2], (3, 'c', true));
+/// ```
+///
+/// [`zip_map`]: ./fn.zip_map.html
+#[must_use]
+#[inline(always)]
+pub const fn zip3<T, U, V, const N: usize>(a0: [T; N], a1: [U; N], a2: [V; N]) -> [(T, U, V); N] {
+    zip_impl!([(T, U, V); N], a0, a1, a2)
 }
 
 /// Unzips an array of tuples, returning a tuple of the unzipped elements.
@@ -302,11 +364,11 @@ pub fn expand_to<const NEW_LEN: usize, T: Clone, const OLD_LEN: usize>(
 /// use vectral::utils::arrays::resize_copy;
 ///
 /// let my_data = [1, 2, 3];
-/// 
+///
 /// let shrunk = resize_copy::<1, _, 3>(my_data.clone(), 240);
 /// assert_eq!(shrunk.len(), 1);
 /// assert_eq!(shrunk[0], 1);
-/// 
+///
 /// let extended = resize_copy::<5, _, _>(my_data.clone(), 240);
 /// assert_eq!(extended.len(), 5);
 /// assert_eq!(extended[3], 240);
@@ -336,11 +398,11 @@ pub const fn resize_copy<const NEW_LEN: usize, T: Copy, const OLD_LEN: usize>(
 /// use vectral::utils::arrays::resize;
 ///
 /// let my_data = [vec![1], vec![2], vec![3]];
-/// 
+///
 /// let shrunk = resize::<1, _, 3>(my_data.clone(), vec![240]);
 /// assert_eq!(shrunk.len(), 1);
 /// assert_eq!(shrunk[0].as_slice(), &[1]);
-/// 
+///
 /// let extended = resize::<5, _, _>(my_data.clone(), vec![240]);
 /// assert_eq!(extended.len(), 5);
 /// assert_eq!(&extended[3], &[240]);
@@ -416,7 +478,7 @@ pub const fn copied<T: Copy, const N: usize>(array: [&'_ T; N]) -> [T; N] {
 ///
 /// ```
 /// use vectral::utils::arrays::fill_copy;
-/// 
+///
 /// let mut arr = [0u8; 255];
 /// fill_copy(&mut arr, 123);
 ///
