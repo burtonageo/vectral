@@ -77,6 +77,33 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         Self { data }
     }
 
+    /// Create a new `Matrix` from the given function. The function takes the 2d index
+    /// of the element as `(row, column)`.
+    ///
+    /// The index of the current element in memory can be calculated using the formula
+    /// `col + row * COLS`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let matrix = Matrix::<(usize, usize), 3, 3>::from_fn(|row, col| (row, col));
+    ///
+    /// assert_eq!(&matrix, &[
+    ///     [(0, 0), (0, 1), (0, 2)],
+    ///     [(1, 0), (1, 1), (1, 2)],
+    ///     [(2, 0), (2, 1), (2, 2)],
+    /// ]);
+    ///
+    /// let matrix = Matrix::<usize, 3, 3>::from_fn(|row, col| col + row * 3);
+    ///
+    /// assert_eq!(&matrix, &[
+    ///     [0, 1, 2],
+    ///     [3, 4, 5],
+    ///     [6, 7, 8],
+    /// ]);
+    /// ```
     #[must_use]
     #[inline]
     pub fn from_fn<F: FnMut(usize, usize) -> T>(mut f: F) -> Self {
@@ -103,10 +130,10 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// # Examples
     ///
     /// ```
-    /// # use vectral::matrix::Matrix;
-    /// # use std::mem::MaybeUninit;
-    /// let matrix = Matrix::uninit();
-    /// # let _mat: Matrix<MaybeUninit<i32>, 4, 4> = matrix;
+    /// use vectral::matrix::Matrix;
+    /// use std::mem::MaybeUninit;
+    ///
+    /// let matrix = Matrix::<f64, 4, 4>::uninit();
     /// ```
     #[must_use]
     #[inline]
@@ -119,7 +146,8 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// # Examples
     ///
     /// ```
-    /// # use vectral::matrix::Matrix;
+    /// use vectral::matrix::Matrix;
+    ///
     /// let matrix = Matrix::new([
     ///     [1, 2, 3],
     ///     [4, 5, 6],
