@@ -642,6 +642,37 @@ fn test_mint_conversions() {
     assert_eq!(matrix, mint_matrix);
 }
 
+#[test]
+fn test_swizzle() {
+    use vectral::matrix::Matrix;
+    
+    #[rustfmt::ignore]
+    let matrix = Matrix::new([
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+    ]);
+
+    #[rustfmt::ignore]
+    let fallback = Matrix::new([
+        [99, 98, 97],
+        [95, 94, 93],
+    ]);
+
+    #[rustfmt::ignore]
+    let swizzle_mat = [
+        [(0, 0), (0, 3), (1, 0)],
+        [(1, 0), (1, 10), (30, 50)],
+    ];
+    
+    let swizzled = matrix.swizzle_or(&swizzle_mat, &fallback);
+
+    #[rustfmt::ignore]
+    assert_eq!(swizzled, [
+        [1, 4, 5],
+        [5, 94, 93],
+    ]);
+}
+
 #[cfg(feature = "simd")]
 #[test]
 fn test_simd() {

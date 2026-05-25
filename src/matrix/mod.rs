@@ -1402,6 +1402,41 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         unsafe { Some(Matrix::assume_init(matrix)) }
     }
 
+    /// Swizzle the matrix using the given swizzle matrix.
+    ///
+    /// The returned matrix will have the dimensions of the swizzle matrix, where each
+    /// element will be the element found at the coordinate of the original matrix.
+    ///
+    /// If any of the swizzle indices are out of bounds, the element at the corresponding
+    /// index of the `or` matrix will be used.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let matrix = Matrix::new([
+    ///     [1, 2, 3, 4],
+    ///     [5, 6, 7, 8],
+    /// ]);
+    ///
+    /// let fallback = Matrix::new([
+    ///     [99, 98, 97],
+    ///     [95, 94, 93],
+    /// ]);
+    ///
+    /// let swizzle_mat = [
+    ///     [(0, 0), (0, 3), (1, 0)],
+    ///     [(1, 0), (1, 10), (30, 50)],
+    /// ];
+    /// 
+    /// let swizzled = matrix.swizzle_or(&swizzle_mat, &fallback);
+    ///
+    /// assert_eq!(swizzled, [
+    ///     [1, 4, 5],
+    ///     [5, 94, 93],
+    /// ]);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn swizzle_or<const SWIZZ_ROWS: usize, const SWIZZ_COLS: usize>(
@@ -1422,7 +1457,7 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
 
                 unsafe {
                     let elem = if swizzle_row_idx >= ROWS || swizzle_col_idx >= COLS {
-                        *or.get_unchecked(swizzle_row_idx, swizzle_col_idx)
+                        *or.get_unchecked(row, col)
                     } else {
                         *self.get_unchecked(swizzle_row_idx, swizzle_col_idx)
                     };
