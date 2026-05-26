@@ -1367,6 +1367,41 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         unsafe { array_assume_init(row) }
     }
 
+    /// Swizzle the matrix using the given swizzle matrix.
+    ///
+    /// The returned matrix will have the dimensions of the swizzle matrix, where each
+    /// element will be the element found at the coordinate of the original matrix.
+    ///
+    /// If any of the swizzle indices are out of bounds, `None` will be returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let matrix = Matrix::new([
+    ///     [0, 1, 2],
+    ///     [3, 4, 5],
+    ///     [6, 7, 8],
+    /// ]);
+    ///
+    /// let swizzled = matrix.try_swizzle(&[
+    ///     [(0, 0), (0, 2)],
+    ///     [(2, 0), (2, 2)],
+    /// ]);
+    ///
+    /// assert_eq!(swizzled.unwrap(), [
+    ///     [0, 2],
+    ///     [6, 8],
+    /// ]);
+    ///
+    /// let swizzled = matrix.try_swizzle(&[
+    ///     [(0, 0), (0, 4)],
+    ///     [(2, 0), (2, 2)],
+    /// ]);
+    ///
+    /// assert_eq!(swizzled, None);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn try_swizzle<const ROWS2: usize, const COLS2: usize>(
@@ -1429,7 +1464,7 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///     [(0, 0), (0, 3), (1, 0)],
     ///     [(1, 0), (1, 10), (30, 50)],
     /// ];
-    /// 
+    ///
     /// let swizzled = matrix.swizzle_or(&swizzle_mat, &fallback);
     ///
     /// assert_eq!(swizzled, [
@@ -1486,7 +1521,8 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// # Examples
     ///
     /// ```
-    /// # use vectral::matrix::Matrix;
+    /// use vectral::matrix::Matrix;
+    ///
     /// let matrix = Matrix::new([
     ///     [1, 2, 3, 4],
     ///     [5, 6, 7, 8],
@@ -3096,8 +3132,7 @@ macro_rules! impl_matrix_conversion {
                 epsilon: Self::Epsilon,
                 max_relative: Self::Epsilon,
             ) -> bool {
-                self.as_slice()
-                    .iter()
+                self.elems()
                     .zip(AsRef::<[T; $rows * $cols]>::as_ref(other))
                     .all(|(x, y)| x.relative_eq(y, epsilon.clone(), max_relative.clone()))
             }
@@ -3123,7 +3158,7 @@ macro_rules! impl_matrix_conversion {
             ) -> bool {
                 AsRef::<[T; $rows * $cols]>::as_ref(self)
                     .iter()
-                    .zip(other.as_slice())
+                    .zip(other.elems())
                     .all(|(x, y)| x.relative_eq(y, epsilon.clone(), max_relative.clone()))
             }
         }
@@ -3141,8 +3176,7 @@ macro_rules! impl_matrix_conversion {
 
             #[inline]
             fn ulps_eq(&self, other: &mint::$matrix_name<T>, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
-                self.as_slice()
-                    .iter()
+                self.elems()
                     .zip(AsRef::<[T; $rows * $cols]>::as_ref(other))
                     .all(|(x, y)| x.ulps_eq(y, epsilon.clone(), max_ulps))
             }
@@ -3163,7 +3197,7 @@ macro_rules! impl_matrix_conversion {
             fn ulps_eq(&self, other: &Matrix<T, $rows, $cols>, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
                 AsRef::<[T; $rows * $cols]>::as_ref(self)
                     .iter()
-                    .zip(other.as_slice())
+                    .zip(other.elems())
                     .all(|(x, y)| x.ulps_eq(y, epsilon.clone(), max_ulps))
             }
         }
@@ -3453,9 +3487,8 @@ where
 
     #[inline]
     fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
-        self.as_slice()
-            .iter()
-            .zip(other.as_slice())
+        self.elems()
+            .zip(other.elems())
             .all(|(x, y)| x.abs_diff_eq(y, epsilon.clone()))
     }
 }
@@ -3478,9 +3511,8 @@ where
         epsilon: Self::Epsilon,
         max_relative: Self::Epsilon,
     ) -> bool {
-        self.as_slice()
-            .iter()
-            .zip(other.as_slice())
+        self.elems()
+            .zip(other.elems())
             .all(|(x, y)| x.relative_eq(y, epsilon.clone(), max_relative.clone()))
     }
 }
@@ -3498,9 +3530,8 @@ where
 
     #[inline]
     fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
-        self.as_slice()
-            .iter()
-            .zip(other.as_slice())
+        self.elems()
+            .zip(other.elems())
             .all(|(x, y)| x.ulps_eq(y, epsilon.clone(), max_ulps.clone()))
     }
 }
@@ -3551,7 +3582,7 @@ impl<T: serde_core::Serialize, const ROWS: usize, const COLS: usize> serde_core:
         } else {
             let mut s = serializer.serialize_seq(Some(ROWS * COLS))?;
 
-            for item in self.as_slice() {
+            for item in self.elems() {
                 s.serialize_element(item)?;
             }
 
