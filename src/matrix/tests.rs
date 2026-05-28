@@ -612,8 +612,7 @@ fn test_decompose() {
 
     let mat = trans_mat * scale_mat * rot_mat;
 
-    let (decomp_translation, decomp_scale, decomp_rot, w) =
-        mat.decompose_homogeneous_transform();
+    let (decomp_translation, decomp_scale, decomp_rot, w) = mat.decompose_homogeneous_transform();
     let decomp_rot = Quaternion::from_matrix(decomp_rot);
     assert_eq!(translation, decomp_translation);
     approx::assert_abs_diff_eq!(rot.to_vector(), decomp_rot.to_vector(), epsilon = epsilon);
@@ -645,28 +644,28 @@ fn test_mint_conversions() {
 #[test]
 fn test_swizzle() {
     use vectral::matrix::Matrix;
-    
-    #[rustfmt::ignore]
+
+    #[rustfmt::skip]
     let matrix = Matrix::new([
         [1, 2, 3, 4],
         [5, 6, 7, 8],
     ]);
 
-    #[rustfmt::ignore]
+    #[rustfmt::skip]
     let fallback = Matrix::new([
         [99, 98, 97],
         [95, 94, 93],
     ]);
 
-    #[rustfmt::ignore]
+    #[rustfmt::skip]
     let swizzle_mat = [
         [(0, 0), (0, 3), (1, 0)],
         [(1, 0), (1, 10), (30, 50)],
     ];
-    
+
     let swizzled = matrix.swizzle_or(&swizzle_mat, &fallback);
 
-    #[rustfmt::ignore]
+    #[rustfmt::skip]
     assert_eq!(swizzled, [
         [1, 4, 5],
         [5, 94, 93],
