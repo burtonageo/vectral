@@ -595,7 +595,6 @@ fn test_inverse() {
     approx::assert_relative_eq!(res_2, matrix, epsilon = 1e-14);
 }
 
-#[cfg(feature = "nightly")]
 #[cfg(any(feature = "std", feature = "libm"))]
 #[test]
 fn test_decompose() {
@@ -607,14 +606,15 @@ fn test_decompose() {
     let scale = Vector::new([2.0, 3.0, 4.0]);
     let translation = Vector::new([14.0, 23.0, 196.0]);
 
-    let trans_mat = Matrix::translation(translation);
-    let scale_mat = Matrix::scaling(scale);
+    let trans_mat = Matrix::translation_3d(translation);
+    let scale_mat = Matrix::scaling_3d(scale);
     let rot_mat = Matrix::rotation_3d(rot);
 
     let mat = trans_mat * scale_mat * rot_mat;
 
     let (decomp_translation, decomp_scale, decomp_rot, w) =
-        mat.decompose_homogeneous_transform_3d::<Quaternion<_>>();
+        mat.decompose_homogeneous_transform();
+    let decomp_rot = Quaternion::from_matrix(decomp_rot);
     assert_eq!(translation, decomp_translation);
     approx::assert_abs_diff_eq!(rot.to_vector(), decomp_rot.to_vector(), epsilon = epsilon);
     approx::assert_abs_diff_eq!(scale, decomp_scale, epsilon = epsilon);

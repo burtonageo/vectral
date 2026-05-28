@@ -2,9 +2,13 @@
 
 #[cfg(feature = "simd")]
 use crate::simd::{SimdAdd, SimdMul, SimdSub};
+#[cfg(feature = "nightly")]
+use crate::utils::{flatten, shrink_to_copy};
 use crate::{
+    const_assert_larger_or_equal,
     point::Point3,
     rotation::{angle::Angle, quaternion::Quaternion},
+    utils::shrink_to,
     utils::{
         array_assume_init, array_get_checked, array_get_mut_checked, array_get_unchecked,
         array_get_unchecked_mut,
@@ -18,13 +22,6 @@ use crate::{
     },
     vector::{Vector, Vector3},
 };
-#[cfg(feature = "nightly")]
-use crate::{
-    rotation::HomogenousRotation,
-    utils::{flatten, shrink_to, shrink_to_copy},
-    vector::Vector4,
-};
-#[cfg(feature = "nightly")]
 use core::cmp::{Ordering, max_by};
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
@@ -47,7 +44,7 @@ mod tests;
 /// A row-major matrix of arbitrary dimensions.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd)]
 #[repr(C)]
-pub struct Matrix<T = f32, const ROWS: usize = 4, const COLS: usize = 4> {
+pub struct Matrix<T = f32, const ROWS: usize = 4, const COLS: usize = ROWS> {
     data: [[T; COLS]; ROWS],
 }
 
@@ -2741,7 +2738,7 @@ where
     }
 }
 
-impl<T, const N: usize> Matrix<T, N, N>
+impl<T, const N: usize> Matrix<T, N>
 where
     T: AddAssign
         + SubAssign
@@ -2793,13 +2790,21 @@ where
         Some(self.adjoint() * (T::ONE / det))
     }
 
+    /// Inverts the current matrix.
+    ///
+    /// # Panics
+    ///
+    /// This method will panic if the `Matrix` is not invertible. To check if the `Matrix` is invertible,
+    /// use the [`has_inverse()`] method.
+    ///
+    /// [`has_inverse()`]: ./struct.Matrix.html#method.has_inverse
     #[inline]
     pub fn invert(&mut self) {
         *self = self.inverse();
     }
 }
 
-impl<T> Matrix4<T>
+impl<T, const N: usize> Matrix<T, N>
 where
     T: AddAssign
         + Abs
@@ -2816,19 +2821,22 @@ where
         + Sqrt
         + PartialOrd,
 {
-    /// Decompose a 3d homogeneous transform matrix into a tuple of `(translation, scale, rotation, w)`
-    #[cfg(feature = "nightly")]
+    /// Decompose a homogeneous transform matrix into a tuple of `(translation, scale, rotation, w)`
     #[doc(alias = "polar_decompose")]
     #[must_use]
     #[inline]
-    pub fn decompose_homogeneous_transform_3d<R: HomogenousRotation<3, Scalar = T>>(
-        mut self,
-    ) -> (Vector3<T>, Vector3<T>, R, T) {
+    pub fn decompose_homogeneous_transform(mut self) -> (Vector3<T>, Vector3<T>, Matrix<T, N>, T) {
+        const_assert_larger_or_equal!(N, 2);
+
         let translation = Vector::new(self.col(3)).shrink_to();
-        let w = self[3][3];
+        let w = self[N - 1][N - 1];
 
         // Remove the translation part from the matrix.
-        self.set_col(3, Vector4::unit_n::<3>().to_array());
+        {
+            let mut v = Vector::<T, N>::ZERO;
+            v[N - 1] = T::ONE;
+            self.set_col(3, v.to_array());
+        }
 
         // Polar decompose the matrix.
         let mut count = 0usize;
@@ -2858,7 +2866,7 @@ where
             count += 1;
         }
 
-        let rotation = HomogenousRotation::from_homogeneous(rot_mat);
+        let rotation = rot_mat;
         let scale =
             Vector::new((self * rot_mat.transpose()).rightwards_diagonal()).shrink_to::<3>();
 

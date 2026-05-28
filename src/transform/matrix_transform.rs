@@ -11,9 +11,8 @@ use crate::{
     transform::{Transform, Translate},
     vector::{Vector, Vector3},
 };
-#[cfg(feature = "nightly")]
-use core::ops::Neg;
 use core::{
+    ops::Neg,
     mem,
     ops::{AddAssign, DivAssign, SubAssign},
 };
@@ -237,7 +236,8 @@ where
         Self::Rotation,
     ) {
         let (translation, scale, rotation, ..) =
-            Matrix::decompose_homogeneous_transform_3d::<Self::Rotation>(self.matrix);
+            Matrix::decompose_homogeneous_transform(self.matrix);
+        let rotation = Quaternion::from_matrix(rotation);
         (translation, scale, rotation)
     }
 
