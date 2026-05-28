@@ -5,13 +5,14 @@ use crate::rotation::angle::Angle;
 #[cfg(feature = "simd")]
 use crate::simd::{SimdMul, SimdValue};
 #[cfg(feature = "nightly")]
-use crate::{matrix::TransformHomogeneous, point::Point3, utils::num::Zero};
+use crate::{matrix::TransformHomogeneous, point::Point3};
 use crate::{
     matrix::{Matrix, Matrix4},
     rotation::quaternion::Quaternion,
+    utils::num::Zero,
     vector::{Vector, Vector3},
 };
-#[cfg(all(any(feature = "std", feature = "libm"), feature = "nightly"))]
+#[cfg(all(any(feature = "std", feature = "libm")))]
 use core::ops::Neg;
 
 #[test]
@@ -537,24 +538,23 @@ fn test_iter() {
     }
 }
 
-#[cfg(feature = "nightly")]
 #[cfg(any(feature = "std", feature = "libm"))]
 #[test]
 fn test_inverse() {
     let translation_v = Vector3::new([1.0, 2.0, 3.0]);
-    let translation_m = Matrix4::translation(translation_v);
+    let translation_m = Matrix4::translation_3d(translation_v);
 
     let inverse_translation_v = translation_v.neg();
-    let inverse_translation_m = Matrix4::translation(inverse_translation_v);
+    let inverse_translation_m = Matrix4::translation_3d(inverse_translation_v);
 
     assert_eq!(translation_m.inverse(), inverse_translation_m);
     assert_eq!(translation_m, inverse_translation_m.inverse());
 
     let scale_v = Vector3::new([4.0, 6.0, 8.0]);
-    let scale_m = Matrix4::scaling(scale_v);
+    let scale_m = Matrix4::scaling_3d(scale_v);
 
     let inverse_scale_v = scale_v.map(|elem| 1.0 / elem);
-    let inverse_scale_m = Matrix4::scaling(inverse_scale_v);
+    let inverse_scale_m = Matrix4::scaling_3d(inverse_scale_v);
 
     assert_eq!(scale_m.inverse(), inverse_scale_m);
     assert_eq!(scale_m, inverse_scale_m.inverse());
