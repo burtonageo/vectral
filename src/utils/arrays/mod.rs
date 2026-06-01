@@ -6,6 +6,8 @@ use core::{
     mem::{self, MaybeUninit},
     ptr, slice,
 };
+#[cfg(feature = "nightly")]
+use core::mem::ManuallyDrop;
 
 pub mod zip;
 
