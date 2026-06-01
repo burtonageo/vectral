@@ -8,8 +8,8 @@ use core::{
 };
 
 macro_rules! zip_map_impl {
-    ( $result:ty ; $num:expr ; $func:expr ; $($arrays:ident),* $(,)? ) => {{
-        let mut result = [const { MaybeUninit::<$result>::uninit() }; $num];
+    ( $num:expr ; $func:expr ; $($arrays:ident),* $(,)? ) => {{
+        let mut result = [const { MaybeUninit::<_>::uninit() }; $num];
 
         for i in 0..N {
             unsafe {
@@ -28,7 +28,7 @@ macro_rules! zip_map_impl {
 }
 
 macro_rules! zip_impl {
-    ([($( $generic:ident ),* $(,)?) ; $num:expr], $($arrays:ident),*) => {{
+    ([($( $generic:ident ),* $(,)?) ; $num:expr], $($arrays:ident),* $(,)?) => {{
         let mut zipped = [const { MaybeUninit::<($($generic),*)>::uninit() }; $num];
 
         let mut i = 0;
@@ -51,6 +51,43 @@ macro_rules! zip_impl {
     }};
 }
 
+macro_rules! unzip_impl {
+    ( $array:expr, ( $( $ty:ident : $idx:expr ),* $(,)? ) $(,)? ) => {{
+        #[allow(nonstandard_style)]
+        let ($(mut $ty),*) = (
+            $( [const { MaybeUninit::<$ty>::uninit() }; N] ),*
+        );
+
+        let mut i = 0;
+        while i < N {
+            unsafe {
+                macro_rules! tuple {
+                    () => { ( $($ty),* ) };
+                }
+
+                let slot = $array.as_ptr().add(i);
+
+                $(
+                    array_get_unchecked_mut(&mut $ty, i)
+                        .write(ptr::read(slot.byte_add(offset_of!(tuple!(), $idx)).cast::<$ty>()));
+                )*
+            }
+
+            i += 1;
+        }
+
+        mem::forget($array);
+
+        #[allow(nonstandard_style)]
+        unsafe {
+            $(
+                let $ty = array_assume_init($ty);
+            )*
+            ( $($ty),* )
+        }
+    }};
+}
+
 /// Zips two arrays together and applies the function `f` to each memberwise element, returning a fixed
 /// size array of the results.
 ///
@@ -66,7 +103,7 @@ pub fn zip_map<T, U, Res, F, const N: usize>(lhs: [T; N], rhs: [U; N], mut f: F)
 where
     F: FnMut(T, U) -> Res,
 {
-    zip_map_impl!( Res ; N ; f ; lhs, rhs, )
+    zip_map_impl!( N ; f ; lhs, rhs, )
 }
 
 /// Zips three arrays together and applies the function `f` to each memberwise element, returning a fixed
@@ -89,7 +126,7 @@ pub fn zip_map3<T, U, V, Res, F, const N: usize>(
 where
     F: FnMut(T, U, V) -> Res,
 {
-    zip_map_impl!( Res ; N ; f ; a0, a1, a2 )
+    zip_map_impl!( N ; f ; a0, a1, a2 )
 }
 
 /// Zips two fixed-size arrays together, returning a fixed size array of tuples.
@@ -157,33 +194,27 @@ pub const fn zip3<T, U, V, const N: usize>(a0: [T; N], a1: [U; N], a2: [V; N]) -
 #[must_use]
 #[inline(always)]
 pub const fn unzip<T, U, const N: usize>(array: [(T, U); N]) -> ([T; N], [U; N]) {
-    let (mut lhs, mut rhs) = (
-        [const { MaybeUninit::<T>::uninit() }; N],
-        [const { MaybeUninit::<U>::uninit() }; N],
-    );
+    unzip_impl!( array, (T: 0, U: 1) )
+}
 
-    let mut i = 0;
-    while i < N {
-        unsafe {
-            let slot = array.as_ptr().add(i);
-
-            array_get_unchecked_mut(&mut lhs, i)
-                .write(ptr::read(slot.byte_add(offset_of!((T, U), 0)).cast::<T>()));
-
-            array_get_unchecked_mut(&mut rhs, i)
-                .write(ptr::read(slot.byte_add(offset_of!((T, U), 1)).cast::<U>()));
-        }
-
-        i += 1;
-    }
-
-    mem::forget(array);
-
-    unsafe {
-        let lhs = array_assume_init(lhs);
-        let rhs = array_assume_init(rhs);
-        (lhs, rhs)
-    }
+/// Unzips an array of tuples, returning a tuple of the unzipped elements.
+///
+/// # Examples
+///
+/// ```
+/// use vectral::utils::arrays::unzip3;
+///
+/// let mixed_data = [(1, 'a', false), (2, 'b', true), (3, 'c', false), (4, 'd', true)];
+///
+/// let (numbers, characters, bools) = unzip3(mixed_data);
+/// assert_eq!(&numbers, &[1, 2, 3, 4]);
+/// assert_eq!(&characters, &['a', 'b', 'c', 'd']);
+/// assert_eq!(&bools, &[false, true, false, true]);
+/// ```
+#[must_use]
+#[inline(always)]
+pub const fn unzip3<T, U, V, const N: usize>(array: [(T, U, V); N]) -> ([T; N], [U; N], [V; N]) {
+    unzip_impl!( array, (T: 0, U: 1, V: 2) )
 }
 
 /// Shrinks an array, returning a new array with `NEW_LEN` elements.
