@@ -564,7 +564,8 @@ fn test_inverse() {
     let rotation = Matrix::x_axis_rotation(Angle::<f64>::half());
     let inverse = rotation.inverse();
 
-    approx::assert_relative_eq!(rotation.transpose(), inverse);
+    let eps = if cfg!(miri) { 1e-14 } else { f64::EPSILON };
+    approx::assert_relative_eq!(rotation.transpose(), inverse, epsilon = eps);
 
     let rotation = Matrix::axis_rotation_3d(
         Angle::<f64>::three_quarters(),
@@ -572,7 +573,7 @@ fn test_inverse() {
     );
     let inverse = rotation.inverse();
 
-    approx::assert_relative_eq!(rotation.transpose(), inverse);
+    approx::assert_relative_eq!(rotation.transpose(), inverse, epsilon = eps);
 
     let matrix = Matrix::new([
         [1.0, 2.0, 3.0, 4.0],
