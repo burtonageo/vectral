@@ -22,6 +22,7 @@ macro_rules! zip_map_impl {
             }
         }
 
+        mem::forget(($($arrays),*));
         unsafe { array_assume_init(result) }
     }};
 }
@@ -398,5 +399,16 @@ mod tests {
         let (nums, strs) = unzip(combined);
         assert_eq!(nums, a);
         assert_eq!(strs, b);
+    }
+
+    #[test]
+    fn test_zip_map() {
+        let x = [1, 2, 3, 4, 5].map(|v| format!("{v}"));
+        let y = ['a', 'b', 'c', 'd', 'e'].map(String::from);
+
+        let _zipped = zip_map(x, y, |x, y| {
+            mem::drop(x);
+            mem::drop(y);
+        });
     }
 }
