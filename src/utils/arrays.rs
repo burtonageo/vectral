@@ -8,10 +8,10 @@ use core::{
 };
 
 macro_rules! zip_map_impl {
-    ( $num:expr ; $func:expr ; $($arrays:ident),* $(,)? ) => {{
-        let mut result = [const { MaybeUninit::<_>::uninit() }; $num];
+    ( $func:expr => $($arrays:ident),* $(,)? ) => {{
+        let mut result = [const { MaybeUninit::<_>::uninit() }; _];
 
-        for i in 0..N {
+        for i in 0..(result.len()) {
             unsafe {
                 let slot = result.get_unchecked_mut(i);
 
@@ -103,7 +103,7 @@ pub fn zip_map<T, U, Res, F, const N: usize>(lhs: [T; N], rhs: [U; N], mut f: F)
 where
     F: FnMut(T, U) -> Res,
 {
-    zip_map_impl!( N ; f ; lhs, rhs, )
+    zip_map_impl!( f => lhs, rhs, )
 }
 
 /// Zips three arrays together and applies the function `f` to each memberwise element, returning a fixed
@@ -126,7 +126,7 @@ pub fn zip_map3<T, U, V, Res, F, const N: usize>(
 where
     F: FnMut(T, U, V) -> Res,
 {
-    zip_map_impl!( N ; f ; a0, a1, a2 )
+    zip_map_impl!( f => a0, a1, a2 )
 }
 
 /// Zips two fixed-size arrays together, returning a fixed size array of tuples.
