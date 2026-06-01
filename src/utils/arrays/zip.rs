@@ -77,12 +77,8 @@ macro_rules! unzip_impl {
 
         mem::forget($array);
 
-        #[allow(nonstandard_style)]
         unsafe {
-            $(
-                let $ty = array_assume_init($ty);
-            )*
-            ( $($ty),* )
+            ( $( array_assume_init($ty) ),* )
         }
     }};
 }
@@ -126,6 +122,80 @@ where
     F: FnMut(T, U, V) -> Res,
 {
     zip_map_impl!( f => a0, a1, a2 )
+}
+
+/// Zips four arrays together and applies the function `f` to each memberwise element, returning a fixed
+/// size array of the results.
+#[must_use]
+#[inline]
+pub fn zip_map4<T, U, V, W, Res, F, const N: usize>(
+    a0: [T; N],
+    a1: [U; N],
+    a2: [V; N],
+    a3: [W; N],
+    mut f: F,
+) -> [Res; N]
+where
+    F: FnMut(T, U, V, W) -> Res,
+{
+    zip_map_impl!( f => a0, a1, a2, a3 )
+}
+
+/// Zips four arrays together and applies the function `f` to each memberwise element, returning a fixed
+/// size array of the results.
+#[must_use]
+#[inline]
+pub fn zip_map5<T, U, V, W, X, Res, F, const N: usize>(
+    a0: [T; N],
+    a1: [U; N],
+    a2: [V; N],
+    a3: [W; N],
+    a4: [X; N],
+    mut f: F,
+) -> [Res; N]
+where
+    F: FnMut(T, U, V, W, X) -> Res,
+{
+    zip_map_impl!( f => a0, a1, a2, a3, a4 )
+}
+
+/// Zips four arrays together and applies the function `f` to each memberwise element, returning a fixed
+/// size array of the results.
+#[must_use]
+#[inline]
+pub fn zip_map6<T, U, V, W, X, Y, Res, F, const N: usize>(
+    a0: [T; N],
+    a1: [U; N],
+    a2: [V; N],
+    a3: [W; N],
+    a4: [X; N],
+    a5: [Y; N],
+    mut f: F,
+) -> [Res; N]
+where
+    F: FnMut(T, U, V, W, X, Y) -> Res,
+{
+    zip_map_impl!( f => a0, a1, a2, a3, a4, a5 )
+}
+
+/// Zips four arrays together and applies the function `f` to each memberwise element, returning a fixed
+/// size array of the results.
+#[must_use]
+#[inline]
+pub fn zip_map7<T, U, V, W, X, Y, Z, Res, F, const N: usize>(
+    a0: [T; N],
+    a1: [U; N],
+    a2: [V; N],
+    a3: [W; N],
+    a4: [X; N],
+    a5: [Y; N],
+    a6: [Z; N],
+    mut f: F,
+) -> [Res; N]
+where
+    F: FnMut(T, U, V, W, X, Y, Z) -> Res,
+{
+    zip_map_impl!( f => a0, a1, a2, a3, a4, a5, a6 )
 }
 
 /// Zips two fixed-size arrays together, returning a fixed size array of tuples.
@@ -177,6 +247,60 @@ pub const fn zip3<T, U, V, const N: usize>(a0: [T; N], a1: [U; N], a2: [V; N]) -
     zip_impl!([(T, U, V); N], a0, a1, a2)
 }
 
+/// Zips four fixed-size arrays together, returning a fixed size array of tuples.
+#[must_use]
+#[inline(always)]
+pub const fn zip4<T, U, V, W, const N: usize>(
+    a0: [T; N],
+    a1: [U; N],
+    a2: [V; N],
+    a3: [W; N],
+) -> [(T, U, V, W); N] {
+    zip_impl!([(T, U, V, W); N], a0, a1, a2, a3)
+}
+
+/// Zips five fixed-size arrays together, returning a fixed size array of tuples.
+#[must_use]
+#[inline(always)]
+pub const fn zip5<T, U, V, W, X, const N: usize>(
+    a0: [T; N],
+    a1: [U; N],
+    a2: [V; N],
+    a3: [W; N],
+    a4: [X; N],
+) -> [(T, U, V, W, X); N] {
+    zip_impl!([(T, U, V, W, X); N], a0, a1, a2, a3, a4)
+}
+
+/// Zips six fixed-size arrays together, returning a fixed size array of tuples.
+#[must_use]
+#[inline(always)]
+pub const fn zip6<T, U, V, W, X, Y, const N: usize>(
+    a0: [T; N],
+    a1: [U; N],
+    a2: [V; N],
+    a3: [W; N],
+    a4: [X; N],
+    a5: [Y; N],
+) -> [(T, U, V, W, X, Y); N] {
+    zip_impl!([(T, U, V, W, X, Y); N], a0, a1, a2, a3, a4, a5)
+}
+
+/// Zips seven fixed-size arrays together, returning a fixed size array of tuples.
+#[must_use]
+#[inline(always)]
+pub const fn zip7<T, U, V, W, X, Y, Z, const N: usize>(
+    a0: [T; N],
+    a1: [U; N],
+    a2: [V; N],
+    a3: [W; N],
+    a4: [X; N],
+    a5: [Y; N],
+    a6: [Z; N],
+) -> [(T, U, V, W, X, Y, Z); N] {
+    zip_impl!([(T, U, V, W, X, Y, Z); N], a0, a1, a2, a3, a4, a5, a6)
+}
+
 /// Unzips an array of tuples, returning a tuple of the unzipped elements.
 ///
 /// # Examples
@@ -214,4 +338,65 @@ pub const fn unzip<T, U, const N: usize>(array: [(T, U); N]) -> ([T; N], [U; N])
 #[inline(always)]
 pub const fn unzip3<T, U, V, const N: usize>(array: [(T, U, V); N]) -> ([T; N], [U; N], [V; N]) {
     unzip_impl!( array, (T: 0, U: 1, V: 2) )
+}
+
+/// Unzips an array of tuples, returning a tuple of the unzipped elements.
+#[must_use]
+#[inline(always)]
+pub const fn unzip4<T, U, V, W, const N: usize>(
+    array: [(T, U, V, W); N],
+) -> ([T; N], [U; N], [V; N], [W; N]) {
+    unzip_impl!( array, (T: 0, U: 1, V: 2, W: 3) )
+}
+
+/// Unzips an array of tuples, returning a tuple of the unzipped elements.
+#[must_use]
+#[inline(always)]
+pub const fn unzip5<T, U, V, W, X, const N: usize>(
+    array: [(T, U, V, W, X); N],
+) -> ([T; N], [U; N], [V; N], [W; N], [X; N]) {
+    unzip_impl!( array, (T: 0, U: 1, V: 2, W: 3, X: 4) )
+}
+
+/// Unzips an array of tuples, returning a tuple of the unzipped elements.
+#[must_use]
+#[inline(always)]
+pub const fn unzip6<T, U, V, W, X, Y, const N: usize>(
+    array: [(T, U, V, W, X, Y); N],
+) -> ([T; N], [U; N], [V; N], [W; N], [X; N], [Y; N]) {
+    unzip_impl!( array, (T: 0, U: 1, V: 2, W: 3, X: 4, Y: 5) )
+}
+
+/// Unzips an array of tuples, returning a tuple of the unzipped elements.
+#[must_use]
+#[inline(always)]
+pub const fn unzip7<T, U, V, W, X, Y, Z, const N: usize>(
+    array: [(T, U, V, W, X, Y, Z); N],
+) -> ([T; N], [U; N], [V; N], [W; N], [X; N], [Y; N], [Z; N]) {
+    unzip_impl!( array, (T: 0, U: 1, V: 2, W: 3, X: 4, Y: 5, Z: 6) )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_zip() {
+        let a = [1, 2, 3, 4, 5];
+        let b = ['a', 'b', 'c', 'd', 'e'].map(String::from);
+
+        let combined = zip(a, b.clone());
+
+        for (i, (num, string)) in combined.iter().enumerate() {
+            let ch = char::from_u32(u32::from(b'a' + i as u8)).unwrap();
+            let expected_str = String::from(ch);
+
+            assert_eq!(*num as usize, i + 1);
+            assert_eq!(*string, *expected_str);
+        }
+
+        let (nums, strs) = unzip(combined);
+        assert_eq!(nums, a);
+        assert_eq!(strs, b);
+    }
 }

@@ -7,9 +7,14 @@ use core::{
     ptr, slice,
 };
 
-mod zip;
+pub mod zip;
 
-pub use self::zip::{unzip, unzip3, zip, zip_map, zip_map3, zip3};
+#[doc(hidden)]
+#[deprecated(note = "use the zip module directly")]
+pub use self::zip::{
+    unzip, unzip3, unzip4, unzip5, unzip6, unzip7, zip, zip_map, zip_map3, zip_map4, zip_map5,
+    zip_map6, zip_map7, zip3, zip4, zip5, zip6, zip7,
+};
 
 /// Shrinks an array, returning a new array with `NEW_LEN` elements.
 ///
@@ -437,26 +442,6 @@ mod tests {
         array,
         sync::atomic::{AtomicUsize, Ordering},
     };
-
-    #[test]
-    fn test_zip() {
-        let a = [1, 2, 3, 4, 5];
-        let b = ['a', 'b', 'c', 'd', 'e'].map(String::from);
-
-        let combined = zip(a, b.clone());
-
-        for (i, (num, string)) in combined.iter().enumerate() {
-            let ch = char::from_u32(u32::from(b'a' + i as u8)).unwrap();
-            let expected_str = String::from(ch);
-
-            assert_eq!(*num as usize, i + 1);
-            assert_eq!(*string, *expected_str);
-        }
-
-        let (nums, strs) = unzip(combined);
-        assert_eq!(nums, a);
-        assert_eq!(strs, b);
-    }
 
     #[test]
     fn test_shrink() {
