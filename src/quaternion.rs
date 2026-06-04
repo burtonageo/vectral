@@ -3,25 +3,23 @@
 #[cfg(feature = "nightly")]
 use crate::rotation::HomogenousRotation;
 #[cfg(feature = "simd")]
+use crate::simd::SimdSub;
+#[cfg(feature = "simd")]
 use crate::simd::{SimdAdd, SimdMul};
+use crate::utils::{
+    array_assume_init, array_get_unchecked,
+    num::{
+        Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
+        checked::{CheckedAddAssign, CheckedDiv, CheckedMul},
+        lerp, rat,
+    },
+    shrink_to, zip,
+};
 use crate::{
     matrix::Matrix4,
     rotation::{Rotation, angle::Angle},
     vector::{Vector, Vector3, Vector4},
 };
-use crate::{
-    utils::{
-        array_assume_init, array_get_unchecked,
-        num::{
-            Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
-            checked::{CheckedAddAssign, CheckedDiv, CheckedMul},
-            lerp, rat,
-        },
-        shrink_to, zip,
-    },
-};
-#[cfg(feature =  "simd")]
-use crate::simd::SimdSub;
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
 #[cfg(feature = "simd")]
@@ -144,7 +142,7 @@ impl<T> Quaternion<T> {
     }
 }
 
-#[cfg(feature =  "simd")]
+#[cfg(feature = "simd")]
 impl<T> Quaternion<T>
 where
     T: SimdElement + ClosedAdd + ClosedMul + Zero + SimdAdd<Output = T>,
@@ -490,7 +488,7 @@ impl<T: Copy + One + ClosedAdd + ClosedMul + ClosedNeg + ClosedSub> Mul<Vector<T
     }
 }
 
-#[cfg(feature =  "simd")]
+#[cfg(feature = "simd")]
 impl<T: SimdElement + ClosedMul + Zero + ClosedAdd + ClosedNeg + One> SimdMul<Vector<T, 3>>
     for Quaternion<T>
 where
@@ -536,7 +534,7 @@ impl<T: Add> Add<Quaternion<T>> for Quaternion<T> {
     }
 }
 
-#[cfg(feature =  "simd")]
+#[cfg(feature = "simd")]
 impl<T: SimdElement + ClosedAdd> SimdAdd for Quaternion<T>
 where
     Simd<T, 3>: ClosedAdd,
@@ -570,7 +568,7 @@ impl<T: Sub> Sub<Quaternion<T>> for Quaternion<T> {
     }
 }
 
-#[cfg(feature =  "simd")]
+#[cfg(feature = "simd")]
 impl<T: SimdElement + ClosedSub> SimdSub for Quaternion<T>
 where
     Simd<T, 3>: ClosedSub,
@@ -1016,7 +1014,8 @@ mod tests {
         let m1 = q1.into_homogeneous();
         let m2 = q1.conjugated().into_homogeneous();
 
-        approx::assert_relative_eq!(m1 * m2, Matrix::<f64>::identity());
+        let epsilon = if cfg!(miri) { 1e-14 } else { f64::EPSILON };
+        approx::assert_relative_eq!(m1 * m2, Matrix::<f64>::identity(), epsilon = epsilon);
     }
 
     #[cfg(any(feature = "std", feature = "libm"))]
