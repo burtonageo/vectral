@@ -180,7 +180,11 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     pub const fn to_flattened_array(self) -> [T; ROWS * COLS] {
         let mut array = [const { MaybeUninit::uninit() }; ROWS * COLS];
         unsafe {
-            ptr::copy_nonoverlapping(self.as_ptr().cast::<MaybeUninit<T>>(), array.as_mut_ptr(), ROWS * COLS);
+            ptr::copy_nonoverlapping(
+                self.as_ptr().cast::<MaybeUninit<T>>(),
+                array.as_mut_ptr(),
+                ROWS * COLS,
+            );
             mem::forget(self);
             array_assume_init(array)
         }
