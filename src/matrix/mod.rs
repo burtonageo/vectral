@@ -5,7 +5,6 @@ use crate::simd::{SimdAdd, SimdMul, SimdSub};
 #[cfg(feature = "nightly")]
 use crate::utils::{flatten, shrink_to_copy};
 use crate::{
-    const_assert_larger_or_equal,
     point::Point3,
     rotation::{angle::Angle, quaternion::Quaternion},
     utils::shrink_to,
@@ -2820,7 +2819,7 @@ where
     }
 }
 
-impl<T, const N: usize> Matrix<T, N>
+impl<T> Matrix<T, 4>
 where
     T: AddAssign
         + Abs
@@ -2841,16 +2840,14 @@ where
     #[doc(alias = "polar_decompose")]
     #[must_use]
     #[inline]
-    pub fn decompose_homogeneous_transform(mut self) -> (Vector3<T>, Vector3<T>, Matrix<T, N>, T) {
-        const_assert_larger_or_equal!(N, 2);
-
+    pub fn decompose_homogeneous_transform(mut self) -> (Vector<T, 3>, Vector<T, 3>, Matrix<T, 4>, T) {
         let translation = Vector::new(self.col(3)).shrink_to();
-        let w = self[N - 1][N - 1];
+        let w = self[3][3];
 
         // Remove the translation part from the matrix.
         {
-            let mut v = Vector::<T, N>::ZERO;
-            v[N - 1] = T::ONE;
+            let mut v = Vector::<T, 4>::ZERO;
+            v[3] = T::ONE;
             self.set_col(3, v.to_array());
         }
 
@@ -2884,7 +2881,7 @@ where
 
         let rotation = rot_mat;
         let scale =
-            Vector::new((self * rot_mat.transpose()).rightwards_diagonal()).shrink_to::<3>();
+            Vector::new((self * rot_mat.transpose()).rightwards_diagonal()).shrink_to();
 
         (translation, scale, rotation, w)
     }
