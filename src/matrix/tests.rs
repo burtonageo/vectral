@@ -509,6 +509,11 @@ fn test_adjoint() {
 
 #[test]
 fn test_iter() {
+    let singleton = Matrix::new([[2]]);
+    let mut iter = singleton.into_elems();
+    assert_eq!(iter.next(), Some(2));
+    assert_eq!(iter.next(), None);
+
     #[rustfmt::skip]
     let matrix = Matrix::new([
         [1, 2, 3, 4, 5, 6],

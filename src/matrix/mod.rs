@@ -1101,7 +1101,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         IntoElements {
             matrix: self.into_uninit(),
             front: 0,
-            back: Self::NUM_ELEMENTS.saturating_sub(1),
+            back: Self::NUM_ELEMENTS,
         }
     }
 
@@ -2953,11 +2953,7 @@ impl<T, const ROWS: usize, const COLS: usize> IntoElements<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     const fn len_const(&self) -> usize {
-        if self.back == self.front {
-            0
-        } else {
-            (self.back - self.front) + 1
-        }
+        self.back - self.front
     }
 }
 
@@ -3036,7 +3032,7 @@ impl<T, const ROWS: usize, const COLS: usize> DoubleEndedIterator for IntoElemen
             return None;
         }
 
-        let value = unsafe { ptr::read(self.matrix.as_ptr().add(self.back)) };
+        let value = unsafe { ptr::read(self.matrix.as_ptr().add(self.back.saturating_sub(1))) };
 
         self.back -= 1;
 
