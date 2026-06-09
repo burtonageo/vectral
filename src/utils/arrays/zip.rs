@@ -406,9 +406,10 @@ mod tests {
         let x = [1, 2, 3, 4, 5].map(|v| format!("{v}"));
         let y = ['a', 'b', 'c', 'd', 'e'].map(String::from);
 
-        let _zipped = zip_map(x, y, |x, y| {
-            mem::drop(x);
-            mem::drop(y);
+        let zipped = zip_map(x, y, |x, y| {
+            format!("{x}{y}")
         });
+
+        assert_eq!(&zipped, &["1a", "2b", "3c", "4d", "5e"]);
     }
 }
