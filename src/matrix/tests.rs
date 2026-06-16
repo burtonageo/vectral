@@ -676,6 +676,9 @@ fn test_swizzle() {
         [1, 4, 5],
         [5, 94, 93],
     ]);
+
+    let swizzled = matrix.try_swizzle(&swizzle_mat);
+    core::assert_matches!(swizzled, None);
 }
 
 #[cfg(feature = "simd")]
