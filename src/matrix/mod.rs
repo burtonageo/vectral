@@ -1062,12 +1062,10 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         let mut row = 0;
         while row < ROWS {
             unsafe {
-                let src = { array_get_unchecked(&self.data, row).as_ptr() };
-                let dst = {
-                    array_get_unchecked_mut(&mut concat_matrix.data, row)
-                        .as_mut_ptr()
-                        .cast::<T>()
-                };
+                let src = array_get_unchecked(&self.data, row).as_ptr();
+                let dst = array_get_unchecked_mut(&mut concat_matrix.data, row)
+                    .as_mut_ptr()
+                    .cast::<T>();
                 ptr::copy(src, dst, COLS);
             }
 
@@ -2840,7 +2838,9 @@ where
     #[doc(alias = "polar_decompose")]
     #[must_use]
     #[inline]
-    pub fn decompose_homogeneous_transform(mut self) -> (Vector<T, 3>, Vector<T, 3>, Matrix<T, 4>, T) {
+    pub fn decompose_homogeneous_transform(
+        mut self,
+    ) -> (Vector<T, 3>, Vector<T, 3>, Matrix<T, 4>, T) {
         let translation = Vector::new(self.col(3)).shrink_to();
         let w = self[3][3];
 
@@ -2880,8 +2880,7 @@ where
         }
 
         let rotation = rot_mat;
-        let scale =
-            Vector::new((self * rot_mat.transpose()).rightwards_diagonal()).shrink_to();
+        let scale = Vector::new((self * rot_mat.transpose()).rightwards_diagonal()).shrink_to();
 
         (translation, scale, rotation, w)
     }
