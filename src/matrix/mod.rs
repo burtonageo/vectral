@@ -55,6 +55,15 @@ impl<T: Default, const ROWS: usize, const COLS: usize> Default for Matrix<T, ROW
 }
 
 impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
+    /// The number of elements in the matrix;
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// assert_eq!(<Matrix<f64, 3, 4>>::NUM_ELEMENTS, 12);
+    /// ```
     pub const NUM_ELEMENTS: usize = ROWS * COLS;
 
     /// Create a new `Matrix` from the given nested array.
@@ -165,6 +174,20 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         self.to_array()
     }
 
+    /// Converts the `Matrix` into its native array representation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let matrix = Matrix::new([
+    ///     [1.0f64, 2.0, 3.0, 4.0, 5.0],
+    ///     [6.0, 7.0, 8.0, 9.0, 10.0]
+    /// ]);
+    ///
+    /// let array: [[f64; 5]; 2] = matrix.to_array();
+    /// ```
     #[must_use]
     #[inline]
     pub const fn to_array(self) -> [[T; COLS]; ROWS] {
@@ -449,6 +472,28 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         unsafe { &*self.get_unchecked_raw(row, col) }
     }
 
+    /// Get a pointer to the element at index `row` and `col` without any bounds checks.
+    ///
+    /// # Safety
+    ///
+    /// It is safe to call this method with `row` and `col` indices which are out of
+    /// bounds. However, it is undefined behavior to dereference this pointer if
+    /// the given indices were out of bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    /// use std::ptr;
+    ///
+    /// let matrix = Matrix::new([[1, 2, 3, 4, 5]]);
+    /// let ptr = matrix.get_unchecked_raw(0, 2);
+    ///
+    /// unsafe {
+    ///     assert!(ptr::eq(ptr, matrix.as_ptr().add(2)));
+    ///     assert_eq!(*ptr, 3);
+    /// }
+    /// ```
     #[must_use]
     #[inline]
     pub const fn get_unchecked_raw(&self, row: usize, col: usize) -> *const T {
@@ -482,6 +527,32 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         unsafe { &mut *self.get_unchecked_raw_mut(row, col) }
     }
 
+    /// Get a mutable pointer to the element at index `row` and `col` without any bounds checks.
+    ///
+    /// # Safety
+    ///
+    /// It is safe to call this method with `row` and `col` indices which are out of
+    /// bounds. However, it is undefined behavior to dereference this pointer if
+    /// the given indices were out of bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    /// use std::ptr;
+    ///
+    /// let mut matrix = Matrix::new([[1, 2, 3, 4, 5]]);
+    /// let ptr = matrix.get_unchecked_raw_mut(0, 2);
+    ///
+    /// unsafe {
+    ///     assert!(ptr::eq(ptr, matrix.as_ptr().add(2)));
+    ///     assert_eq!(*ptr, 3);
+    ///
+    ///     *ptr = 9;
+    /// }
+    ///
+    /// assert_eq!(&matrix, &[[1, 2, 9, 4, 5]]);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn get_unchecked_raw_mut(&mut self, row: usize, col: usize) -> *mut T {
@@ -595,6 +666,11 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// Sets the row of the `Matrix` at `row_idx` to the given `row`,
     /// returning the previous row.
     ///
+    /// # Panics
+    ///
+    /// This method will panic if the given `row_idx` is larger than the
+    /// number of rows - 1 in the `Matrix`.
+    ///
     /// # Examples
     ///
     /// ```
@@ -629,7 +705,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             return Err(row);
         }
 
-        let matrix_row = unsafe { &mut *self.data.as_mut_ptr().add(row_idx) };
+        let matrix_row = unsafe { self.data.as_mut_ptr().add(row_idx).as_mut_unchecked() };
         mem::swap(&mut row, matrix_row);
 
         Ok(row)
