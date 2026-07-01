@@ -91,6 +91,25 @@ macro_rules! unzip_impl {
 /// `zip(array_0, array_1).map(|(x, y)| x + y);`, as it avoids allocating an intermediate array to store the zipped
 /// array.
 ///
+/// # Examples
+///
+/// ```
+/// use vectral::utils::zip_map;
+///
+/// let array_1 = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"].map(String::from);
+/// let array_2 = [1, 2, 3, 4, 5];
+///
+/// let joined = zip_map(array_1, array_2, |string, num| format!("{}_{}", string, num));
+///
+/// assert_eq!(&joined, &[
+///     "Alpha_1",
+///     "Beta_2",
+///     "Gamma_3",
+///     "Delta_4",
+///     "Epsilon_5",
+/// ]);
+/// ```
+///
 /// [`zip()`]: ./fn.zip.html
 /// [`map()`]: https://doc.rust-lang.org/stable/std/primitive.array.html#method.map
 #[must_use]
@@ -105,11 +124,25 @@ where
 /// Zips three arrays together and applies the function `f` to each memberwise element, returning a fixed
 /// size array of the results.
 ///
-/// It is preferred to use this function over chaining the [`zip()`] and [`map()`] methods together (e.g.
-/// `zip3(arr0, arr1, arr2).map(|(x, y, z)| x + y + z);`, as it avoids allocating an intermediate array to store the zipped
-/// array.
+/// It is preferred to use this function over chaining the [`zip3()`] and [`map()`] methods together (e.g.
+/// `zip3(arr0, arr1, arr2).map(|(x, y, z)| x + y + z);`, as it avoids allocating an intermediate array
+/// to store the zipped array.
 ///
-/// [`zip()`]: ./fn.zip.html
+/// # Examples
+///
+/// ```
+/// use vectral::utils::zip_map3;
+///
+/// let array_1 = [0, 1, 2, 3, 4];
+/// let array_2 = [1, 2, 3, 4, 5];
+/// let array_3 = [2, 3, 4, 5, 6];
+///
+/// let joined = zip_map3(array_1, array_2, array_3, |n0, n1, n2| n0 + n1 + n2);
+///
+/// assert_eq!(&joined, &[3, 6, 9, 12, 15]);
+/// ```
+///
+/// [`zip3()`]: ./fn.zip3.html
 /// [`map()`]: https://doc.rust-lang.org/stable/std/primitive.array.html#method.map
 #[must_use]
 #[inline]
@@ -406,9 +439,7 @@ mod tests {
         let x = [1, 2, 3, 4, 5].map(|v| format!("{v}"));
         let y = ['a', 'b', 'c', 'd', 'e'].map(String::from);
 
-        let zipped = zip_map(x, y, |x, y| {
-            format!("{x}{y}")
-        });
+        let zipped = zip_map(x, y, |x, y| format!("{x}{y}"));
 
         assert_eq!(&zipped, &["1a", "2b", "3c", "4d", "5e"]);
     }
