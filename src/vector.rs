@@ -455,6 +455,21 @@ where
     T: ClosedAdd + ClosedMul + ClosedDiv + Sqrt + Trig + Zero,
 {
     /// Returns the angle between two vectors.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::{vector::Vector, rotation::angle::Angle};
+    /// 
+    /// let forwards = Vector::<f64, 3>::Y;
+    /// let right = Vector::X;
+    ///
+    /// let angle = forwards.angle_between(right);
+    ///
+    /// assert_eq!(angle, Angle::quarter());
+    ///
+    /// assert_eq!(forwards.angle_between(forwards), Angle::zero());
+    /// ```
     #[must_use]
     #[inline]
     pub fn angle_between(self, other: Self) -> Angle<T> {
