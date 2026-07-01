@@ -131,14 +131,65 @@ pub trait FromFloat<FloatType = f32> {
     fn from_float_round(float_type: FloatType) -> Self;
 }
 
+/// Provides the absolute difference between two values.
 pub trait AbsDiff<Rhs = Self>: Sub<Rhs> {
+    /// Calculate the absolute difference between two values.
+    ///
+    /// This will always provide the same value regardless of the
+    /// order of the parameters.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::num::AbsDiff;
+    ///
+    /// let diff = AbsDiff::abs_diff(7.0, 1.0);
+    /// assert_eq!(diff, 6.0);
+    /// ```
     #[must_use]
     fn abs_diff(self, rhs: Rhs) -> Self::Output;
 } 
 
-pub trait Abs: Copy {
+/// Provides the absolute value.
+/// 
+/// The absolute value is the positive value of a given value. For example,
+/// the absolute value of -12 is 12. The absolute value of 12 is also 12.
+pub trait Abs: Copy + Neg {
+    /// Returns the absolute value of `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::num::Abs;
+    /// 
+    /// let num = 14.0;
+    /// assert_eq!(Abs::abs(num), 14.0);
+    ///
+    /// let num = -2304.0;
+    /// assert_eq!(Abs::abs(num), 2304.0);
+    /// ```
     #[must_use]
     fn abs(self) -> Self;
+
+    /// Assigns `self` to the absolute value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::num::Abs;
+    ///
+    /// let mut num = -15;
+    /// num.make_abs();
+    /// assert_eq!(num, 15);
+    ///
+    /// let mut num = 240;
+    /// num.make_abs();
+    /// assert_eq!(num, 240);
+    /// ```
+    #[inline]
+    fn make_abs(&mut self) {
+        *self = Abs::abs(*self);
+    }
 }
 
 pub trait CopySign: Abs + Neg {
@@ -156,8 +207,12 @@ pub trait Zero {
     const ZERO: Self;
 }
 
-pub trait Bounded {
+/// Represents a type which has its values bounded between the given `MIN` and `MAX`
+/// values.
+pub trait Bounded: PartialOrd {
+    /// The minimum value which `self` can take.
     const MIN: Self;
+    /// The maximum value which `self` can take.
     const MAX: Self;
 }
 
