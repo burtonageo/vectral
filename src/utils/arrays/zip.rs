@@ -175,7 +175,7 @@ where
     zip_map_impl!( f => a0, a1, a2, a3 )
 }
 
-/// Zips four arrays together and applies the function `f` to each memberwise element, returning a fixed
+/// Zips five arrays together and applies the function `f` to each memberwise element, returning a fixed
 /// size array of the results.
 #[must_use]
 #[inline]
@@ -193,7 +193,7 @@ where
     zip_map_impl!( f => a0, a1, a2, a3, a4 )
 }
 
-/// Zips four arrays together and applies the function `f` to each memberwise element, returning a fixed
+/// Zips six arrays together and applies the function `f` to each memberwise element, returning a fixed
 /// size array of the results.
 #[must_use]
 #[inline]
@@ -212,7 +212,7 @@ where
     zip_map_impl!( f => a0, a1, a2, a3, a4, a5 )
 }
 
-/// Zips four arrays together and applies the function `f` to each memberwise element, returning a fixed
+/// Zips seven arrays together and applies the function `f` to each memberwise element, returning a fixed
 /// size array of the results.
 #[must_use]
 #[inline]
