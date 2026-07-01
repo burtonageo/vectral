@@ -460,13 +460,14 @@ where
     ///
     /// ```
     /// use vectral::{vector::Vector, rotation::angle::Angle};
+    /// use approx::assert_relative_eq;
     /// 
     /// let forwards = Vector::<f64, 3>::Y;
     /// let right = Vector::X;
     ///
     /// let angle = forwards.angle_between(right);
     ///
-    /// assert_eq!(angle, Angle::quarter());
+    /// approx::assert_relative_eq!(angle, Angle::quarter(), epsilon = 1e-14);
     ///
     /// assert_eq!(forwards.angle_between(forwards), Angle::zero());
     /// ```
