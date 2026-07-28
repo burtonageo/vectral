@@ -768,8 +768,8 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// let mut matrix_mut = matrix.each_mut();
     ///
-    /// for (i, elem) in matrix_mut.as_mut_slice().iter_mut().enumerate() {
-    ///     **elem = i;
+    /// for (i, elem) in matrix_mut.into_elems().enumerate() {
+    ///     *elem = i;
     /// }
     ///
     /// assert_eq!(matrix.as_slice(), [0, 1, 2, 3]);
@@ -1368,7 +1368,7 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// # use vectral::matrix::Matrix;
     /// let matrix: Matrix<_, 4, 4> = Matrix::splat(21);
-    /// assert!(matrix.as_slice().into_iter().all(|elem| *elem == 21));
+    /// assert!(matrix.elems().all(|elem| *elem == 21));
     /// ```
     #[must_use]
     #[inline]
