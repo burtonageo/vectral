@@ -40,6 +40,8 @@ use serde_core::{
     ser::{Serialize, SerializeTupleStruct, Serializer},
 };
 
+/// A type which represents a position in space. This type is generic over its dimension,
+/// and the type of its scalar components.
 #[repr(C)]
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Point<T = f32, const N: usize = 3> {
@@ -79,12 +81,37 @@ impl_coerce_to_fields! {
 }
 
 impl<T: Copy, const N: usize> Point<T, N> {
+    /// Create a new `Point` where each field is set to the given `value`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let point = Point::<_, 64>::splat(127i8);
+    ///
+    /// for element in point {
+    ///     assert_eq!(element, 127);
+    /// }
+    /// ```
     #[must_use]
     #[inline]
     pub const fn splat(value: T) -> Self {
         Self { data: [value; N] }
     }
 
+    /// Expand the given `Point` into a larger dimension, extending new fields with the given `value`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let point = Point::new([1, 2, 3]);
+    /// let expanded: Point::<_, 6> = point.expand_to::<6>(6);
+    ///
+    /// assert_eq!(&expanded, &[1, 2, 3, 6, 6, 6]);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn expand_to<const N1: usize>(self, value: T) -> Point<T, N1> {
@@ -99,6 +126,16 @@ impl<T: Zero, const N: usize> Zero for Point<T, N> {
 }
 
 impl<T: Zero, const N: usize> Point<T, N> {
+    /// Returns a new `Point` at the origin, where each field is set to `0`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let point = Point::<f32, 3>::origin();
+    /// assert_eq!(&point, &[0.0, 0.0, 0.0]);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn origin() -> Self {
@@ -107,20 +144,61 @@ impl<T: Zero, const N: usize> Point<T, N> {
 }
 
 impl<T, const N: usize> Point<T, N> {
+    /// The dimension of the `Point`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// type Point45<T> = Point::<T, 45>;
+    ///
+    /// assert_eq!(<Point45<i32>>::LENGTH, 45);
+    /// ```
     pub const LENGTH: usize = N;
 
+    /// Create a new `Point` from the given `array`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let point = Point::new([1, 2, 3, 5]);
+    /// assert_eq!(&point, &[1, 2, 3, 5]);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn new(array: [T; N]) -> Self {
         Self { data: array }
     }
 
+    /// Create a new `Point` from the given function `f`.
+    ///
+    /// The function takes the index of the field it is initializing.
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let point = Point::<usize, 5>::from_fn(|i| i * 2);
+    ///
+    /// assert_eq!(&point, &[0, 2, 4, 6, 8]);
+    /// ```
     #[must_use]
     #[inline]
     pub fn from_fn<F: FnMut(usize) -> T>(f: F) -> Self {
         Self::new(array::from_fn(f))
     }
 
+    /// Returns a `Point` containtaining uninitialized data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let point = Point::<f64, 4>::uninit();
+    /// ```
     #[must_use]
     #[inline]
     pub const fn uninit() -> Point<MaybeUninit<T>, N> {
@@ -177,24 +255,82 @@ impl<T, const N: usize> Point<T, N> {
         unsafe { array_get_unchecked_mut(&mut self.data, index) }
     }
 
+    /// Returns a const pointer to the start of the `Point` data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    /// use std::ptr;
+    ///
+    /// let point = Point::new([1u64, 2, 4, 8, 24]);
+    ///
+    /// let ptr: *const u64 = point.as_ptr();
+    /// assert!(ptr::eq(ptr, &point[0]));
+    /// ```
     #[must_use]
     #[inline]
     pub const fn as_ptr(&self) -> *const T {
         self.data.as_ptr()
     }
 
+    /// Returns a mutable pointer to the start of the `Point` data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    /// use std::ptr;
+    ///
+    /// let mut point = Point::new([1u64, 2, 4, 8, 24]);
+    ///
+    /// let ptr: *mut u64 = point.as_mut_ptr();
+    /// assert!(ptr::eq(ptr, &point[0]));
+    ///
+    /// unsafe {
+    ///     ptr.add(2).write(8);
+    /// }
+    ///
+    /// assert_eq!(&point, &[1, 2, 8, 8, 24]);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn as_mut_ptr(&mut self) -> *mut T {
         self.data.as_mut_ptr()
     }
 
+    /// Access the `Point` as a `&[T]`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let point = Point::new([1, 2, 4, 8, 14, 2]);
+    /// let slice: &[i16] = point.as_slice();
+    ///
+    /// assert_eq!(slice, &[1, 2, 4, 8, 14, 2]);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn as_slice(&self) -> &[T] {
         unsafe { slice::from_raw_parts(self.as_ptr(), N) }
     }
 
+    /// Access the `Point` mutably as a `&mut [T]`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let mut point = Point::new([1, 2, 4, 8, 14, 2]);
+    /// let slice: &mut [i16] = point.as_mut_slice();
+    ///
+    /// slice[1] = 14;
+    ///
+    /// assert_eq!(&point, &[1, 14, 4, 8, 14, 2]);
+    /// ``` 
     #[must_use]
     #[inline]
     pub const fn as_mut_slice(&mut self) -> &mut [T] {
@@ -210,6 +346,18 @@ impl<T, const N: usize> Point<T, N> {
         array
     }
 
+    /// Convert the given `point` into a fixed size array.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point4;
+    ///
+    /// let point = Point4::splat(18);
+    /// let array = point.to_array();
+    ///
+    /// assert_eq!(array, [18; 4]);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn to_array(self) -> [T; N] {
@@ -218,6 +366,18 @@ impl<T, const N: usize> Point<T, N> {
         array
     }
 
+    /// Returns the distance to the `other` `Point`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let origin = Point::<f64, 3>::origin();
+    /// let other = Point::new([3.0, 4.0, 0.0]);
+    ///
+    /// assert_eq!(origin.distance_to(other), 5.0);
+    /// ```
     #[must_use]
     #[inline]
     pub fn distance_to<U: Sub<T>>(self, other: Point<U, N>) -> U::Output
@@ -227,6 +387,18 @@ impl<T, const N: usize> Point<T, N> {
         self.vector_to(other).len()
     }
 
+    /// Returns the distance squared to the `other` `Point`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let origin = Point::<f64, 3>::origin();
+    /// let other = Point::new([3.0, 4.0, 0.0]);
+    ///
+    /// assert_eq!(other.distance_squared_to(origin), 25.0);
+    /// ```
     #[must_use]
     #[inline]
     pub fn distance_squared_to<U: Sub<T>>(self, other: Point<U, N>) -> U::Output
@@ -236,12 +408,34 @@ impl<T, const N: usize> Point<T, N> {
         self.vector_to(other).len_squared()
     }
 
+    /// Returns the `Vector` which would translate `self` to `other`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::{point::Point, vector::Vector};
+    /// 
+    /// let p1 = Point::new([1.0, 2.0, 6.0]);
+    /// let p2 = Point::new([3.0, 1.0, 8.0]);
+    ///
+    /// assert_eq!(p1.vector_to(p2), Vector::new([2.0, -1.0, 2.0]));
+    /// ```
     #[must_use]
     #[inline]
     pub fn vector_to<U: Sub<T>>(self, other: Point<U, N>) -> Vector<U::Output, N> {
         other - self
     }
 
+    /// Returns the normalized direction vector which points from `self` to `other`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::{point::Point, vector::Vector};
+    /// 
+    /// let direction = Point::<f64, 3>::origin().direction_to(Point::new([0.0, 0.7, 0.0]));
+    /// assert_eq!(direction, Vector::Y);
+    /// ```
     #[must_use]
     #[inline]
     pub fn direction_to<U: Sub<T>>(self, other: Point<U, N>) -> Vector<U::Output, N>
@@ -251,6 +445,17 @@ impl<T, const N: usize> Point<T, N> {
         Vector::normalized(self.vector_to(other))
     }
 
+    /// Converts the `Point` into a `Vector` with identical fields.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::{point::Point, vector::Vector};
+    ///
+    /// let point = Point::new([1, 5, 2, 9, 135, 2104]);
+    /// let vector: Vector<i32, _> = point.to_vector();
+    /// assert_eq!(&vector, &[1, 5, 2, 9, 135, 2104]);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn to_vector(self) -> Vector<T, N> {
@@ -304,6 +509,20 @@ impl<T, const N: usize> Point<T, N> {
 }
 
 impl<T: Copy + One + ClosedAdd + ClosedDiv + ClosedSub, const N: usize> Point<T, N> {
+    /// Returns the point exactly between `self` and `other`.
+    ///
+    /// This method should not overflow.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let p1 = Point::new([2.0; 3]);
+    /// let p2 = Point::new([4.0; 3]);
+    ///
+    /// assert_eq!(p1.midpoint(p2), Point::new([3.0; 3]));
+    /// ```
     #[must_use]
     #[inline]
     pub fn midpoint(self, other: Point<T, N>) -> Point<T, N> {
@@ -314,6 +533,21 @@ impl<T: Copy + One + ClosedAdd + ClosedDiv + ClosedSub, const N: usize> Point<T,
 }
 
 impl<T: Copy + ClosedDiv + ClosedSub + ClosedMul + ClosedAdd + Zero, const N: usize> Point<T, N> {
+    /// Returns the `Point` rotated around `center_of_rotation`, by `rotation`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approx::assert_relative_eq;
+    /// use vectral::{point::Point, vector::Vector, quaternion::Quaternion, rotation::angle::Degrees};
+    ///
+    /// let point = Point::new([1.0, 0.0, 0.0]);
+    /// let origin = Point::origin();
+    ///
+    /// let rotation = Quaternion::from_angle_axis(Degrees(90.0), Vector::Y);
+    ///
+    /// assert_relative_eq!(point.rotated_around(origin, rotation), Point::new([0.0, 0.0, -1.0]));
+    /// ```
     #[must_use]
     #[inline]
     pub fn rotated_around<R: Rotation<N, Scalar = T>>(
@@ -328,6 +562,34 @@ impl<T: Copy + ClosedDiv + ClosedSub + ClosedMul + ClosedAdd + Zero, const N: us
 }
 
 impl<T, const N: usize> Point<MaybeUninit<T>, N> {
+    /// Initialize a `Point` of `MaybeUninit` data, assuming that
+    /// each field is initialized.
+    ///
+    /// # Safety
+    ///
+    /// This method must only be called on a `Point` where each field
+    /// of the `Point` has been initialized through the `MaybeUninit`,
+    /// otherwise this method may allow access to uninitialized memory.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let mut point = Point::<usize, 5>::uninit();
+    ///
+    /// for (i, item) in point.iter_mut().enumerate() {
+    ///     unsafe {
+    ///         item.write(i + 200);
+    ///     }
+    /// }
+    ///
+    /// let point = unsafe {
+    ///     Point::assume_init(point)
+    /// };
+    ///
+    /// assert_eq!(&point, &[200, 201, 202, 203, 204]);
+    /// ```
     #[must_use]
     #[inline]
     pub unsafe fn assume_init(self) -> Point<T, N> {

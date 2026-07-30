@@ -16,6 +16,9 @@ use serde_core::{
     ser::{Serialize, Serializer},
 };
 
+pub use Angle::Degrees;
+pub use Angle::Radians;
+
 #[derive(Clone, Copy, Debug)]
 pub enum Angle<T> {
     Degrees(T),
