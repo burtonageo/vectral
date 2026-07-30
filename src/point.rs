@@ -9,6 +9,7 @@ use crate::{
     utils::concat,
 };
 use crate::{
+    rotation::Rotation,
     utils::{
         array_assume_init, array_get_checked, array_get_mut_checked, array_get_unchecked,
         array_get_unchecked_mut, expand_to_copy,
@@ -309,6 +310,20 @@ impl<T: Copy + One + ClosedAdd + ClosedDiv + ClosedSub, const N: usize> Point<T,
         let mut v = self.vector_to(other);
         v = v / (T::ONE + T::ONE);
         self + v
+    }
+}
+
+impl<T: Copy + ClosedDiv + ClosedSub + ClosedMul + ClosedAdd + Zero, const N: usize> Point<T, N> {
+    #[must_use]
+    #[inline]
+    pub fn rotated_around<R: Rotation<N, Scalar = T>>(
+        self,
+        center_of_rotation: Self,
+        rotation: R,
+    ) -> Self {
+        let dir = self.vector_to(center_of_rotation);
+        let rotated_dir = rotation.transform_vector(dir);
+        self + dir - rotated_dir
     }
 }
 
