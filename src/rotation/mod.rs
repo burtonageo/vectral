@@ -41,6 +41,7 @@ pub trait HomogenousRotation<const DIM: usize>: Rotation<DIM> {
     fn get_homogeneous(&self) -> Matrix<Self::Scalar, { DIM + 1 }, { DIM + 1 }>;
 }
 
+#[deprecated(note = "use `Point::rotated_around()`")]
 #[must_use]
 #[inline]
 pub fn rotate_point_around<T, R, const N: usize>(
@@ -52,7 +53,5 @@ where
     R: Rotation<N, Scalar = T>,
     T: Copy + ClosedDiv + ClosedSub + ClosedMul + ClosedAdd + Zero,
 {
-    let dir = point_to_rotate.vector_to(center_of_rotation);
-    let rotated_dir = rotation.transform_vector(dir);
-    point_to_rotate + dir - rotated_dir
+    point_to_rotate.rotated_around(center_of_rotation, rotation)
 }
