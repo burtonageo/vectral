@@ -100,6 +100,7 @@ where
         + Zero
         + Sqrt,
 {
+    #[must_use]
     #[inline]
     pub fn from_matrix(matrix: Matrix<T, 4, 4>) -> Self {
         let translation = {
