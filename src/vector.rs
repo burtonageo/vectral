@@ -14,7 +14,7 @@ use crate::{
             ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
             checked::{CheckedDiv, CheckedMul},
         },
-        shrink_to, zip_map,
+        shrink_to, swizzle_or, try_swizzle, zip_map,
     },
 };
 #[cfg(feature = "nightly")]
@@ -461,7 +461,7 @@ where
     /// ```
     /// use vectral::{vector::Vector, rotation::angle::Angle};
     /// use approx::assert_relative_eq;
-    /// 
+    ///
     /// let forwards = Vector::<f64, 3>::Y;
     /// let right = Vector::X;
     ///
@@ -826,25 +826,10 @@ impl<T: Copy, const N: usize> Vector<T, N> {
         self,
         swizzle_vec: &[usize; N1],
     ) -> Option<Vector<T, N1>> {
-        let mut vec = Vector::<_, N1>::uninit();
-
-        let mut i = 0;
-        while i < N1 {
-            unsafe {
-                let swizzle_idx = *swizzle_vec.as_ptr().add(i);
-                if swizzle_idx >= N {
-                    return None;
-                }
-
-                let swizzle_elem = *self.get_unchecked(swizzle_idx);
-                let slot = vec.get_unchecked_mut(i);
-                slot.write(swizzle_elem);
-            }
-
-            i += 1;
+        match try_swizzle(&self.data, swizzle_vec) {
+            Some(data) => Some(Vector::new(data)),
+            None => None,
         }
-
-        unsafe { Some(Vector::assume_init(vec)) }
     }
 
     /// Swizzles the vector using the given `swizzle_vec`, returning a new vector where each
@@ -872,26 +857,8 @@ impl<T: Copy, const N: usize> Vector<T, N> {
         swizzle_vec: &[usize; N1],
         or: &Vector<T, N1>,
     ) -> Vector<T, N1> {
-        let mut vec = Vector::<_, N1>::uninit();
-
-        let mut i = 0;
-        while i < N1 {
-            unsafe {
-                let swizzle_idx = *swizzle_vec.as_ptr().add(i);
-
-                let swizzle_elem = if swizzle_idx >= N {
-                    *or.get_unchecked(i)
-                } else {
-                    *self.get_unchecked(swizzle_idx)
-                };
-                let slot = vec.get_unchecked_mut(i);
-                slot.write(swizzle_elem);
-            }
-
-            i += 1;
-        }
-
-        unsafe { Vector::assume_init(vec) }
+        let array = swizzle_or(&self.data, swizzle_vec, &or.data);
+        Vector::new(array)
     }
 
     /// Swizzles the vector using the given `swizzle_vec`, returning a new vector where each
@@ -1550,8 +1517,16 @@ mod tests {
         let x = Vector::<f64, 3>::X;
         let neg_y = -y;
 
-        assert_abs_diff_eq!(Vector::angle_between(y, x), Angle::<f64>::quarter(), epsilon = epsilon);
-        assert_abs_diff_eq!(Vector::angle_between(y, neg_y), Angle::<f64>::half(), epsilon = epsilon);
+        assert_abs_diff_eq!(
+            Vector::angle_between(y, x),
+            Angle::<f64>::quarter(),
+            epsilon = epsilon
+        );
+        assert_abs_diff_eq!(
+            Vector::angle_between(y, neg_y),
+            Angle::<f64>::half(),
+            epsilon = epsilon
+        );
     }
 
     #[cfg(feature = "serde")]

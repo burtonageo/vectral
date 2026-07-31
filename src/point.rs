@@ -17,7 +17,7 @@ use crate::{
             ClosedAdd, ClosedDiv, ClosedMul, ClosedSub, One, Sqrt, Zero,
             checked::{CheckedDiv, CheckedMul},
         },
-        shrink_to, zip_map,
+        shrink_to, swizzle_or, try_swizzle, zip_map,
     },
     vector::Vector,
 };
@@ -117,6 +117,88 @@ impl<T: Copy, const N: usize> Point<T, N> {
     pub const fn expand_to<const N1: usize>(self, value: T) -> Point<T, N1> {
         Point {
             data: expand_to_copy(self.data, value),
+        }
+    }
+
+    /// Swizzles the `Point` using the given `swizzle_vec`, returning a new `Oiubt` where each
+    /// element is the item at the index of `swizzle_vec`.
+    ///
+    /// # Notes
+    ///
+    /// If any index given in `swizzle_vec` is out of bounds, then this method will return `None`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectral::point::Point;
+    /// let point = Point::new([1, 2, 8, 9, 3, 1, 4]);
+    /// let swizzled = point.try_swizzle(&[1, 4, 0, 0]).unwrap();
+    /// assert_eq!(swizzled.to_array(), [2, 3, 1, 1]);
+    /// ```
+    #[must_use]
+    #[inline]
+    pub const fn try_swizzle<const N1: usize>(
+        self,
+        swizzle_vec: &[usize; N1],
+    ) -> Option<Point<T, N1>> {
+        match try_swizzle(&self.data, swizzle_vec) {
+            Some(data) => Some(Point::new(data)),
+            None => None,
+        }
+    }
+
+    /// Swizzles the `Point` using the given `swizzle_vec`, returning a new `Point` where each
+    /// element is the item at the index of `swizzle_vec`.
+    ///
+    /// # Notes
+    ///
+    /// If any index given in `swizzle_vec` is out of bounds, then the corresponding element from the
+    /// `or` `Point` will be used instead.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let point = Point::new([1, 2, 8, 9, 3, 1, 4]);
+    /// let swizzled = point.swizzle_or(&[1, 4, 0, 900], &Point::new([6, 7, 8, 19]));
+    ///
+    /// assert_eq!(swizzled.to_array(), [2, 3, 1, 19]);
+    /// ```
+    #[must_use]
+    #[inline]
+    pub const fn swizzle_or<const N1: usize>(
+        self,
+        swizzle_vec: &[usize; N1],
+        or: &Point<T, N1>,
+    ) -> Point<T, N1> {
+        let array = swizzle_or(&self.data, swizzle_vec, &or.data);
+        Point::new(array)
+    }
+
+    /// Swizzles the `Point` using the given `swizzle_vec`, returning a new `Point` where each
+    /// element is the item at the index of `swizzle_vec`.
+    ///
+    /// # Panics
+    ///
+    /// If any index given in `swizzle_vec` is out of bounds, then this method will panic.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::point::Point;
+    ///
+    /// let point = Point::new([1, 2, 8, 9, 3, 1, 4]);
+    /// let swizzled = point.swizzle(&[1, 4, 0, 0]);
+    /// assert_eq!(swizzled.to_array(), [2, 3, 1, 1]);
+    /// ```
+    #[track_caller]
+    #[must_use]
+    #[inline]
+    pub const fn swizzle<const N1: usize>(self, swizzle_vec: &[usize; N1]) -> Point<T, N1> {
+        match self.try_swizzle(swizzle_vec) {
+            Some(point) => point,
+            None => panic!("swizzle index out of bounds"),
         }
     }
 }
@@ -330,7 +412,7 @@ impl<T, const N: usize> Point<T, N> {
     /// slice[1] = 14;
     ///
     /// assert_eq!(&point, &[1, 14, 4, 8, 14, 2]);
-    /// ``` 
+    /// ```
     #[must_use]
     #[inline]
     pub const fn as_mut_slice(&mut self) -> &mut [T] {
@@ -414,7 +496,7 @@ impl<T, const N: usize> Point<T, N> {
     ///
     /// ```
     /// use vectral::{point::Point, vector::Vector};
-    /// 
+    ///
     /// let p1 = Point::new([1.0, 2.0, 6.0]);
     /// let p2 = Point::new([3.0, 1.0, 8.0]);
     ///
@@ -432,7 +514,7 @@ impl<T, const N: usize> Point<T, N> {
     ///
     /// ```
     /// use vectral::{point::Point, vector::Vector};
-    /// 
+    ///
     /// let direction = Point::<f64, 3>::origin().direction_to(Point::new([0.0, 0.7, 0.0]));
     /// assert_eq!(direction, Vector::Y);
     /// ```

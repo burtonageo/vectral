@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{const_assert_larger_or_equal, const_assert_smaller, const_assert_smaller_or_equal};
+#[cfg(feature = "nightly")]
+use core::mem::ManuallyDrop;
 use core::{
     marker::PhantomData,
     mem::{self, MaybeUninit},
     ptr, slice,
 };
-#[cfg(feature = "nightly")]
-use core::mem::ManuallyDrop;
 
 pub mod zip;
 
@@ -435,6 +435,62 @@ pub(crate) const unsafe fn array_assume_init<T, const N: usize>(
     array: [MaybeUninit<T>; N],
 ) -> [T; N] {
     unsafe { mem::transmute_copy(&array) }
+}
+
+#[must_use]
+#[inline]
+pub(crate) const fn try_swizzle<T: Copy, const ARR: usize, const SWIZZ: usize>(
+    array: &[T; ARR],
+    swizz_vec: &[usize; SWIZZ],
+) -> Option<[T; SWIZZ]> {
+    let mut swizzled = [MaybeUninit::uninit(); SWIZZ];
+
+    let mut i = 0;
+    while i < SWIZZ {
+        unsafe {
+            let swizzle_idx = *swizz_vec.as_ptr().add(i);
+            if swizzle_idx >= ARR {
+                return None;
+            }
+
+            let swizzle_elem = array_get_unchecked(array, swizzle_idx);
+            let slot = array_get_unchecked_mut(&mut swizzled, i);
+            slot.write(*swizzle_elem);
+        }
+
+        i += 1;
+    }
+
+    unsafe { Some(array_assume_init(swizzled)) }
+}
+
+#[must_use]
+#[inline]
+pub(crate) const fn swizzle_or<T: Copy, const ARR: usize, const SWIZZ: usize>(
+    array: &[T; ARR],
+    swizz_vec: &[usize; SWIZZ],
+    alternate: &[T; SWIZZ],
+) -> [T; SWIZZ] {
+    let mut swizzled = [MaybeUninit::<T>::uninit(); SWIZZ];
+
+    let mut i = 0;
+    while i < SWIZZ {
+        unsafe {
+            let swizzle_idx = *swizz_vec.as_ptr().add(i);
+
+            let swizzle_elem = if swizzle_idx >= ARR {
+                array_get_unchecked(alternate, i)
+            } else {
+                array_get_unchecked(array, swizzle_idx)
+            };
+            let slot = array_get_unchecked_mut(&mut swizzled, i);
+            slot.write(*swizzle_elem);
+        }
+
+        i += 1;
+    }
+
+    unsafe { array_assume_init(swizzled) }
 }
 
 #[cfg(test)]
