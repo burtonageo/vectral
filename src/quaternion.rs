@@ -13,7 +13,7 @@ use crate::utils::{
         checked::{CheckedAddAssign, CheckedDiv, CheckedMul},
         lerp, rat,
     },
-    shrink_to, zip,
+    shrink_to, zip::zip,
 };
 use crate::{
     matrix::Matrix4,
