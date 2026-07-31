@@ -598,7 +598,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             unsafe {
                 mem::swap(
                     self.get_unchecked_mut(row_idx, col_idx),
-                    &mut *col.as_mut_ptr().add(row_idx),
+                    array_get_unchecked_mut(&mut col, row_idx),
                 );
             }
             row_idx += 1;
@@ -654,7 +654,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             unsafe {
                 mem::swap(
                     self.get_unchecked_mut(row_idx, col_idx),
-                    &mut *col.as_mut_ptr().add(row_idx),
+                    array_get_unchecked_mut(&mut col, row_idx),
                 );
             }
             row_idx += 1;
