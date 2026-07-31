@@ -250,6 +250,9 @@ pub trait Trig: Copy {
     fn atan(self) -> Self;
 
     #[must_use]
+    fn atan2(self, other: Self) -> Self;
+
+    #[must_use]
     fn sinh(self) -> Self;
     #[must_use]
     fn asinh(self) -> Self;
@@ -482,6 +485,11 @@ macro_rules! impl_float_traits {
                 #[inline]
                 fn atan(self) -> Self  {
                     <$type>::atan(self)
+                }
+
+                #[inline]
+                fn atan2(self, other: Self) -> Self {
+                    <$type>::atan2(self, other)
                 }
 
                 #[inline]

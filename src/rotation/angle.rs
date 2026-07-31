@@ -273,6 +273,11 @@ impl<T: Trig> Trig for Angle<T> {
     }
 
     #[inline]
+    fn atan2(self, other: Self) -> Self {
+        Angle::Radians(self.in_radians().atan2(other.in_radians()))
+    }
+
+    #[inline]
     fn sinh(self) -> Self {
         match self {
             Self::Degrees(degrees) => Angle::Radians(degrees.to_radians().sinh()),
