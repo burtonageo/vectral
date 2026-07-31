@@ -1728,39 +1728,68 @@ impl<T, const N: usize> Matrix<T, N, N> {
     /// Sets the rightwards diagonal of the matrix (starting at the top left) to the given
     /// `new_diagonal`.
     ///
+    /// The old diagonal is returned as an array.
+    ///
     /// # Examples
     ///
     /// ```
-    /// # use vectral::matrix::Matrix;
+    /// use vectral::matrix::Matrix;
+    ///
     /// let mut identity_matrix = Matrix::<f32, 4, 4>::splat(0.0);
     /// identity_matrix.set_rightwards_diagonal([1.0; 4]);
     /// assert_eq!(identity_matrix, Matrix::identity());
     /// ```
     #[inline]
-    pub fn set_rightwards_diagonal(&mut self, new_diagonal: [T; N]) {
+    pub const fn set_rightwards_diagonal(&mut self, mut new_diagonal: [T; N]) -> [T; N] {
         let mut i = 0;
         while i < N {
             unsafe {
-                *self.get_unchecked_mut(i, i) = ptr::read(new_diagonal.get_unchecked(i));
+                let a = array_get_unchecked_mut(&mut new_diagonal, i);
+                let b = self.get_unchecked_mut(i, i);
+                mem::swap(a, b);
             }
             i += 1;
         }
 
-        let _diag = ManuallyDrop::new(new_diagonal);
+        new_diagonal
     }
 
+    /// Sets the leftwards diagonal of the matrix (starting at the top right) to the given
+    /// `new_diagonal`.
+    ///
+    /// The old diagonal is returned as an array.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let mut matrix = Matrix::<f32, 4, 4>::splat(0.0);
+    ///
+    /// matrix.set_leftwards_diagonal([1.0, 2.0, 3.0, 1.0]);
+    ///
+    /// assert_eq!(&matrix, &[
+    ///     [0.0, 0.0, 0.0, 1.0],
+    ///     [0.0, 0.0, 2.0, 0.0],
+    ///     [0.0, 3.0, 0.0, 0.0],
+    ///     [1.0, 0.0, 0.0, 0.0],
+    /// ]);
+    /// ```
     #[inline]
-    pub fn set_leftwards_diagonal(&mut self, new_diagonal: [T; N]) {
+    pub const fn set_leftwards_diagonal(&mut self, mut new_diagonal: [T; N]) -> [T; N] {
         let (mut row, mut col) = (0, N - 1);
         while row < N {
             unsafe {
-                *self.get_unchecked_mut(row, col) = ptr::read(new_diagonal.get_unchecked(row));
+                let from = array_get_unchecked_mut(&mut new_diagonal, row);
+                let to = self.get_unchecked_mut(row, col);
+                mem::swap(from, to)
             }
+
             row += 1;
             col = col.saturating_sub(1);
         }
 
-        let _diag = ManuallyDrop::new(new_diagonal);
+        new_diagonal
     }
 
     /// Transposes the matrix by swapping elements around the diagonal, without creating
