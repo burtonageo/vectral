@@ -8,13 +8,13 @@ use core::{
 
 #[non_exhaustive]
 #[derive(Debug)]
-pub enum CheckedIntegerArithmeticError {
+pub enum CheckedArithmeticError {
     Overflow,
     Underflow,
     DivideByZero,
 }
 
-impl fmt::Display for CheckedIntegerArithmeticError {
+impl fmt::Display for CheckedArithmeticError {
     #[inline]
     fn fmt(&self, fmtr: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
@@ -25,11 +25,7 @@ impl fmt::Display for CheckedIntegerArithmeticError {
     }
 }
 
-impl Error for CheckedIntegerArithmeticError {}
-
-#[non_exhaustive]
-#[derive(Debug)]
-pub enum CheckedFloatingPointArithmeticError {}
+impl Error for CheckedArithmeticError {}
 
 pub trait CheckedAdd<T = Self>: Add<T> {
     #[must_use]
@@ -128,54 +124,54 @@ macro_rules! impl_checked_int_ops {
 
             $( #[ $meta ] )*
             impl CheckedAddAssign for $int_ty {
-                type Error = CheckedIntegerArithmeticError;
+                type Error = CheckedArithmeticError;
                 #[inline]
                 fn checked_add_assign(&mut self, rhs: Self) -> Result<(), Self::Error> {
-                    *self = self.checked_add(rhs).ok_or(CheckedIntegerArithmeticError::Overflow)?;
+                    *self = self.checked_add(rhs).ok_or(CheckedArithmeticError::Overflow)?;
                     Ok(())
                 }
             }
 
             $( #[ $meta ] )*
             impl CheckedSubAssign for $int_ty {
-                type Error = CheckedIntegerArithmeticError;
+                type Error = CheckedArithmeticError;
                 #[inline]
                 fn checked_sub_assign(&mut self, rhs: Self) -> Result<(), Self::Error> {
-                    *self = self.checked_sub(rhs).ok_or(CheckedIntegerArithmeticError::Underflow)?;
+                    *self = self.checked_sub(rhs).ok_or(CheckedArithmeticError::Underflow)?;
                     Ok(())
                 }
             }
 
             $( #[ $meta ] )*
             impl CheckedMulAssign for $int_ty {
-                type Error = CheckedIntegerArithmeticError;
+                type Error = CheckedArithmeticError;
                 #[inline]
                 fn checked_mul_assign(&mut self, rhs: Self) -> Result<(), Self::Error> {
-                    *self = self.checked_mul(rhs).ok_or(CheckedIntegerArithmeticError::Overflow)?;
+                    *self = self.checked_mul(rhs).ok_or(CheckedArithmeticError::Overflow)?;
                     Ok(())
                 }
             }
 
             $( #[ $meta ] )*
             impl CheckedDivAssign for $int_ty {
-                type Error = CheckedIntegerArithmeticError;
+                type Error = CheckedArithmeticError;
                 #[inline]
                 fn checked_div_assign(&mut self, rhs: Self) -> Result<(), Self::Error> {
                     if rhs == 0 {
-                        return Err(CheckedIntegerArithmeticError::DivideByZero);
+                        return Err(CheckedArithmeticError::DivideByZero);
                     }
 
-                    *self = self.checked_div(rhs).ok_or(CheckedIntegerArithmeticError::Overflow)?;
+                    *self = self.checked_div(rhs).ok_or(CheckedArithmeticError::Overflow)?;
                     Ok(())
                 }
             }
 
             $( #[ $meta ] )*
             impl CheckedRemAssign for $int_ty {
-                type Error = CheckedIntegerArithmeticError;
+                type Error = CheckedArithmeticError;
                 #[inline]
                 fn checked_rem_assign(&mut self, rhs: Self) -> Result<(), Self::Error> {
-                    *self = self.checked_rem(rhs).ok_or(CheckedIntegerArithmeticError::Overflow)?;
+                    *self = self.checked_rem(rhs).ok_or(CheckedArithmeticError::Overflow)?;
                     Ok(())
                 }
             }
@@ -260,54 +256,54 @@ macro_rules! impl_checked_float_ops {
 
             $( #[ $meta ] )*
             impl CheckedAddAssign for $float_ty {
-                type Error = CheckedIntegerArithmeticError;
+                type Error = CheckedArithmeticError;
                 #[inline]
                 fn checked_add_assign(&mut self, rhs: Self) -> Result<(), Self::Error> {
-                    *self = self.checked_add(rhs).ok_or(CheckedIntegerArithmeticError::Overflow)?;
+                    *self = self.checked_add(rhs).ok_or(CheckedArithmeticError::Overflow)?;
                     Ok(())
                 }
             }
 
             $( #[ $meta ] )*
             impl CheckedSubAssign for $float_ty {
-                type Error = CheckedIntegerArithmeticError;
+                type Error = CheckedArithmeticError;
                 #[inline]
                 fn checked_sub_assign(&mut self, rhs: Self) -> Result<(), Self::Error> {
-                    *self = self.checked_sub(rhs).ok_or(CheckedIntegerArithmeticError::Underflow)?;
+                    *self = self.checked_sub(rhs).ok_or(CheckedArithmeticError::Underflow)?;
                     Ok(())
                 }
             }
 
             $( #[ $meta ] )*
             impl CheckedMulAssign for $float_ty {
-                type Error = CheckedIntegerArithmeticError;
+                type Error = CheckedArithmeticError;
                 #[inline]
                 fn checked_mul_assign(&mut self, rhs: Self) -> Result<(), Self::Error> {
-                    *self = self.checked_mul(rhs).ok_or(CheckedIntegerArithmeticError::Overflow)?;
+                    *self = self.checked_mul(rhs).ok_or(CheckedArithmeticError::Overflow)?;
                     Ok(())
                 }
             }
 
             $( #[ $meta ] )*
             impl CheckedDivAssign for $float_ty {
-                type Error = CheckedIntegerArithmeticError;
+                type Error = CheckedArithmeticError;
                 #[inline]
                 fn checked_div_assign(&mut self, rhs: Self) -> Result<(), Self::Error> {
                     if rhs == 0.0 {
-                        return Err(CheckedIntegerArithmeticError::DivideByZero);
+                        return Err(CheckedArithmeticError::DivideByZero);
                     }
 
-                    *self = self.checked_div(rhs).ok_or(CheckedIntegerArithmeticError::Overflow)?;
+                    *self = self.checked_div(rhs).ok_or(CheckedArithmeticError::Overflow)?;
                     Ok(())
                 }
             }
 
             $( #[ $meta ] )*
             impl CheckedRemAssign for $float_ty {
-                type Error = CheckedIntegerArithmeticError;
+                type Error = CheckedArithmeticError;
                 #[inline]
                 fn checked_rem_assign(&mut self, rhs: Self) -> Result<(), Self::Error> {
-                    *self = self.checked_rem(rhs).ok_or(CheckedIntegerArithmeticError::Overflow)?;
+                    *self = self.checked_rem(rhs).ok_or(CheckedArithmeticError::Overflow)?;
                     Ok(())
                 }
             }
