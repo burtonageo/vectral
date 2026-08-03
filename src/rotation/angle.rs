@@ -28,7 +28,7 @@ pub enum Angle<T> {
 impl<T: Zero> Angle<T> {
     #[must_use]
     #[inline]
-    pub fn zero() -> Self {
+    pub const fn zero() -> Self {
         Self::Degrees(T::ZERO)
     }
 }
