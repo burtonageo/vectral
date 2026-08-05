@@ -1,21 +1,34 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+//! Types which allow struct-like access to the fields of [`Point`]s and [`Vector`]s
+//!
+//! [`Vector`]: ../vector/struct.Vector.html
+//! [`Point`]: ../point/struct.Point.html
+
 use crate::utils::num::Zero;
 
 macro_rules! decl_fields {
     (
         $(
+            $( #[ $meta:meta ] )*
             $ty_name:ident <{ $dim:expr }> {
-                $( $field:ident ),+
+                $(
+                    $( #[ $field_meta:meta ] )*
+                    $field:ident
+                ),+
                 $(,)?
             }
         )*
     ) => {
         $(
+            $( #[ $meta ] )*
             #[repr(C)]
             #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
             pub struct $ty_name <T> {
-                $( pub $field : T ),+
+                $(
+                    $( #[ $field_meta ] )*
+                    pub $field : T
+                ),+
             }
 
             impl<T> $ty_name<T> {
@@ -77,8 +90,36 @@ macro_rules! decl_fields {
 }
 
 decl_fields! {
-    X <{ 1 }> { x }
-    Xy <{ 2 }> { x, y }
-    Xyz <{ 3 }> { x, y, z}
-    Xyzw <{ 4 }> { x, y, z, w, }
+    /// A field with a single scalar value representing a single axis.
+    X <{ 1 }> {
+        /// The value representing the x-axis value.
+        x,
+    }
+    /// A field with a two scalar values representing a two dimensional space.
+    Xy <{ 2 }> {
+        /// The value representing the x-axis value.
+        x,
+        /// The value representing the y-axis value.
+        y,
+    }
+    /// A field with a three scalar values representing a three dimensional space.
+    Xyz <{ 3 }> {
+        /// The value representing the x-axis value.
+        x,
+        /// The value representing the y-axis value.
+        y,
+        /// The value representing the z-axis value.
+        z,
+    }
+    /// A field with a four scalar values representing a four dimensional space.
+    Xyzw <{ 4 }> {
+        /// The value representing the x-axis value.
+        x,
+        /// The value representing the y-axis value.
+        y,
+        /// The value representing the z-axis value.
+        z,
+        /// The value representing the w-axis value.
+        w,
+    }
 }
