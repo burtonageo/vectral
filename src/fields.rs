@@ -32,6 +32,7 @@ macro_rules! decl_fields {
             }
 
             impl<T> $ty_name<T> {
+                #[doc = concat!("Create a new `", stringify!($ty_name), "` from the given values.")]
                 #[must_use]
                 #[inline]
                 pub const fn new( $( $field : T ),+ ) -> Self {
@@ -42,6 +43,10 @@ macro_rules! decl_fields {
             }
 
             impl<T: Copy> $ty_name<T> {
+                #[doc = concat!(
+                    "Create a new `", stringify!($ty_name), "` where each element in the `",
+                    stringify!($ty_name), "` is set to the given `value`."
+                )]
                 #[must_use]
                 #[inline]
                 pub const fn splat(value: T) -> Self {
@@ -84,7 +89,7 @@ macro_rules! decl_fields {
             }
 
             #[cfg(feature = "bytemuck")]
-            unsafe impl<T: bytemuck::Pod> bytemuck::Pod for $ty_name<T>{}
+            unsafe impl<T: bytemuck::Pod> bytemuck::Pod for $ty_name<T> {}
         )*
     };
 }
