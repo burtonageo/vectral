@@ -2799,14 +2799,14 @@ where
         let diag = [
             two / (right - left),
             two / (top - bottom),
-            -two / (z_near - z_far),
+            -two / (z_far - z_near),
             One::ONE,
         ];
 
         let col = [
-            -((right + left) / (right - left)),
-            -((top + bottom) / (top - bottom)),
-            -((z_far + z_near) / (z_far - z_near)),
+            -(right + left) / (right - left),
+            -(top + bottom) / (top - bottom),
+            -(z_far + z_near) / (z_far - z_near),
             One::ONE,
         ];
 
