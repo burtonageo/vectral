@@ -2817,6 +2817,33 @@ where
     }
 }
 
+impl<T> Matrix<T, 4, 4>
+where
+    T: One + ClosedDiv + Trig + ClosedNeg + ClosedAdd + ClosedMul + Zero + ClosedSub,
+{
+    #[must_use]
+    #[inline]
+    pub fn orthographic_projection_3d_from_fov(
+        aspect: T,
+        vfov: Angle<T>,
+        znear: T,
+        zfar: T,
+    ) -> Self {
+        let two = T::ONE + T::ONE;
+        let width = zfar * (vfov / two).tan().in_radians();
+        let height = width / aspect;
+
+        Matrix4::orthographic_projection_3d(
+            -(width / two),
+            width / two,
+            -(height / two),
+            height / two,
+            znear,
+            zfar,
+        )
+    }
+}
+
 impl<T> Matrix4<T>
 where
     T: Trig
