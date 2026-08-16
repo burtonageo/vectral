@@ -15,7 +15,6 @@ use crate::{
             Abs, Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig,
             Zero,
             checked::{CheckedAddAssign, CheckedDiv},
-            n,
         },
         zip_map,
     },
@@ -2861,26 +2860,30 @@ where
     #[must_use]
     #[inline]
     pub fn perspective_3d(aspect: T, fov: Angle<T>, near: T, far: T) -> Self {
-        // Taken from https://www.mauriciopoppe.com/notes/computer-graphics/viewing/projection-transform/
-        let two = n::<T>(nz!(2));
-        let fov = fov.in_radians();
+        let two = T::ONE + T::ONE;
+        let scale = (fov / two).tan().in_radians() * near;
 
-        let top = near * Trig::tan(fov / two);
-        let right = aspect * top;
+        let r = aspect * scale.clone();
+        let l = r.neg();
 
-        let z = T::ZERO;
+        let t = scale;
+        let b = t.neg();
 
-        Matrix::new([
-            [T::ONE / right, z, z, z],
-            [z, T::ONE / top, z, z],
-            [
-                z,
-                z,
-                ((far + near) / (far - near)).neg(),
-                (two.neg() * far * near) / (far - near),
-            ],
-            [z, z, T::ONE.neg(), z],
-        ])
+        let (n, f) = (near, far);
+
+        let mut matrix = Matrix::ZERO;
+
+        matrix[0][0] = two * n / (r - l);
+        matrix[1][1] = two * n / (t - b);
+
+        matrix[2][0] = (r + l) / (r - l);
+        matrix[2][1] = (t + b) / (t - b);
+        matrix[2][2] = -(f + n) / (f - n);
+        matrix[2][3] = two.neg() * f * n / (f - n);
+
+        matrix[3][2] = T::ONE.neg();
+
+        matrix
     }
 }
 

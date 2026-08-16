@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use approx::assert_relative_eq;
+
 #[cfg(any(feature = "std", feature = "libm"))]
 use crate::rotation::angle::Angle;
 #[cfg(feature = "simd")]
@@ -8,7 +10,7 @@ use crate::simd::{SimdMul, SimdValue};
 use crate::{matrix::TransformHomogeneous, point::Point3};
 use crate::{
     matrix::{Matrix, Matrix4},
-    rotation::quaternion::Quaternion,
+    rotation::{angle::Angle::Degrees, quaternion::Quaternion},
     utils::num::Zero,
     vector::{Vector, Vector3},
 };
@@ -718,4 +720,27 @@ fn test_serde() {
     let matrix_deserialized = rmp_serde::from_slice::<Matrix<f64, 3, 4>>(&matrix_data).unwrap();
 
     assert_eq!(&matrix, &matrix_deserialized);
+}
+
+#[test]
+fn test_perspective() {
+    #[rustfmt::skip]
+    let expected_matrix = Matrix::<f32, _, _>::new([
+        [1.81066, 0.0, 0.0, 0.0],
+        [0.0, 2.4142134, 0.0, 0.0],
+        [0.0, 0.0, -1.002002, -0.2002002],
+        [0.0, 0.0, -1.0, 0.0],
+    ]);
+
+    let fov = Degrees(45.0);
+    let near = 0.1;
+    let far = 100.0;
+    let aspect = {
+        let w = 1600.0;
+        let h = 1200.0;
+        w / h
+    };
+
+    let perspective = Matrix::perspective_3d(aspect, fov, near, far);
+    assert_relative_eq!(&perspective, &expected_matrix);
 }
