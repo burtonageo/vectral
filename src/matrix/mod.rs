@@ -2859,7 +2859,7 @@ where
 {
     #[must_use]
     #[inline]
-    pub fn perspective_3d(fov: Angle<T>, aspect: T, near: T, far: T) -> Self {
+    pub fn perspective_3d(aspect: T, fov: Angle<T>, near: T, far: T) -> Self {
         // Taken from https://www.mauriciopoppe.com/notes/computer-graphics/viewing/projection-transform/
         let two = n::<T>(nz!(2));
         let fov = fov.in_radians();
