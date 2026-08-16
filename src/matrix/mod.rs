@@ -913,7 +913,8 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// # Examples
     ///
     /// ```
-    /// # use vectral::matrix::Matrix;
+    /// use vectral::matrix::Matrix;
+    ///
     /// let matrix = Matrix::new([
     ///     [1, 2, 3, 4],
     ///     [5, 6, 7, 8],
