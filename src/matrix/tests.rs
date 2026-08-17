@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use approx::assert_relative_eq;
-
 #[cfg(any(feature = "std", feature = "libm"))]
 use crate::rotation::angle::Angle;
 #[cfg(feature = "simd")]
@@ -10,10 +8,12 @@ use crate::simd::{SimdMul, SimdValue};
 use crate::{matrix::TransformHomogeneous, point::Point3};
 use crate::{
     matrix::{Matrix, Matrix4},
+    point::Point,
     rotation::{angle::Angle::Degrees, quaternion::Quaternion},
     utils::num::Zero,
     vector::{Vector, Vector3},
 };
+use approx::assert_relative_eq;
 #[cfg(all(any(feature = "std", feature = "libm")))]
 use core::ops::Neg;
 
@@ -725,11 +725,19 @@ fn test_serde() {
 #[test]
 fn test_perspective() {
     #[rustfmt::skip]
-    let expected_matrix = Matrix::<f32, _, _>::new([
+    let expected_perspective_matrix = Matrix::<f32, _, _>::new([
         [1.81066, 0.0, 0.0, 0.0],
         [0.0, 2.4142134, 0.0, 0.0],
         [0.0, 0.0, -1.002002, -0.2002002],
         [0.0, 0.0, -1.0, 0.0],
+    ]);
+
+    #[rustfmt::skip]
+    let expected_orthographic_matrix = Matrix::<f32, _, _>::new([
+        [0.04828427, 0.0, 0.0, -0.0],
+        [0.0, 0.06437903, 0.0, -0.0],
+        [0.0, 0.0, -0.02002002, -1.002002],
+        [0.0, 0.0, 0.0, 1.0],
     ]);
 
     let fov = Degrees(45.0);
@@ -742,5 +750,15 @@ fn test_perspective() {
     };
 
     let perspective = Matrix::perspective_3d(aspect, fov, near, far);
-    assert_relative_eq!(&perspective, &expected_matrix);
+    assert_relative_eq!(&perspective, &expected_perspective_matrix);
+
+    let ortho = Matrix::orthographic_projection_3d_from_fov(aspect, fov, near, far);
+    assert_relative_eq!(&ortho, &expected_orthographic_matrix);
+}
+
+#[test]
+fn test_lookat() {
+    let origin_lookat =
+        Matrix::<f32, _, _>::look_at_lh(Point::origin(), Point::from(Vector::Z), Vector::Y);
+    assert_relative_eq!(&origin_lookat, &Matrix::identity());
 }
