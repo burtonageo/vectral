@@ -2765,17 +2765,25 @@ where
     #[must_use]
     #[inline]
     pub fn look_at_lh(origin: Point3<T>, target: Point3<T>, up: Vector3<T>) -> Self {
-        let mut cam_to_world = Matrix::translation_3d(origin.to_vector());
+        let mut matrix = Matrix::identity();
 
         let dir = origin.direction_to(target);
-        let left = Vector::cross(up.normalized(), dir);
-        let new_up = Vector::cross(dir, left);
+        let side = Vector::cross(up.normalized(), dir);
+        let new_up = Vector::cross(dir, side);
 
-        cam_to_world.set_col(0, left.expand_to::<4>(T::ZERO).to_array());
-        cam_to_world.set_col(1, new_up.expand_to::<4>(T::ZERO).to_array());
-        cam_to_world.set_col(2, dir.expand_to::<4>(T::ZERO).to_array());
+        let origin_vector = Vector::new([
+            -Vector::dot(origin.to_vector(), side),
+            -Vector::dot(origin.to_vector(), new_up),
+            -Vector::dot(origin.to_vector(), dir),
+            T::ONE,
+        ]);
 
-        cam_to_world
+        matrix.set_col(0, side.expand_to::<4>(T::ZERO).to_array());
+        matrix.set_col(1, new_up.expand_to::<4>(T::ZERO).to_array());
+        matrix.set_col(2, dir.expand_to::<4>(T::ZERO).to_array());
+        matrix.set_col(3, origin_vector.to_array());
+
+        matrix
     }
 }
 
