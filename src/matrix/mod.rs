@@ -808,6 +808,15 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         }
     }
 
+    #[must_use]
+    #[inline]
+    pub const fn get_row_ref(&self, n: usize) -> Option<[&T; COLS]> {
+        match array_get_checked(&self.data, n) {
+            Some(row) => Some(row.each_ref()),
+            None => None,
+        }
+    }
+
     #[track_caller]
     #[must_use]
     #[inline]
@@ -821,6 +830,16 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[track_caller]
     #[must_use]
     #[inline]
+    pub const fn get_row_mut(&mut self, n: usize) -> Option<[&mut T; COLS]> {
+        match array_get_mut_checked(&mut self.data, n) {
+            Some(row) => Some(row.each_mut()),
+            None => None,
+        }
+    }
+
+    #[track_caller]
+    #[must_use]
+    #[inline]
     pub const fn row_mut(&mut self, n: usize) -> [&mut T; COLS] {
         match array_get_mut_checked(&mut self.data, n) {
             Some(row) => row.each_mut(),
@@ -828,11 +847,12 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         }
     }
 
-    #[track_caller]
     #[must_use]
     #[inline]
-    pub const fn col_ref(&self, n: usize) -> [&T; ROWS] {
-        assert!(n < COLS, "column index out of bounds");
+    pub const fn get_column_ref(&self, n: usize) -> Option<[&T; ROWS]> {
+        if n >= COLS {
+            return None;
+        }
 
         let mut col = [const { MaybeUninit::uninit() }; ROWS];
 
@@ -844,14 +864,26 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             row += 1;
         }
 
-        unsafe { MaybeUninit::assume_init(mem::transmute_copy(&col)) }
+        unsafe { Some(MaybeUninit::assume_init(mem::transmute_copy(&col))) }
     }
 
     #[track_caller]
     #[must_use]
     #[inline]
-    pub const fn col_mut(&mut self, n: usize) -> [&mut T; ROWS] {
-        assert!(n < COLS, "column index out of bounds");
+    pub const fn column_ref(&self, n: usize) -> [&T; ROWS] {
+        match self.get_column_ref(n) {
+            Some(col) => col,
+            None => panic!("column index out of bounds"),
+        }
+    }
+
+    #[track_caller]
+    #[must_use]
+    #[inline]
+    pub const fn get_column_mut(&mut self, n: usize) -> Option<[&mut T; ROWS]> {
+        if n >= COLS {
+            return None;
+        }
 
         let mut col = [const { MaybeUninit::uninit() }; _];
 
@@ -864,7 +896,33 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             row += 1;
         }
 
-        unsafe { array_assume_init(col) }
+        unsafe { Some(array_assume_init(col)) }
+    }
+
+    #[track_caller]
+    #[must_use]
+    #[inline]
+    pub const fn column_mut(&mut self, n: usize) -> [&mut T; ROWS] {
+        match self.get_column_mut(n) {
+            Some(col) => col,
+            None => panic!("column index out of bounds"),
+        }
+    }
+
+    #[deprecated]
+    #[track_caller]
+    #[must_use]
+    #[inline]
+    pub const fn col_mut(&mut self, n: usize) -> [&mut T; ROWS] {
+        self.column_mut(n)
+    }
+
+    #[deprecated]
+    #[track_caller]
+    #[must_use]
+    #[inline]
+    pub const fn col_ref(&self, n: usize) -> [&T; ROWS] {
+        self.column_ref(n)
     }
 
     /// Applies the given function `f` to every element of the `Matrix`, returning
