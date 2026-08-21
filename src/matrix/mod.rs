@@ -2596,7 +2596,7 @@ impl<T: One + Zero, const N: usize> Matrix<T, N, N> {
     #[inline]
     pub fn translation(offset: Vector<T, { N - 1 }>) -> Self {
         let mut mat = Matrix::identity();
-        let col = mat.col_mut(N - 1);
+        let col = mat.column_mut(N - 1);
 
         for (mat_elem, v_elem) in col.into_iter().zip(offset.to_array()) {
             *mat_elem = v_elem;
@@ -2636,7 +2636,7 @@ impl<T: One + Zero> Matrix<T, 4, 4> {
     #[inline]
     pub fn translation_3d(offset: Vector<T, 3>) -> Self {
         let mut mat = Matrix::identity();
-        let col = mat.col_mut(3);
+        let col = mat.column_mut(3);
 
         for (mat_elem, v_elem) in col.into_iter().zip(offset.to_array()) {
             *mat_elem = v_elem;
@@ -2664,7 +2664,7 @@ impl<T: One + Zero> Matrix<T, 3, 3> {
     #[inline]
     pub fn translation_2d(offset: Vector<T, 2>) -> Self {
         let mut mat = Matrix::identity();
-        let col = mat.col_mut(2);
+        let col = mat.column_mut(2);
 
         for (mat_elem, v_elem) in col.into_iter().zip(offset.to_array()) {
             *mat_elem = v_elem;
@@ -3444,7 +3444,7 @@ macro_rules! impl_matrix_conversion {
             fn eq(&self, other: &mint::$matrix_name<Rhs>) -> bool {
                 let cols: &[[Rhs; $rows]; $cols] = other.as_ref();
                 for i in 0..$cols {
-                    for (e1, e2) in cols[i].as_ref().into_iter().zip(self.col_ref(i)) {
+                    for (e1, e2) in cols[i].as_ref().into_iter().zip(self.column_ref(i)) {
                         if !PartialEq::eq(e2, e1) {
                             return false;
                         }
@@ -3460,7 +3460,7 @@ macro_rules! impl_matrix_conversion {
             fn eq(&self, other: &Matrix<Rhs, $rows, $cols>) -> bool {
                 let cols: &[[T; $rows]; $cols] = self.as_ref();
                 for i in 0..$cols {
-                    for (e1, e2) in cols[i].as_ref().into_iter().zip(other.col_ref(i)) {
+                    for (e1, e2) in cols[i].as_ref().into_iter().zip(other.column_ref(i)) {
                         if !PartialEq::eq(e1, e2) {
                             return false;
                         }
@@ -3487,7 +3487,7 @@ macro_rules! impl_matrix_conversion {
             fn abs_diff_eq(&self, other: &mint::$matrix_name<Rhs>, epsilon: Self::Epsilon) -> bool {
                 let cols: &[[Rhs; $rows]; $cols] = other.as_ref();
                 for i in 0..$cols {
-                    for (e1, e2) in cols[i].as_ref().into_iter().zip(self.col_ref(i)) {
+                    for (e1, e2) in cols[i].as_ref().into_iter().zip(self.column_ref(i)) {
                         if !e2.abs_diff_eq(e1, epsilon.clone()) {
                             return false;
                         }
@@ -3514,7 +3514,7 @@ macro_rules! impl_matrix_conversion {
             fn abs_diff_eq(&self, other: &Matrix<Rhs, $rows, $cols>, epsilon: Self::Epsilon) -> bool {
                 let cols: &[[T; $rows]; $cols] = self.as_ref();
                 for i in 0..$cols {
-                    for (e1, e2) in cols[i].as_ref().into_iter().zip(other.col_ref(i)) {
+                    for (e1, e2) in cols[i].as_ref().into_iter().zip(other.column_ref(i)) {
                         if !e1.abs_diff_eq(e2, epsilon.clone()) {
                             return false;
                         }
@@ -3544,7 +3544,7 @@ macro_rules! impl_matrix_conversion {
             ) -> bool {
                 let cols: &[[Rhs; $rows]; $cols] = other.as_ref();
                 for i in 0..$cols {
-                    for (e1, e2) in cols[i].as_ref().into_iter().zip(self.col_ref(i)) {
+                    for (e1, e2) in cols[i].as_ref().into_iter().zip(self.column_ref(i)) {
                         if !e2.relative_eq(e1, epsilon.clone(), max_relative.clone()) {
                             return false;
                         }
@@ -3574,7 +3574,7 @@ macro_rules! impl_matrix_conversion {
             ) -> bool {
                 let cols: &[[T; $rows]; $cols] = self.as_ref();
                 for i in 0..$cols {
-                    for (e1, e2) in cols[i].as_ref().into_iter().zip(other.col_ref(i)) {
+                    for (e1, e2) in cols[i].as_ref().into_iter().zip(other.column_ref(i)) {
                         if !e1.relative_eq(e2, epsilon.clone(), max_relative.clone()) {
                             return false;
                         }
@@ -3599,7 +3599,7 @@ macro_rules! impl_matrix_conversion {
             fn ulps_eq(&self, other: &mint::$matrix_name<Rhs>, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
                 let cols: &[[Rhs; $rows]; $cols] = other.as_ref();
                 for i in 0..$cols {
-                    for (e1, e2) in cols[i].as_ref().into_iter().zip(self.col_ref(i)) {
+                    for (e1, e2) in cols[i].as_ref().into_iter().zip(self.column_ref(i)) {
                         if !e2.ulps_eq(e1, epsilon.clone(), max_ulps) {
                             return false;
                         }
@@ -3624,7 +3624,7 @@ macro_rules! impl_matrix_conversion {
             fn ulps_eq(&self, other: &Matrix<Rhs, $rows, $cols>, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
                 let cols: &[[T; $rows]; $cols] = self.as_ref();
                 for i in 0..$cols {
-                    for (e1, e2) in cols[i].as_ref().into_iter().zip(other.col_ref(i)) {
+                    for (e1, e2) in cols[i].as_ref().into_iter().zip(other.column_ref(i)) {
                         if !e1.ulps_eq(e2, epsilon.clone(), max_ulps) {
                             return false;
                         }

@@ -37,8 +37,8 @@ fn test_matrix_access() {
         assert_eq!(matrix.row_ref(i).map(|elem| *elem), matrix.row(i));
         assert_eq!(matrix.row_mut(i).map(|elem| *elem), matrix.row(i));
 
-        assert_eq!(matrix.col_ref(i).map(|elem| *elem), matrix.col(i));
-        assert_eq!(matrix.col_mut(i).map(|elem| *elem), matrix.col(i));
+        assert_eq!(matrix.column_ref(i).map(|elem| *elem), matrix.col(i));
+        assert_eq!(matrix.column_mut(i).map(|elem| *elem), matrix.col(i));
     }
 
     assert_eq!(
