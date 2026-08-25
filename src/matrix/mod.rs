@@ -1371,6 +1371,26 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         let _self = ManuallyDrop::new(self);
         cofactor_mat
     }
+
+    #[must_use]
+    #[inline]
+    pub const fn rows(&self) -> Rows<'_, T, ROWS, COLS> {
+        Rows {
+            matrix: self,
+            front: 0,
+            back: ROWS.checked_sub(1),
+        }
+    }
+
+    #[must_use]
+    #[inline]
+    pub const fn columns(&self) -> Columns<'_, T, ROWS, COLS> {
+        Columns {
+            matrix: self,
+            front: 0,
+            back: COLS.checked_sub(1),
+        }
+    }
 }
 
 impl<T, const ROWS: usize, const COLS: usize> Matrix<MaybeUninit<T>, ROWS, COLS> {
@@ -3242,6 +3262,89 @@ impl<T, const ROWS: usize, const COLS: usize> ExactSizeIterator for IntoElements
     #[inline]
     fn len(&self) -> usize {
         self.len_const()
+    }
+}
+
+#[derive(Debug)]
+pub struct Rows<'a, T, const ROWS: usize, const COLS: usize> {
+    matrix: &'a Matrix<T, ROWS, COLS>,
+    front: usize,
+    back: Option<usize>,
+}
+
+impl<'a, T, const ROWS: usize, const COLS: usize> Iterator for Rows<'a, T, ROWS, COLS> {
+    type Item = [&'a T; COLS];
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let row = self.matrix.get_row_ref(self.front)?;
+        self.front += 1;
+        Some(row)
+    }
+}
+
+impl<'a, T, const ROWS: usize, const COLS: usize> ExactSizeIterator for Rows<'a, T, ROWS, COLS> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.back.map(|back| back - self.front).unwrap_or_default()
+    }
+}
+
+impl<'a, T, const ROWS: usize, const COLS: usize> DoubleEndedIterator for Rows<'a, T, ROWS, COLS> {
+    #[inline]
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let Some(back) = self.back else {
+            return None;
+        };
+
+        self.back = back.checked_sub(1);
+        let row = self.matrix.get_row_ref(back)?;
+        if self.front == back {
+            self.back = None;
+        }
+
+        Some(row)
+    }
+}
+
+#[derive(Debug)]
+pub struct Columns<'a, T, const ROWS: usize, const COLS: usize> {
+    matrix: &'a Matrix<T, ROWS, COLS>,
+    front: usize,
+    back: Option<usize>,
+}
+
+impl<'a, T, const ROWS: usize, const COLS: usize> Iterator for Columns<'a, T, ROWS, COLS> {
+    type Item = [&'a T; ROWS];
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let row = self.matrix.get_column_ref(self.front)?;
+        self.front += 1;
+        Some(row)
+    }
+}
+
+impl<'a, T, const ROWS: usize, const COLS: usize> ExactSizeIterator for Columns<'a, T, ROWS, COLS> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.back.map(|back| back - self.front).unwrap_or_default()
+    }
+}
+
+impl<'a, T, const ROWS: usize, const COLS: usize> DoubleEndedIterator
+    for Columns<'a, T, ROWS, COLS>
+{
+    #[inline]
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let Some(back) = self.back else {
+            return None;
+        };
+
+        self.back = back.checked_sub(1);
+        if self.front == back {
+            self.back = None;
+        }
+        let col = self.matrix.get_column_ref(back)?;
+        Some(col)
     }
 }
 

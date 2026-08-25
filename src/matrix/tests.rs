@@ -70,6 +70,40 @@ fn test_matrix_access() {
     assert_eq!(matrix[0][0], 99);
 }
 
+#[test]
+fn test_iterators() {
+    let matrix = Matrix::new([
+        [1, 2, 3, 4, 5],
+        [5, 4, 3, 2, 1],
+    ]);
+
+    let mut cols = matrix.columns();
+    assert_eq!(cols.next(), Some([&1, &5]));
+    assert_eq!(cols.next(), Some([&2, &4]));
+    assert_eq!(cols.next(), Some([&3, &3]));
+    assert_eq!(cols.next(), Some([&4, &2]));
+    assert_eq!(cols.next(), Some([&5, &1]));
+    assert_eq!(cols.next(), None);
+
+    let mut cols = matrix.columns();
+    assert_eq!(cols.next_back(), Some([&5, &1]));
+    assert_eq!(cols.next_back(), Some([&4, &2]));
+    assert_eq!(cols.next_back(), Some([&3, &3]));
+    assert_eq!(cols.next_back(), Some([&2, &4]));
+    assert_eq!(cols.next_back(), Some([&1, &5]));
+    assert_eq!(cols.next_back(), None);
+
+    let mut rows = matrix.rows();
+    assert_eq!(rows.next(), Some([&1, &2, &3, &4, &5]));
+    assert_eq!(rows.next(), Some([&5, &4, &3, &2, &1]));
+    assert_eq!(rows.next(), None);
+
+    let mut rows = matrix.rows();
+    assert_eq!(rows.next_back(), Some([&5, &4, &3, &2, &1]));
+    assert_eq!(rows.next_back(), Some([&1, &2, &3, &4, &5]));
+    assert_eq!(rows.next_back(), None);
+}
+
 #[cfg(feature = "nightly")]
 #[test]
 fn test_concat() {
