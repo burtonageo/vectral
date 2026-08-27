@@ -125,7 +125,7 @@ where
 /// size array of the results.
 ///
 /// It is preferred to use this function over chaining the [`zip3()`] and [`map()`] methods together (e.g.
-/// `zip3(arr0, arr1, arr2).map(|(x, y, z)| x + y + z);`, as it avoids allocating an intermediate array
+/// `zip3(arr0, arr1, arr2).map(|(x, y, z)| x + y + z);`), as it avoids allocating an intermediate array
 /// to store the zipped array.
 ///
 /// # Examples
