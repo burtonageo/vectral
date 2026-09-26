@@ -2886,13 +2886,13 @@ where
         let mut matrix = Matrix::identity();
 
         let dir = origin.direction_to(target);
-        let side = Vector::cross(up.normalized(), dir);
-        let new_up = Vector::cross(dir, side);
+        let side = Vector::cross(up.normalized(), dir).normalized();
+        let new_up = Vector::cross(dir, side).normalized();
 
         let origin_vector = Vector::new([
-            -Vector::dot(origin.to_vector(), side),
-            -Vector::dot(origin.to_vector(), new_up),
-            -Vector::dot(origin.to_vector(), dir),
+            -Vector::dot(side, origin.to_vector()),
+            -Vector::dot(new_up, origin.to_vector()),
+            -Vector::dot(dir, origin.to_vector()),
             T::ONE,
         ]);
 
