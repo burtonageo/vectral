@@ -2882,23 +2882,58 @@ where
 {
     #[must_use]
     #[inline]
-    pub fn look_at_lh(origin: Point3<T>, target: Point3<T>, up: Vector3<T>) -> Self {
-        let mut matrix = Matrix::identity();
-
-        let dir = origin.direction_to(target);
-        let side = Vector::cross(up.normalized(), dir).normalized();
+    pub fn look_towards_lh(origin: Point3<T>, direction: Vector3<T>, up: Vector3<T>) -> Self {
+        let dir = direction.normalized();
+        let side = Vector::cross(up, dir).normalized();
         let new_up = Vector::cross(dir, side).normalized();
+
+        Self::view_from_orthonormal_basis(origin, side, new_up, dir)
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn look_at_lh(origin: Point3<T>, target: Point3<T>, up: Vector3<T>) -> Self {
+        let direction = origin.direction_to(target);
+        Self::look_towards_lh(origin, direction, up)
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn look_towards_rh(origin: Point3<T>, direction: Vector3<T>, up: Vector3<T>) -> Self {
+        let dir = direction.normalized();
+        let side = Vector::cross(dir, up).normalized();
+        let new_up = Vector::cross(side, dir).normalized();
+
+        Self::view_from_orthonormal_basis(origin, side, new_up, dir)
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn look_at_rh(origin: Point3<T>, target: Point3<T>, up: Vector3<T>) -> Self {
+        let direction = origin.direction_to(target);
+        Self::look_towards_rh(origin, direction, up)
+    }
+
+    #[must_use]
+    #[inline]
+    fn view_from_orthonormal_basis(
+        origin: Point3<T>,
+        side: Vector<T>,
+        up: Vector<T>,
+        forwards: Vector<T>,
+    ) -> Self {
+        let mut matrix = Matrix::identity();
 
         let origin_vector = Vector::new([
             -Vector::dot(side, origin.to_vector()),
-            -Vector::dot(new_up, origin.to_vector()),
-            -Vector::dot(dir, origin.to_vector()),
+            -Vector::dot(up, origin.to_vector()),
+            -Vector::dot(forwards, origin.to_vector()),
             T::ONE,
         ]);
 
         matrix.set_col(0, side.expand_to::<4>(T::ZERO).to_array());
-        matrix.set_col(1, new_up.expand_to::<4>(T::ZERO).to_array());
-        matrix.set_col(2, dir.expand_to::<4>(T::ZERO).to_array());
+        matrix.set_col(1, up.expand_to::<4>(T::ZERO).to_array());
+        matrix.set_col(2, forwards.expand_to::<4>(T::ZERO).to_array());
         matrix.set_col(3, origin_vector.to_array());
 
         matrix

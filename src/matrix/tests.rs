@@ -72,6 +72,7 @@ fn test_matrix_access() {
 
 #[test]
 fn test_iterators() {
+    #[rustfmt::skip]
     let matrix = Matrix::from_columns([
         [1, 2, 3, 4, 5],
         [5, 4, 3, 2, 1],
@@ -818,7 +819,18 @@ fn test_perspective() {
 
 #[test]
 fn test_lookat() {
-    let origin_lookat =
-        Matrix::<f32, _, _>::look_at_lh(Point::origin(), Point::from(Vector::Z), Vector::Y);
-    assert_relative_eq!(&origin_lookat, &Matrix::identity());
+    let calculated_lookat = Matrix::<f64, _, _>::look_at_lh(
+        Point::new([0.0, 2.0, 3.0]),
+        Point::new([0.0, 1.0, -4.0]),
+        Vector::Y,
+    );
+
+    let expected_lookat = Matrix::from_columns([
+        [-1.0, 0.0, 0.0, 0.0],
+        [0.0, 0.9899494936611665, -0.1414213562373095, 0.0],
+        [-0.0, -0.1414213562373095, -0.9899494936611665, 0.0],
+        [0.0, -1.5556349186104044, 3.2526911934581184, 1.0],
+    ]);
+
+    approx::assert_relative_eq!(calculated_lookat, expected_lookat);
 }
