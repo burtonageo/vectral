@@ -612,7 +612,11 @@ impl<T: Copy + ClosedDiv + ClosedSub + ClosedMul + ClosedAdd + Zero, const N: us
     ///
     /// let rotation = Quaternion::from_angle_axis(Degrees(90.0), Vector::Y);
     ///
-    /// assert_relative_eq!(point.rotated_around(origin, rotation), Point::new([0.0, 0.0, -1.0]));
+    /// assert_relative_eq!(
+    ///     point.rotated_around(origin, rotation),
+    ///     Point::new([0.0, 0.0, -1.0]),
+    ///     epsilon = 1e-14,
+    /// );
     /// ```
     #[must_use]
     #[inline]

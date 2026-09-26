@@ -758,9 +758,10 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             let mut col_idx = 0;
             while col_idx < COLS {
                 unsafe {
+                    let ptr = &raw const self.data[col_idx][row_idx];
                     matrix
                         .get_unchecked_raw_mut(row_idx, col_idx)
-                        .write(self.get_unchecked_raw(row_idx, col_idx));
+                        .write(ptr);
                 }
 
                 col_idx += 1;
@@ -802,9 +803,10 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             let mut col_idx: usize = 0;
             while col_idx < COLS {
                 unsafe {
+                    let ptr = &raw mut self.data[col_idx][row_idx];
                     matrix
                         .get_unchecked_raw_mut(row_idx, col_idx)
-                        .write(self.get_unchecked_raw_mut(row_idx, col_idx));
+                        .write(ptr);
                 }
 
                 col_idx += 1;

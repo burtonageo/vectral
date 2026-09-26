@@ -785,6 +785,7 @@ fn test_serde() {
 
 #[test]
 fn test_perspective() {
+    let epsilon = if cfg!(miri) { 1e-6 } else { f32::EPSILON };
     #[rustfmt::skip]
     let expected_perspective_matrix = Matrix::<f32, _, _>::from_rows([
         [1.81066, 0.0, 0.0, 0.0],
@@ -811,14 +812,15 @@ fn test_perspective() {
     };
 
     let perspective = Matrix::perspective_3d(aspect, fov, near, far);
-    assert_relative_eq!(&perspective, &expected_perspective_matrix);
+    assert_relative_eq!(&perspective, &expected_perspective_matrix, epsilon = epsilon);
 
     let ortho = Matrix::orthographic_projection_3d_from_fov(aspect, fov, near, far);
-    assert_relative_eq!(&ortho, &expected_orthographic_matrix);
+    assert_relative_eq!(&ortho, &expected_orthographic_matrix, epsilon = epsilon);
 }
 
 #[test]
 fn test_lookat() {
+    let epsilon = if cfg!(miri) { 1e-14 } else { f64::EPSILON };
     let calculated_lookat = Matrix::<f64, _, _>::look_at_lh(
         Point::new([0.0, 2.0, 3.0]),
         Point::new([0.0, 1.0, -4.0]),
@@ -832,5 +834,5 @@ fn test_lookat() {
         [0.0, -1.5556349186104044, 3.2526911934581184, 1.0],
     ]);
 
-    approx::assert_relative_eq!(calculated_lookat, expected_lookat);
+    approx::assert_relative_eq!(calculated_lookat, expected_lookat, epsilon = epsilon);
 }
