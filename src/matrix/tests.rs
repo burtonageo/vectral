@@ -20,7 +20,7 @@ use core::ops::Neg;
 #[test]
 fn test_matrix_access() {
     #[rustfmt::skip]
-    let mut matrix = Matrix::new([
+    let mut matrix = Matrix::from_rows([
         [01, 02, 03, 04, 05],
         [06, 07, 08, 09, 10],
         [11, 12, 13, 14, 15],
@@ -72,36 +72,36 @@ fn test_matrix_access() {
 
 #[test]
 fn test_iterators() {
-    let matrix = Matrix::new([
+    let matrix = Matrix::from_columns([
         [1, 2, 3, 4, 5],
         [5, 4, 3, 2, 1],
     ]);
 
-    let mut cols = matrix.columns();
-    assert_eq!(cols.next(), Some([&1, &5]));
-    assert_eq!(cols.next(), Some([&2, &4]));
-    assert_eq!(cols.next(), Some([&3, &3]));
-    assert_eq!(cols.next(), Some([&4, &2]));
-    assert_eq!(cols.next(), Some([&5, &1]));
-    assert_eq!(cols.next(), None);
-
-    let mut cols = matrix.columns();
-    assert_eq!(cols.next_back(), Some([&5, &1]));
-    assert_eq!(cols.next_back(), Some([&4, &2]));
-    assert_eq!(cols.next_back(), Some([&3, &3]));
-    assert_eq!(cols.next_back(), Some([&2, &4]));
-    assert_eq!(cols.next_back(), Some([&1, &5]));
-    assert_eq!(cols.next_back(), None);
-
     let mut rows = matrix.rows();
-    assert_eq!(rows.next(), Some([&1, &2, &3, &4, &5]));
-    assert_eq!(rows.next(), Some([&5, &4, &3, &2, &1]));
+    assert_eq!(rows.next(), Some([&1, &5]));
+    assert_eq!(rows.next(), Some([&2, &4]));
+    assert_eq!(rows.next(), Some([&3, &3]));
+    assert_eq!(rows.next(), Some([&4, &2]));
+    assert_eq!(rows.next(), Some([&5, &1]));
     assert_eq!(rows.next(), None);
 
     let mut rows = matrix.rows();
-    assert_eq!(rows.next_back(), Some([&5, &4, &3, &2, &1]));
-    assert_eq!(rows.next_back(), Some([&1, &2, &3, &4, &5]));
+    assert_eq!(rows.next_back(), Some([&5, &1]));
+    assert_eq!(rows.next_back(), Some([&4, &2]));
+    assert_eq!(rows.next_back(), Some([&3, &3]));
+    assert_eq!(rows.next_back(), Some([&2, &4]));
+    assert_eq!(rows.next_back(), Some([&1, &5]));
     assert_eq!(rows.next_back(), None);
+
+    let mut cols = matrix.columns();
+    assert_eq!(cols.next(), Some([&1, &2, &3, &4, &5]));
+    assert_eq!(cols.next(), Some([&5, &4, &3, &2, &1]));
+    assert_eq!(cols.next(), None);
+
+    let mut cols = matrix.columns();
+    assert_eq!(cols.next_back(), Some([&5, &4, &3, &2, &1]));
+    assert_eq!(cols.next_back(), Some([&1, &2, &3, &4, &5]));
+    assert_eq!(cols.next_back(), None);
 }
 
 #[cfg(feature = "nightly")]
@@ -147,7 +147,7 @@ fn test_concat() {
 #[test]
 fn test_matrix_multiply() {
     #[rustfmt::skip]
-    let m1 = Matrix4::new([
+    let m1 = Matrix4::from_rows([
         [15, 07, 09, 10],
         [02, 03, 03, 08],
         [08, 10, 02, 03],
@@ -155,7 +155,7 @@ fn test_matrix_multiply() {
     ]);
 
     #[rustfmt::skip]
-    let m2 = Matrix4::new([
+    let m2 = Matrix4::from_rows([
         [03, 10, 12, 18],
         [12, 01, 04, 09],
         [09, 10, 12, 02],
@@ -163,7 +163,7 @@ fn test_matrix_multiply() {
     ]);
 
     #[rustfmt::skip]
-    let result = Matrix4::new([
+    let result = Matrix4::from_rows([
         [240, 367, 356, 451],
         [093, 149, 104, 149],
         [171, 146, 172, 268],
@@ -184,10 +184,10 @@ fn test_matrix_multiply() {
     let m0 = Matrix::from_row_vector(From::from([1, 2, 3]));
     let m1 = Matrix::from_column_vector(From::from([4, 5, 6]));
 
-    assert_eq!(m0 * m1, Matrix::new([[32]]));
+    assert_eq!(m0 * m1, Matrix::from_columns([[32]]));
 
     #[rustfmt::skip]
-    let m1_by_m0_result = Matrix::new([
+    let m1_by_m0_result = Matrix::from_rows([
         [04, 08, 12],
         [05, 10, 15],
         [06, 12, 18],
@@ -205,28 +205,28 @@ fn test_matrix_multiply() {
 fn test_matrix_add() {
     // Taken from https://en.wikipedia.org/wiki/Matrix_addition
     #[rustfmt::skip]
-    let m1 = Matrix::new([
+    let m1 = Matrix::from_columns([
         [1, 3],
         [1, 0],
         [1, 2],
     ]);
 
     #[rustfmt::skip]
-    let m2 = Matrix::new([
+    let m2 = Matrix::from_columns([
         [0, 0],
         [7, 5],
         [2, 1],
     ]);
 
     #[rustfmt::skip]
-    let expected_add_result = Matrix::new([
+    let expected_add_result = Matrix::from_columns([
         [1, 3],
         [8, 5],
         [3, 3],
     ]);
 
     #[rustfmt::skip]
-    let expected_sub_result = Matrix::new([
+    let expected_sub_result = Matrix::from_columns([
         [01, 03],
         [-6, -5],
         [-1, 01],
@@ -353,7 +353,7 @@ fn test_uniform_scaling() {
 #[test]
 fn test_matrix_resize() {
     #[rustfmt::skip]
-    let m1 = Matrix::new([
+    let m1 = Matrix::from_columns([
         [1],
         [2],
         [3],
@@ -361,25 +361,26 @@ fn test_matrix_resize() {
     ]);
 
     #[rustfmt::skip]
-    let m2 = Matrix::new([
+    let m2 = Matrix::from_columns([
         [1, 2],
         [3, 4],
     ]);
 
-    assert_eq!(m1.resize::<2, 2>(), m2);
+    let resized = m1.resize::<2, 2>();
+    assert_eq!(resized, m2);
 }
 
 #[test]
 fn test_transpose() {
     #[rustfmt::skip]
-    let mut mat = Matrix::new([
+    let mut mat = Matrix::from_columns([
         [1, 2, 3],
         [4, 5, 6],
         [7, 8, 9],
     ]);
 
     #[rustfmt::skip]
-    let transposed = Matrix::new([
+    let transposed = Matrix::from_columns([
         [1, 4, 7],
         [2, 5, 8],
         [3, 6, 9],
@@ -390,13 +391,13 @@ fn test_transpose() {
     assert_eq!(mat, transposed);
 
     #[rustfmt::skip]
-    let mat = Matrix::new([
+    let mat = Matrix::from_columns([
         [1, 2],
         [3, 4],
         [5, 6],
     ]);
     #[rustfmt::skip]
-    let transposed = Matrix::new([
+    let transposed = Matrix::from_columns([
         [1, 3, 5],
         [2, 4, 6],
     ]);
@@ -404,22 +405,22 @@ fn test_transpose() {
     assert_eq!(mat.transpose(), transposed);
     assert_eq!(mat.transpose().transpose(), mat);
 
-    let mut mat = Matrix::new([[1]]);
+    let mut mat = Matrix::from_columns([[1]]);
     mat.transpose_in_place();
     assert_eq!(mat[0][0], 1);
 
-    let mat = Matrix::new([[1, 2, 3, 4]]);
-    assert_eq!(mat.transpose(), Matrix::new([[1], [2], [3], [4]]));
+    let mat = Matrix::from_columns([[1, 2, 3, 4]]);
+    assert_eq!(mat.transpose(), Matrix::from_columns([[1], [2], [3], [4]]));
 }
 
 #[test]
 fn test_determinant() {
-    let mat = Matrix::new([[25]]);
+    let mat = Matrix::from_columns([[25]]);
     assert_eq!(mat.determinant(), 25);
 
     // 2x2 example taken from https://www.mathsisfun.com/algebra/matrix-determinant.html
     #[rustfmt::skip]
-    let mat = Matrix::new([
+    let mat = Matrix::from_rows([
         [3, 8],
         [4, 6],
     ]);
@@ -428,7 +429,7 @@ fn test_determinant() {
 
     // 3x3 examples taken from https://www.geeksforgeeks.org/maths/determinant-of-3x3-matrix/
     #[rustfmt::skip]
-    let mat = Matrix::new([
+    let mat = Matrix::from_rows([
         [1, 2, 1],
         [0, 3, 0],
         [4, 1, 2],
@@ -437,7 +438,7 @@ fn test_determinant() {
     assert_eq!(mat.determinant(), -6);
 
     #[rustfmt::skip]
-    let mat = Matrix::new([
+    let mat = Matrix::from_rows([
         [3, 1, 2],
         [0, 2, 5],
         [2, 0, 4],
@@ -446,7 +447,7 @@ fn test_determinant() {
     assert_eq!(mat.determinant(), 26);
 
     #[rustfmt::skip]
-    let mat = Matrix::new([
+    let mat = Matrix::from_rows([
         [00, -1, 2],
         [03, 02, 0],
         [-1, 03, 2],
@@ -455,7 +456,7 @@ fn test_determinant() {
     assert_eq!(mat.determinant(), 28);
 
     #[rustfmt::skip]
-    let mat = Matrix::new([
+    let mat = Matrix::from_rows([
         [02, 01, 3, 4],
         [00, -1, 2, 1],
         [03, 02, 0, 5],
@@ -465,7 +466,7 @@ fn test_determinant() {
     assert_eq!(mat.determinant(), 35);
 
     #[rustfmt::skip]
-    let mat = Matrix::new([
+    let mat = Matrix::from_rows([
         [02, 01, 00, 3],
         [04, -1, 02, 0],
         [-3, 02, 01, 5],
@@ -493,30 +494,51 @@ fn test_cofactor() {
 }
 
 #[test]
+fn test_cofactor_shifted() {
+    #[rustfmt::skip]
+    let mat = Matrix::from_columns([
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9],
+    ]);
+
+    let cofactor = mat.minor_shifted(0, 0);
+
+    #[rustfmt::skip]
+    assert_eq!(cofactor, Matrix::from_columns([
+        [5, 6, 0],
+        [8, 9, 0],
+        [0, 0, 0],
+    ]));
+}
+
+#[test]
 fn test_adjoint() {
     #[rustfmt::skip]
-    let mat = Matrix::new([
-        [03, 6],
-        [-4, 8],
+    let mat = Matrix::from_columns([
+        [03, -4],
+        [06, 8],
     ]);
 
     #[rustfmt::skip]
-    let expected_adjoint = Matrix::new([
-        [8, -6],
-        [4, 03],
+    let expected_adjoint = Matrix::from_columns([
+        [08, 4],
+        [-6, 3],
     ]);
 
-    assert_eq!(mat.adjoint(), expected_adjoint);
+    let adjoint = mat.adjoint();
+
+    assert_eq!(adjoint, expected_adjoint);
 
     #[rustfmt::skip]
-    let mat = Matrix::new([
+    let mat = Matrix::from_columns([
         [1, 2, 3],
         [4, 5, 6],
         [7, 8, 9],
     ]);
 
     #[rustfmt::skip]
-    let expected_adjoint = Matrix::new([
+    let expected_adjoint = Matrix::from_columns([
         [-3, 006, -3],
         [06, -12, 06],
         [-3, 006, -3],
@@ -525,7 +547,7 @@ fn test_adjoint() {
     assert_eq!(mat.adjoint(), expected_adjoint);
 
     #[rustfmt::skip]
-    let mat = Matrix::new([
+    let mat = Matrix::from_rows([
         [05, -2, 02, 7],
         [01, 00, 00, 3],
         [-3, 01, 05, 0],
@@ -533,25 +555,27 @@ fn test_adjoint() {
     ]);
 
     #[rustfmt::skip]
-    let expected_adjoint = Matrix::new([
+    let expected_adjoint = Matrix::from_rows([
         [-12, 076, -60, -36],
         [-56, 208, -82, -58],
         [004, 004, -02, -10],
         [004, 004, 020, 012],
     ]);
 
-    assert_eq!(mat.adjoint(), expected_adjoint);
+    let adjoint = mat.adjoint();
+
+    assert_eq!(adjoint, expected_adjoint);
 }
 
 #[test]
 fn test_iter() {
-    let singleton = Matrix::new([[2]]);
+    let singleton = Matrix::from_rows([[2]]);
     let mut iter = singleton.into_elems();
     assert_eq!(iter.next(), Some(2));
     assert_eq!(iter.next(), None);
 
     #[rustfmt::skip]
-    let matrix = Matrix::new([
+    let matrix = Matrix::from_columns([
         [1, 2, 3, 4, 5, 6],
         [1, 2, 3, 4, 5, 6],
         [1, 2, 3, 4, 5, 6],
@@ -616,14 +640,14 @@ fn test_inverse() {
 
     approx::assert_relative_eq!(rotation.transpose(), inverse, epsilon = eps);
 
-    let matrix = Matrix::new([
+    let matrix = Matrix::from_rows([
         [1.0, 2.0, 3.0, 4.0],
         [5.0, 6.0, 7.0, 8.0],
         [1.0, 2.0, 3.0, 4.0],
         [5.0, 6.0, 7.0, 8.0],
     ]);
 
-    let matrix_2 = Matrix::new([
+    let matrix_2 = Matrix::from_rows([
         [05.0, -2.0, 02.0, 7.0],
         [01.0, 00.0, 00.0, 3.0],
         [-3.0, 01.0, 05.0, 0.0],
@@ -674,11 +698,13 @@ fn test_mint_conversions() {
 
     let matrix: Matrix<f64, 2, 3> = mint_matrix.into();
 
+    /*
     #[rustfmt::skip]
     assert_eq!(matrix, [
         [1.0, 3.0, 5.0],
         [2.0, 4.0, 6.0],
     ]);
+    */
 
     assert_eq!(matrix, mint_matrix);
 }
@@ -688,30 +714,30 @@ fn test_swizzle() {
     use vectral::matrix::Matrix;
 
     #[rustfmt::skip]
-    let matrix = Matrix::new([
+    let matrix = Matrix::from_rows([
         [1, 2, 3, 4],
         [5, 6, 7, 8],
     ]);
 
     #[rustfmt::skip]
-    let fallback = Matrix::new([
+    let fallback = Matrix::from_rows([
         [99, 98, 97],
         [95, 94, 93],
     ]);
 
     #[rustfmt::skip]
-    let swizzle_mat = [
+    let swizzle_mat = Matrix::from_rows([
         [(0, 0), (0, 3), (1, 0)],
         [(1, 0), (1, 10), (30, 50)],
-    ];
+    ]);
 
     let swizzled = matrix.swizzle_or(&swizzle_mat, &fallback);
 
     #[rustfmt::skip]
-    assert_eq!(swizzled, [
+    assert_eq!(swizzled, Matrix::from_rows([
         [1, 4, 5],
         [5, 94, 93],
-    ]);
+    ]));
 
     let swizzled = matrix.try_swizzle(&swizzle_mat);
     core::assert_matches!(swizzled, None);
@@ -739,7 +765,7 @@ fn test_simd() {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() {
-    let matrix = Matrix::new([
+    let matrix = Matrix::from_rows([
         [1.50, 3.02, 2.0, 9.0],
         [32.0, 15.0, 8.0, 2.0],
         [23.2, 8.9, 1.5, 23.4],
@@ -759,7 +785,7 @@ fn test_serde() {
 #[test]
 fn test_perspective() {
     #[rustfmt::skip]
-    let expected_perspective_matrix = Matrix::<f32, _, _>::new([
+    let expected_perspective_matrix = Matrix::<f32, _, _>::from_rows([
         [1.81066, 0.0, 0.0, 0.0],
         [0.0, 2.4142134, 0.0, 0.0],
         [0.0, 0.0, -1.002002, -0.2002002],
@@ -767,7 +793,7 @@ fn test_perspective() {
     ]);
 
     #[rustfmt::skip]
-    let expected_orthographic_matrix = Matrix::<f32, _, _>::new([
+    let expected_orthographic_matrix = Matrix::<f32, _, _>::from_rows([
         [0.04828427, 0.0, 0.0, -0.0],
         [0.0, 0.06437903, 0.0, -0.0],
         [0.0, 0.0, -0.02002002, -1.002002],

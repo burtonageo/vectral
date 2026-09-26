@@ -318,9 +318,9 @@ where
             s = s * two;
 
             let v = [
-                (m[2][1] - m[1][2]) / s,
-                (m[0][2] - m[2][0]) / s,
-                (m[1][0] - m[0][1]) / s,
+                (*m.elem(2, 1) - *m.elem(1, 2)) / s,
+                (*m.elem(0, 2) - *m.elem(2, 0)) / s,
+                (*m.elem(1, 0) - *m.elem(0, 1)) / s,
             ];
 
             Quaternion::from_components(v, w)
@@ -359,10 +359,10 @@ where
                 s = half / s;
             }
 
-            let w = (m[k][j] - m[j][k]) * s;
+            let w = (*m.elem(k, j) - *m.elem(j, k)) * s;
 
-            qj = (m[j][i] + m[i][j]) * s;
-            qk = (m[k][i] + m[i][k]) * s;
+            qj = (*m.elem(j, i) + *m.elem(i, j)) * s;
+            qk = (*m.elem(k, i) + *m.elem(i, k)) * s;
 
             Quaternion::from_components([qi, qj, qk], w)
         }

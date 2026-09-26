@@ -39,11 +39,11 @@ use serde_core::{Deserialize, de};
 #[cfg(test)]
 mod tests;
 
-/// A row-major matrix of arbitrary dimensions.
+/// A column-major matrix of arbitrary dimensions.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd)]
 #[repr(C)]
 pub struct Matrix<T = f32, const ROWS: usize = 4, const COLS: usize = ROWS> {
-    data: [[T; COLS]; ROWS],
+    data: [[T; ROWS]; COLS],
 }
 
 impl<T: Default, const ROWS: usize, const COLS: usize> Default for Matrix<T, ROWS, COLS> {
@@ -72,13 +72,17 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// # use vectral::matrix::Matrix;
     /// let data: [[i32; 2]; 2] = [[1, 2], [3, 4]];
-    /// let matrix: Matrix<i32, 2, 2> = Matrix::new(data);
+    /// let matrix: Matrix<i32, 2, 2> = Matrix::from_columns(data);
     /// # let _matrix = matrix;
     /// ```
     #[must_use]
     #[inline]
-    pub const fn new(data: [[T; COLS]; ROWS]) -> Self {
+    pub const fn from_columns(data: [[T; ROWS]; COLS]) -> Self {
         Self { data }
+    }
+
+    pub const fn from_rows(data: [[T; COLS]; ROWS]) -> Self {
+        Matrix::from_columns(data).transpose()
     }
 
     /// Create a new `Matrix` from the given function. The function takes the 2d index
@@ -94,19 +98,19 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// let matrix = Matrix::<(usize, usize), 3, 3>::from_fn(|row, col| (row, col));
     ///
-    /// assert_eq!(&matrix, &[
+    /// assert_eq!(matrix, Matrix::from_rows([
     ///     [(0, 0), (0, 1), (0, 2)],
     ///     [(1, 0), (1, 1), (1, 2)],
     ///     [(2, 0), (2, 1), (2, 2)],
-    /// ]);
+    /// ]));
     ///
     /// let matrix = Matrix::<usize, 3, 3>::from_fn(|row, col| col + row * 3);
     ///
-    /// assert_eq!(&matrix, &[
+    /// assert_eq!(matrix, Matrix::from_rows([
     ///     [0, 1, 2],
     ///     [3, 4, 5],
     ///     [6, 7, 8],
-    /// ]);
+    /// ]));
     /// ```
     #[must_use]
     #[inline]
@@ -152,7 +156,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_columns([
     ///     [1, 2, 3],
     ///     [4, 5, 6],
     /// ]);
@@ -162,14 +166,14 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     #[must_use]
     #[inline]
-    pub const fn as_array(&self) -> &[[T; COLS]; ROWS] {
+    pub const fn as_array(&self) -> &[[T; ROWS]; COLS] {
         &self.data
     }
 
     #[deprecated(note = "use Matrix::to_array instead")]
     #[must_use]
     #[inline]
-    pub const fn into_array(self) -> [[T; COLS]; ROWS] {
+    pub const fn into_array(self) -> [[T; ROWS]; COLS] {
         self.to_array()
     }
 
@@ -180,7 +184,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_columns([
     ///     [1.0f64, 2.0, 3.0, 4.0, 5.0],
     ///     [6.0, 7.0, 8.0, 9.0, 10.0]
     /// ]);
@@ -189,7 +193,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     #[must_use]
     #[inline]
-    pub const fn to_array(self) -> [[T; COLS]; ROWS] {
+    pub const fn to_array(self) -> [[T; ROWS]; COLS] {
         let array = unsafe { ptr::read(&self.data) };
         let _self = ManuallyDrop::new(self);
         array
@@ -217,7 +221,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// ```
     /// # use vectral::matrix::Matrix;
-    /// let mut matrix = Matrix::new([
+    /// let mut matrix = Matrix::from_columns([
     ///     [0.0, 1.0],
     ///     [2.0, 3.0],
     ///     [4.0, 5.0],
@@ -230,7 +234,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     #[must_use]
     #[inline]
-    pub const fn as_array_mut(&mut self) -> &mut [[T; COLS]; ROWS] {
+    pub const fn as_array_mut(&mut self) -> &mut [[T; ROWS]; COLS] {
         &mut self.data
     }
 
@@ -240,7 +244,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// ```
     /// use vectral::matrix::Matrix;
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_columns([
     ///     [1, 2, 3],
     ///     [4, 5, 6],
     /// ]);
@@ -260,7 +264,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_columns([
     ///     [1, 2],
     ///     [3, 4],
     /// ]);
@@ -281,19 +285,20 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// # Examples
     ///
     /// ```
-    /// # use vectral::matrix::Matrix;
-    /// let mut matrix = Matrix::new([
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let mut matrix = Matrix::from_rows([
     ///     [1, 2, 3],
     ///     [4, 5, 6],
     /// ]);
     ///
     /// let mut slice = matrix.as_mut_slice();
-    /// slice[4] = 9;
+    /// slice[2] = 9;
     ///
-    /// assert_eq!(matrix, [
-    ///     [1, 2, 3],
-    ///     [4, 9, 6],
-    /// ]);
+    /// assert_eq!(matrix, Matrix::from_rows([
+    ///     [1, 9, 3],
+    ///     [4, 5, 6],
+    /// ]));
     /// ```
     #[must_use]
     #[inline]
@@ -308,7 +313,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let mut matrix = Matrix::new([
+    /// let mut matrix = Matrix::from_columns([
     ///     [1, 2],
     ///     [3, 4],
     /// ]);
@@ -337,7 +342,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_columns([
     ///     [5, 6, 4, 2],
     ///     [1, 1, 3, 4],
     ///     [2, 7, 9, 0],
@@ -361,7 +366,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let mut matrix = Matrix::new([
+    /// let mut matrix = Matrix::from_columns([
     ///     [5, 6, 4, 2],
     ///     [1, 1, 3, 4],
     ///     [2, 7, 9, 0],
@@ -390,7 +395,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let matrix: Matrix<f32, _, _> = Matrix::new([
+    /// let matrix: Matrix<f32, _, _> = Matrix::from_columns([
     ///     [5.0, 6.0, 4.0, 2.0],
     ///     [1.0, 1.0, 3.0, 4.0],
     ///     [2.0, 7.0, 9.0, 0.0],
@@ -405,9 +410,9 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     #[must_use]
     #[inline]
-    pub const fn get(&self, row: usize, col: usize) -> Option<&T> {
-        match array_get_checked(&self.data, row) {
-            Some(row) => array_get_checked(row, col),
+    pub const fn get(&self, row_idx: usize, col_idx: usize) -> Option<&T> {
+        match array_get_checked(&self.data, col_idx) {
+            Some(col) => array_get_checked(col, row_idx),
             None => None,
         }
     }
@@ -421,7 +426,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let mut matrix: Matrix<f32, _, _> = Matrix::new([
+    /// let mut matrix: Matrix<f32, _, _> = Matrix::from_columns([
     ///     [5.0, 6.0, 4.0, 2.0],
     ///     [1.0, 1.0, 3.0, 4.0],
     ///     [2.0, 7.0, 9.0, 0.0],
@@ -441,9 +446,9 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     #[must_use]
     #[inline]
-    pub const fn get_mut(&mut self, row: usize, col: usize) -> Option<&mut T> {
-        match array_get_mut_checked(&mut self.data, row) {
-            Some(row_data) => array_get_mut_checked(row_data.as_mut_slice(), col),
+    pub const fn get_mut(&mut self, row_idx: usize, col_idx: usize) -> Option<&mut T> {
+        match array_get_mut_checked(&mut self.data, col_idx) {
+            Some(col) => array_get_mut_checked(col.as_mut_slice(), row_idx),
             None => None,
         }
     }
@@ -460,7 +465,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let matrix = Matrix::new([[1]]);
+    /// let matrix = Matrix::from_columns([[1]]);
     ///
     /// let data = unsafe { matrix.get_unchecked(0, 0) };
     /// assert_eq!(*data, 1);
@@ -485,7 +490,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// use vectral::matrix::Matrix;
     /// use std::ptr;
     ///
-    /// let matrix = Matrix::new([[1, 2, 3, 4, 5]]);
+    /// let matrix = Matrix::from_rows([[1, 2, 3, 4, 5]]);
     /// let ptr = matrix.get_unchecked_raw(0, 2);
     ///
     /// unsafe {
@@ -496,7 +501,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[must_use]
     #[inline]
     pub const fn get_unchecked_raw(&self, row: usize, col: usize) -> *const T {
-        unsafe { self.as_ptr().add((row * COLS) + col) }
+        unsafe { self.as_ptr().add((col * ROWS) + row) }
     }
 
     /// Get a mutable reference to the element at index `row` and `col` without performing
@@ -512,7 +517,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let mut matrix = Matrix::new([[1, 2, 3]]);
+    /// let mut matrix = Matrix::from_rows([[1, 2, 3]]);
     ///
     /// let data = unsafe { matrix.get_unchecked_mut(0, 2) };
     /// assert_eq!(*data, 3);
@@ -522,8 +527,8 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     #[must_use]
     #[inline]
-    pub const unsafe fn get_unchecked_mut(&mut self, row: usize, col: usize) -> &mut T {
-        unsafe { &mut *self.get_unchecked_raw_mut(row, col) }
+    pub const unsafe fn get_unchecked_mut(&mut self, row_idx: usize, col_idx: usize) -> &mut T {
+        unsafe { &mut *self.get_unchecked_raw_mut(row_idx, col_idx) }
     }
 
     /// Get a mutable pointer to the element at index `row` and `col` without any bounds checks.
@@ -540,7 +545,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// use vectral::matrix::Matrix;
     /// use std::ptr;
     ///
-    /// let mut matrix = Matrix::new([[1, 2, 3, 4, 5]]);
+    /// let mut matrix = Matrix::from_rows([[1, 2, 3, 4, 5]]);
     /// let ptr = matrix.get_unchecked_raw_mut(0, 2);
     ///
     /// unsafe {
@@ -550,12 +555,36 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///     *ptr = 9;
     /// }
     ///
-    /// assert_eq!(&matrix, &[[1, 2, 9, 4, 5]]);
+    /// assert_eq!(&matrix, &Matrix::from_rows([[1, 2, 9, 4, 5]]));
     /// ```
     #[must_use]
     #[inline]
-    pub const fn get_unchecked_raw_mut(&mut self, row: usize, col: usize) -> *mut T {
-        unsafe { self.as_mut_ptr().add((row * COLS) + col) }
+    pub const fn get_unchecked_raw_mut(&mut self, row_idx: usize, col_idx: usize) -> *mut T {
+        unsafe { self.as_mut_ptr().add((col_idx * ROWS) + row_idx) }
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn elem(&self, row_idx: usize, col_idx: usize) -> &T {
+        match self.get(row_idx, col_idx) {
+            Some(elem) => elem,
+            None => panic!(
+                "row index of {} and column index of {} are out of bounds",
+                row_idx, col_idx
+            ),
+        }
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn elem_mut(&mut self, row_idx: usize, col_idx: usize) -> &mut T {
+        match self.get_mut(row_idx, col_idx) {
+            Some(elem) => elem,
+            None => panic!(
+                "row index of {} and column index of {} are out of bounds",
+                row_idx, col_idx
+            ),
+        }
     }
 
     /// Sets the column of the `Matrix` at `col_idx` to the given `col`,
@@ -571,39 +600,39 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let mut matrix = Matrix::new([
+    /// let mut matrix = Matrix::from_rows([
     ///     [1, 2, 3],
     ///     [4, 5, 6],
     /// ]);
     ///
-    /// let old_col = matrix.set_col(2, [4, 7]);
-    /// assert_eq!(old_col, [3, 6]);
-    /// assert_eq!(matrix, [
-    ///     [1, 2, 4],
-    ///     [4, 5, 7],
-    /// ]);
+    /// let old_row = matrix.set_row(1, [4, 9, 7]);
+    /// assert_eq!(old_row, [4, 5, 6]);
+    /// assert_eq!(matrix, Matrix::from_rows([
+    ///     [1, 2, 3],
+    ///     [4, 9, 7],
+    /// ]));
     /// ```
     #[track_caller]
     #[inline]
-    pub const fn set_col(&mut self, col_idx: usize, mut col: [T; ROWS]) -> [T; ROWS] {
+    pub const fn set_row(&mut self, row_idx: usize, mut row: [T; COLS]) -> [T; COLS] {
         // @TODO: Implement this in terms of `try_set_col()` when const dtors are
         // more supported.
-        if col_idx >= COLS {
-            panic!("Column index out of bounds");
+        if row_idx >= ROWS {
+            panic!("Row index out of bounds");
         }
 
-        let mut row_idx = 0;
-        while row_idx < ROWS {
+        let mut col_idx = 0;
+        while col_idx < COLS {
             unsafe {
                 mem::swap(
                     self.get_unchecked_mut(row_idx, col_idx),
-                    array_get_unchecked_mut(&mut col, row_idx),
+                    array_get_unchecked_mut(&mut row, col_idx),
                 );
             }
-            row_idx += 1;
+            col_idx += 1;
         }
 
-        col
+        row
     }
 
     /// Attempts to set the column of the `Matrix` at `col_idx` to the given `col`,
@@ -619,47 +648,47 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let mut matrix = Matrix::new([
+    /// let mut matrix = Matrix::from_rows([
     ///     [1, 2, 3],
     ///     [4, 5, 6],
     /// ]);
     ///
     /// let old_col = matrix.try_set_col(2, [4, 7]).unwrap();
     /// assert_eq!(old_col, [3, 6]);
-    /// assert_eq!(matrix, [
+    /// assert_eq!(matrix, Matrix::from_rows([
     ///     [1, 2, 4],
     ///     [4, 5, 7],
-    /// ]);
+    /// ]));
     ///
     /// let err_col = matrix.try_set_col(3, [5, 8]).unwrap_err();
     /// assert_eq!(err_col, [5, 8]);
-    /// assert_eq!(matrix, [
+    /// assert_eq!(matrix, Matrix::from_rows([
     ///     [1, 2, 4],
     ///     [4, 5, 7],
-    /// ]);
+    /// ]));
     /// ```
     #[inline]
-    pub const fn try_set_col(
+    pub const fn try_set_row(
         &mut self,
-        col_idx: usize,
-        mut col: [T; ROWS],
-    ) -> Result<[T; ROWS], [T; ROWS]> {
-        if col_idx >= COLS {
-            return Err(col);
+        row_idx: usize,
+        mut row: [T; COLS],
+    ) -> Result<[T; COLS], [T; COLS]> {
+        if row_idx >= ROWS {
+            return Err(row);
         }
 
-        let mut row_idx: usize = 0;
-        while row_idx < ROWS {
+        let mut col_idx: usize = 0;
+        while col_idx < ROWS {
             unsafe {
                 mem::swap(
                     self.get_unchecked_mut(row_idx, col_idx),
-                    array_get_unchecked_mut(&mut col, row_idx),
+                    array_get_unchecked_mut(&mut row, col_idx),
                 );
             }
-            row_idx += 1;
+            col_idx += 1;
         }
 
-        Ok(col)
+        Ok(row)
     }
 
     /// Sets the row of the `Matrix` at `row_idx` to the given `row`,
@@ -675,39 +704,39 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let mut matrix = Matrix::new([
+    /// let mut matrix = Matrix::from_rows([
     ///     [1, 2, 3],
     ///     [4, 5, 6],
     /// ]);
     ///
-    /// let old_row = matrix.set_row(1, [7, 8, 9]);
-    /// assert_eq!(old_row, [4, 5, 6]);
-    /// assert_eq!(matrix, [
-    ///     [1, 2, 3],
-    ///     [7, 8, 9],
-    /// ]);
+    /// let old_col = matrix.set_col(2, [7, 9]);
+    /// assert_eq!(old_col, [3, 6]);
+    /// assert_eq!(matrix, Matrix::from_rows([
+    ///     [1, 2, 7],
+    ///     [4, 5, 9],
+    /// ]));
     /// ```
     #[track_caller]
     #[inline]
-    pub const fn set_row(&mut self, row_idx: usize, mut row: [T; COLS]) -> [T; COLS] {
-        mem::swap(&mut self.data[row_idx], &mut row);
-        row
+    pub const fn set_col(&mut self, col_idx: usize, mut col: [T; ROWS]) -> [T; ROWS] {
+        mem::swap(&mut self.data[col_idx], &mut col);
+        col
     }
 
     #[inline]
-    pub const fn try_set_row(
+    pub const fn try_set_col(
         &mut self,
-        row_idx: usize,
-        mut row: [T; COLS],
-    ) -> Result<[T; COLS], [T; COLS]> {
-        if row_idx >= ROWS {
-            return Err(row);
+        col_idx: usize,
+        mut col: [T; ROWS],
+    ) -> Result<[T; ROWS], [T; ROWS]> {
+        if col_idx >= COLS {
+            return Err(col);
         }
 
-        let matrix_row = unsafe { self.data.as_mut_ptr().add(row_idx).as_mut_unchecked() };
-        mem::swap(&mut row, matrix_row);
+        let matrix_col = unsafe { self.data.as_mut_ptr().add(col_idx).as_mut_unchecked() };
+        mem::swap(&mut col, matrix_col);
 
-        Ok(row)
+        Ok(col)
     }
 
     /// Returns a new `Matrix` where each element is a reference to the corresponding element
@@ -718,7 +747,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_columns([
     ///     [1, 2, 3],
     ///     [4, 5, 6],
     /// ]);
@@ -734,20 +763,20 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     pub const fn each_ref(&self) -> Matrix<&T, ROWS, COLS> {
         let mut matrix = Matrix::<_, ROWS, COLS>::splat(ptr::null::<T>());
 
-        let mut row = 0;
-        while row < ROWS {
-            let mut col = 0;
-            while col < COLS {
+        let mut row_idx = 0;
+        while row_idx < ROWS {
+            let mut col_idx = 0;
+            while col_idx < COLS {
                 unsafe {
                     matrix
-                        .get_unchecked_raw_mut(row, col)
-                        .write(&raw const self.data[row][col]);
+                        .get_unchecked_raw_mut(row_idx, col_idx)
+                        .write(self.get_unchecked_raw(row_idx, col_idx));
                 }
 
-                col += 1;
+                col_idx += 1;
             }
 
-            row += 1;
+            row_idx += 1;
         }
 
         unsafe { mem::transmute_copy(&matrix) }
@@ -761,7 +790,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let mut matrix = Matrix::new([
+    /// let mut matrix = Matrix::from_rows([
     ///     [1, 2, 3, 4],
     /// ]);
     ///
@@ -778,20 +807,20 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     pub const fn each_mut(&mut self) -> Matrix<&mut T, ROWS, COLS> {
         let mut matrix = Matrix::<_, ROWS, COLS>::splat(ptr::null_mut::<T>());
 
-        let mut row = 0;
-        while row < ROWS {
-            let mut col = 0;
-            while col < COLS {
+        let mut row_idx = 0;
+        while row_idx < ROWS {
+            let mut col_idx: usize = 0;
+            while col_idx < COLS {
                 unsafe {
                     matrix
-                        .get_unchecked_raw_mut(row, col)
-                        .write(&raw mut self.data[row][col]);
+                        .get_unchecked_raw_mut(row_idx, col_idx)
+                        .write(self.get_unchecked_raw_mut(row_idx, col_idx));
                 }
 
-                col += 1;
+                col_idx += 1;
             }
 
-            row += 1;
+            row_idx += 1;
         }
 
         unsafe { mem::transmute_copy(&matrix) }
@@ -810,69 +839,71 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
 
     #[must_use]
     #[inline]
-    pub const fn get_row_ref(&self, n: usize) -> Option<[&T; COLS]> {
-        match array_get_checked(&self.data, n) {
-            Some(row) => Some(row.each_ref()),
+    pub const fn get_column_ref(&self, col_idx: usize) -> Option<[&T; ROWS]> {
+        match array_get_checked(&self.data, col_idx) {
+            Some(col) => Some(col.each_ref()),
             None => None,
         }
+    }
+
+    #[track_caller]
+    #[must_use]
+    #[inline]
+    pub const fn column_ref(&self, col_idx: usize) -> [&T; ROWS] {
+        match array_get_checked(&self.data, col_idx) {
+            Some(col) => col.each_ref(),
+            None => panic!("row index out of bounds"),
+        }
+    }
+
+    #[track_caller]
+    #[must_use]
+    #[inline]
+    pub const fn get_column_mut(&mut self, col_idx: usize) -> Option<[&mut T; ROWS]> {
+        match array_get_mut_checked(&mut self.data, col_idx) {
+            Some(col) => Some(col.each_mut()),
+            None => None,
+        }
+    }
+
+    #[track_caller]
+    #[must_use]
+    #[inline]
+    pub const fn column_mut(&mut self, col_idx: usize) -> [&mut T; ROWS] {
+        match array_get_mut_checked(&mut self.data, col_idx) {
+            Some(col) => col.each_mut(),
+            None => panic!("row index out of bounds"),
+        }
+    }
+
+    #[must_use]
+    #[inline]
+    pub const fn get_row_ref(&self, row_idx: usize) -> Option<[&T; COLS]> {
+        if row_idx >= ROWS {
+            return None;
+        }
+
+        let mut row = [const { MaybeUninit::uninit() }; COLS];
+
+        let mut col = 0;
+        while col < COLS {
+            unsafe {
+                let slot = array_get_unchecked_mut(&mut row, col);
+                let elem_ref = self.get_unchecked(row_idx, col);
+                slot.write(elem_ref);
+            }
+            col += 1;
+        }
+
+        unsafe { Some(MaybeUninit::assume_init(mem::transmute_copy(&row))) }
     }
 
     #[track_caller]
     #[must_use]
     #[inline]
     pub const fn row_ref(&self, n: usize) -> [&T; COLS] {
-        match array_get_checked(&self.data, n) {
-            Some(row) => row.each_ref(),
-            None => panic!("row index out of bounds"),
-        }
-    }
-
-    #[track_caller]
-    #[must_use]
-    #[inline]
-    pub const fn get_row_mut(&mut self, n: usize) -> Option<[&mut T; COLS]> {
-        match array_get_mut_checked(&mut self.data, n) {
-            Some(row) => Some(row.each_mut()),
-            None => None,
-        }
-    }
-
-    #[track_caller]
-    #[must_use]
-    #[inline]
-    pub const fn row_mut(&mut self, n: usize) -> [&mut T; COLS] {
-        match array_get_mut_checked(&mut self.data, n) {
-            Some(row) => row.each_mut(),
-            None => panic!("row index out of bounds"),
-        }
-    }
-
-    #[must_use]
-    #[inline]
-    pub const fn get_column_ref(&self, n: usize) -> Option<[&T; ROWS]> {
-        if n >= COLS {
-            return None;
-        }
-
-        let mut col = [const { MaybeUninit::uninit() }; ROWS];
-
-        let mut row = 0;
-        while row < ROWS {
-            unsafe {
-                array_get_unchecked_mut(&mut col, row).write(self.get_unchecked(row, n));
-            }
-            row += 1;
-        }
-
-        unsafe { Some(MaybeUninit::assume_init(mem::transmute_copy(&col))) }
-    }
-
-    #[track_caller]
-    #[must_use]
-    #[inline]
-    pub const fn column_ref(&self, n: usize) -> [&T; ROWS] {
-        match self.get_column_ref(n) {
-            Some(col) => col,
+        match self.get_row_ref(n) {
+            Some(row) => row,
             None => panic!("column index out of bounds"),
         }
     }
@@ -880,31 +911,32 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[track_caller]
     #[must_use]
     #[inline]
-    pub const fn get_column_mut(&mut self, n: usize) -> Option<[&mut T; ROWS]> {
-        if n >= COLS {
+    pub const fn get_row_mut(&mut self, row_idx: usize) -> Option<[&mut T; COLS]> {
+        if row_idx >= ROWS {
             return None;
         }
 
-        let mut col = [const { MaybeUninit::uninit() }; _];
+        let mut row = [const { MaybeUninit::uninit() }; _];
 
-        let mut row = 0;
+        let mut col_idx = 0;
         let ptr = self.as_mut_ptr();
-        while row < ROWS {
+        while col_idx < COLS {
             unsafe {
-                array_get_unchecked_mut(&mut col, row).write(&mut *ptr.add(row * ROWS + n));
+                array_get_unchecked_mut(&mut row, col_idx)
+                    .write(&mut *ptr.add(col_idx * COLS + row_idx));
             }
-            row += 1;
+            col_idx += 1;
         }
 
-        unsafe { Some(array_assume_init(col)) }
+        unsafe { Some(array_assume_init(row)) }
     }
 
     #[track_caller]
     #[must_use]
     #[inline]
-    pub const fn column_mut(&mut self, n: usize) -> [&mut T; ROWS] {
-        match self.get_column_mut(n) {
-            Some(col) => col,
+    pub const fn row_mut(&mut self, row_idx: usize) -> [&mut T; COLS] {
+        match self.get_row_mut(row_idx) {
+            Some(row) => row,
             None => panic!("column index out of bounds"),
         }
     }
@@ -913,16 +945,16 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[track_caller]
     #[must_use]
     #[inline]
-    pub const fn col_mut(&mut self, n: usize) -> [&mut T; ROWS] {
-        self.column_mut(n)
+    pub const fn col_mut(&mut self, col_idx: usize) -> [&mut T; ROWS] {
+        self.column_mut(col_idx)
     }
 
     #[deprecated]
     #[track_caller]
     #[must_use]
     #[inline]
-    pub const fn col_ref(&self, n: usize) -> [&T; ROWS] {
-        self.column_ref(n)
+    pub const fn col_ref(&self, col_idx: usize) -> [&T; ROWS] {
+        self.column_ref(col_idx)
     }
 
     /// Applies the given function `f` to every element of the `Matrix`, returning
@@ -932,17 +964,17 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// ```
     /// # use vectral::matrix::Matrix;
-    /// let mut matrix = Matrix::new([
+    /// let mut matrix = Matrix::from_rows([
     ///     [1, 2, 3, 4],
     ///     [5, 6, 7, 8],
     /// ]);
     ///
     /// let transformed: Matrix<String, _, _> = matrix.map(|elem| format!("{elem}"));
     ///
-    /// assert_eq!(transformed, [
+    /// assert_eq!(transformed, Matrix::from_rows([
     ///     [1.to_string(), 2.to_string(), 3.to_string(), 4.to_string()],
     ///     [5.to_string(), 6.to_string(), 7.to_string(), 8.to_string()],
-    /// ]);
+    /// ]));
     /// ```
     #[must_use]
     #[inline]
@@ -954,7 +986,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
 
     #[must_use]
     #[inline]
-    pub fn map_rows<U, F: FnMut([T; COLS]) -> [U; COLS]>(self, f: F) -> Matrix<U, ROWS, COLS> {
+    pub fn map_columns<U, F: FnMut([T; ROWS]) -> [U; ROWS]>(self, f: F) -> Matrix<U, ROWS, COLS> {
         Matrix {
             data: self.data.map(f),
         }
@@ -972,12 +1004,12 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_columns([
     ///     [1, 2, 3, 4],
     ///     [5, 6, 7, 8],
     /// ]);
     ///
-    /// assert_eq!(matrix.transpose(), Matrix::new([
+    /// assert_eq!(matrix.transpose(), Matrix::from_columns([
     ///     [1, 5],
     ///     [2, 6],
     ///     [3, 7],
@@ -991,23 +1023,23 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     pub const fn transpose(self) -> Matrix<T, COLS, ROWS> {
         let mut transposed = Matrix::uninit();
 
-        let mut row = 0;
-        while row < ROWS {
-            let mut col = 0;
-            while col < COLS {
+        let mut row_idx = 0;
+        while row_idx < ROWS {
+            let mut col_idx = 0;
+            while col_idx < COLS {
                 unsafe {
                     let write_slot = {
-                        let c = array_get_unchecked_mut(&mut transposed.data, col);
-                        array_get_unchecked_mut(c, row)
+                        let c = array_get_unchecked_mut(&mut transposed.data, row_idx);
+                        array_get_unchecked_mut(c, col_idx)
                     };
 
-                    let read_slot = self.get_unchecked(row, col);
+                    let read_slot = self.get_unchecked(row_idx, col_idx);
                     write_slot.write(ptr::read(read_slot));
                 }
 
-                col += 1;
+                col_idx += 1;
             }
-            row += 1;
+            row_idx += 1;
         }
 
         let _self = ManuallyDrop::new(self);
@@ -1020,8 +1052,8 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// ```
     /// # use vectral::matrix::Matrix;
-    /// let m1 = Matrix::new([[1, 2, 3, 4]]);
-    /// let m2 = Matrix::new([
+    /// let m1 = Matrix::from_columns([[1, 2, 3, 4]]);
+    /// let m2 = Matrix::from_columns([
     ///     [1, 2],
     ///     [3, 4],
     /// ]);
@@ -1033,13 +1065,13 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// ```compile_fail
     /// # use vectral::matrix::Matrix;
-    /// let matrix = Matrix::new([[1, 2, 3, 4]]);
+    /// let matrix = Matrix::from_columns([[1, 2, 3, 4]]);
     /// let _ = matrix.resize::<1, 5>();
     /// ```
     ///
     /// ```compile_fail
     /// # use vectral::matrix::Matrix;
-    /// let matrix = Matrix::new([[1, 2, 3, 4]]);
+    /// let matrix = Matrix::from_columns([[1, 2, 3, 4]]);
     /// let _ = matrix.resize::<1, 3>();
     /// ```
     #[must_use]
@@ -1064,8 +1096,19 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
         #[allow(path_statements)]
         <AssertCompatibleMatrixLayout<ROWS, COLS, NEW_ROWS, NEW_COLS>>::ASSERTION;
 
-        let this = ManuallyDrop::new(self);
-        unsafe { mem::transmute_copy(&this) }
+        let mut value = Matrix::uninit();
+
+        unsafe {
+            ptr::copy_nonoverlapping(
+                self.as_ptr(),
+                value.as_mut_ptr().cast::<T>(),
+                Self::NUM_ELEMENTS,
+            );
+
+            mem::forget(self);
+
+            Matrix::assume_init(value)
+        }
     }
 
     /// Returns a new matrix, where every element has been wrapped in a `MaybeUninit`.
@@ -1075,7 +1118,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// # use vectral::matrix::Matrix;
     /// # use std::mem::MaybeUninit;
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_columns([
     ///     [1.0, 2.0],
     ///     [3.0, 4.0],
     /// ]);
@@ -1105,13 +1148,13 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// ```
     /// # use vectral::matrix::Matrix;
-    /// let mat1 = Matrix::new([
+    /// let mat1 = Matrix::from_columns([
     ///     [01, 02],
     ///     [05, 06],
     ///     [09, 10],
     /// ]);
     ///
-    /// let mat2 = Matrix::new([
+    /// let mat2 = Matrix::from_columns([
     ///     [03, 04],
     ///     [07, 08],
     ///     [11, 12],
@@ -1163,13 +1206,13 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// ```
     /// # use vectral::matrix::Matrix;
-    /// let mat1 = Matrix::new([
+    /// let mat1 = Matrix::from_columns([
     ///     [01, 02],
     ///     [03, 04],
     ///     [05, 06],
     /// ]);
     ///
-    /// let mat2 = Matrix::new([
+    /// let mat2 = Matrix::from_columns([
     ///     [07, 08],
     ///     [09, 10],
     ///     [11, 12],
@@ -1298,7 +1341,7 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[track_caller]
     #[must_use]
     #[inline]
-    const fn cofactor_shifted_uninit(
+    const fn minor_shifted_uninit(
         self,
         removed_row: usize,
         removed_col: usize,
@@ -1406,19 +1449,14 @@ impl<T, const COLS: usize> Matrix<T, 1, COLS> {
     #[must_use]
     #[inline]
     pub const fn from_row_vector(vector: Vector<T, COLS>) -> Self {
-        Self::new([vector.to_array()])
+        Matrix::from_column_vector(vector).transpose()
     }
 
     /// Converts the matrix into a row vector of `COLS` elements.
     #[must_use]
     #[inline]
     pub const fn into_row_vector(self) -> Vector<T, COLS> {
-        let Matrix { data: [ref item] } = self;
-        let array = unsafe { ptr::read(item) };
-
-        let _ = ManuallyDrop::new(self);
-
-        Vector::new(array)
+        Matrix::into_column_vector(self.transpose())
     }
 }
 
@@ -1427,14 +1465,19 @@ impl<T, const ROWS: usize> Matrix<T, ROWS, 1> {
     #[must_use]
     #[inline]
     pub const fn from_column_vector(vector: Vector<T, ROWS>) -> Self {
-        Matrix::from_row_vector(vector).transpose()
+        Self::from_columns([vector.to_array()])
     }
 
     /// Converts the matrix into a column vector of `ROWS` elements.
     #[must_use]
     #[inline]
     pub const fn into_column_vector(self) -> Vector<T, ROWS> {
-        Matrix::into_row_vector(self.transpose())
+        let Matrix { data: [ref item] } = self;
+        let array = unsafe { ptr::read(item) };
+
+        let _ = ManuallyDrop::new(self);
+
+        Vector::new(array)
     }
 }
 
@@ -1452,7 +1495,7 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[inline]
     pub const fn splat(value: T) -> Self {
         Self {
-            data: [[value; COLS]; ROWS],
+            data: [[value; ROWS]; COLS],
         }
     }
 
@@ -1465,8 +1508,9 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// # Examples
     ///
     /// ```
-    /// # use vectral::matrix::Matrix;
-    /// let matrix = Matrix::new([
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let matrix = Matrix::from_rows([
     ///     [0, 1, 2, 3, 4],
     ///     [5, 6, 7, 8, 9]
     /// ]);
@@ -1477,26 +1521,22 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[track_caller]
     #[must_use]
     #[inline]
-    pub const fn col(&self, n: usize) -> [T; ROWS] {
-        assert!(n < COLS, "given column index is out of bounds");
-
-        // `MaybeUninit` is used here because:
-        // (a). using `self[0][0]` would panic if `ROWS == 0 && COLS == 0`.
-        // (b). it avoids requiring a trait-specified default (`T: Zero` or `T: Default``).
+    pub const fn col(&self, col_idx: usize) -> [T; ROWS] {
+        assert!(col_idx < COLS, "given column index is out of bounds");
         let mut col = [MaybeUninit::uninit(); ROWS];
 
-        let mut row = 0;
-        while row < ROWS {
-            unsafe {
-                col[row].write(ptr::read(self.get_unchecked(row, n)));
-            }
-            row += 1;
+        unsafe {
+            ptr::copy_nonoverlapping(
+                self.data.as_ptr().add(col_idx).cast::<T>(),
+                col.as_mut_ptr().cast(),
+                ROWS,
+            );
         }
 
         unsafe { array_assume_init(col) }
     }
 
-    /// Returns a copy of the row at `n`.
+    /// Returns a copy of the row at `row_idx`.
     ///
     /// # Panics
     ///
@@ -1505,8 +1545,9 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// # Examples
     ///
     /// ```
-    /// # use vectral::matrix::Matrix;
-    /// let matrix = Matrix::new([
+    /// use vectral::matrix::Matrix;
+    ///
+    /// let matrix = Matrix::from_rows([
     ///     [0, 1, 2, 3, 4],
     ///     [5, 6, 7, 8, 9]
     /// ]);
@@ -1516,16 +1557,20 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[track_caller]
     #[must_use]
     #[inline]
-    pub const fn row(&self, n: usize) -> [T; COLS] {
-        assert!(n < ROWS, "given row index is out of bounds");
+    pub const fn row(&self, row_idx: usize) -> [T; COLS] {
+        assert!(row_idx < ROWS, "given column index is out of bounds");
+
+        // `MaybeUninit` is used here because:
+        // (a). using `self[0][0]` would panic if `ROWS == 0 && COLS == 0`.
+        // (b). it avoids requiring a trait-specified default (`T: Zero` or `T: Default``).
         let mut row = [MaybeUninit::uninit(); COLS];
 
-        unsafe {
-            ptr::copy(
-                self.data.as_ptr().add(n).cast::<T>(),
-                row.as_mut_ptr().cast(),
-                COLS,
-            );
+        let mut col_idx = 0;
+        while col_idx < COLS {
+            unsafe {
+                row[col_idx].write(ptr::read(self.get_unchecked(row_idx, col_idx)));
+            }
+            col_idx += 1;
         }
 
         unsafe { array_assume_init(row) }
@@ -1543,26 +1588,26 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_rows([
     ///     [0, 1, 2],
     ///     [3, 4, 5],
     ///     [6, 7, 8],
     /// ]);
     ///
-    /// let swizzled = matrix.try_swizzle(&[
+    /// let swizzled = matrix.try_swizzle(&Matrix::from_rows([
     ///     [(0, 0), (0, 2)],
     ///     [(2, 0), (2, 2)],
-    /// ]);
+    /// ]));
     ///
-    /// assert_eq!(swizzled.unwrap(), [
+    /// assert_eq!(swizzled.unwrap(), Matrix::from_rows([
     ///     [0, 2],
     ///     [6, 8],
-    /// ]);
+    /// ]));
     ///
-    /// let swizzled = matrix.try_swizzle(&[
+    /// let swizzled = matrix.try_swizzle(&Matrix::from_rows([
     ///     [(0, 0), (0, 4)],
     ///     [(2, 0), (2, 2)],
-    /// ]);
+    /// ]));
     ///
     /// assert_eq!(swizzled, None);
     /// ```
@@ -1570,7 +1615,7 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[inline]
     pub const fn try_swizzle<const ROWS2: usize, const COLS2: usize>(
         &self,
-        swizzle_matrix: &[[(usize, usize); COLS2]; ROWS2],
+        swizzle_matrix: &Matrix<(usize, usize), ROWS2, COLS2>,
     ) -> Option<Matrix<T, ROWS2, COLS2>> {
         let mut matrix = Matrix::uninit();
 
@@ -1579,8 +1624,8 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             let mut col = 0;
             while col < COLS2 {
                 let (swizzle_row_idx, swizzle_col_idx) = unsafe {
-                    let swizz_row = array_get_unchecked(swizzle_matrix, row);
-                    *array_get_unchecked(swizz_row, col)
+                    let swizz_row = swizzle_matrix.row(row);
+                    *array_get_unchecked(&swizz_row, col)
                 };
 
                 if swizzle_row_idx >= ROWS || swizzle_col_idx >= COLS {
@@ -1614,33 +1659,33 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_rows([
     ///     [1, 2, 3, 4],
     ///     [5, 6, 7, 8],
     /// ]);
     ///
-    /// let fallback = Matrix::new([
+    /// let fallback = Matrix::from_rows([
     ///     [99, 98, 97],
     ///     [95, 94, 93],
     /// ]);
     ///
-    /// let swizzle_mat = [
+    /// let swizzle_mat = Matrix::from_rows([
     ///     [(0, 0), (0, 3), (1, 0)],
     ///     [(1, 0), (1, 10), (30, 50)],
-    /// ];
+    /// ]);
     ///
     /// let swizzled = matrix.swizzle_or(&swizzle_mat, &fallback);
     ///
-    /// assert_eq!(swizzled, [
+    /// assert_eq!(swizzled, Matrix::from_rows([
     ///     [1, 4, 5],
     ///     [5, 94, 93],
-    /// ]);
+    /// ]));
     /// ```
     #[must_use]
     #[inline]
     pub const fn swizzle_or<const SWIZZ_ROWS: usize, const SWIZZ_COLS: usize>(
         self,
-        swizzle_matrix: &[[(usize, usize); SWIZZ_COLS]; SWIZZ_ROWS],
+        swizzle_matrix: &Matrix<(usize, usize), SWIZZ_ROWS, SWIZZ_COLS>,
         or: &Matrix<T, SWIZZ_ROWS, SWIZZ_COLS>,
     ) -> Matrix<T, SWIZZ_ROWS, SWIZZ_COLS> {
         let mut matrix = Matrix::uninit();
@@ -1650,8 +1695,8 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             let mut col = 0;
             while col < SWIZZ_COLS {
                 let (swizzle_row_idx, swizzle_col_idx) = unsafe {
-                    let swizz_row = array_get_unchecked(swizzle_matrix, row);
-                    *array_get_unchecked(swizz_row, col)
+                    let swizz_row = swizzle_matrix.row(row);
+                    *array_get_unchecked(&swizz_row, col)
                 };
 
                 unsafe {
@@ -1687,26 +1732,26 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// ```
     /// use vectral::matrix::Matrix;
     ///
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_rows([
     ///     [1, 2, 3, 4],
     ///     [5, 6, 7, 8],
     /// ]);
     ///
-    /// let swizzled = matrix.swizzle(&[
+    /// let swizzled = matrix.swizzle(&Matrix::from_rows([
     ///     [(0, 0), (0, 3)],
     ///     [(1, 0), (1, 1)],
-    /// ]);
+    /// ]));
     ///
-    /// assert_eq!(swizzled, [
+    /// assert_eq!(swizzled, Matrix::from_rows([
     ///     [1, 4],
     ///     [5, 6],
-    /// ]);
+    /// ]));
     /// ```
     #[must_use]
     #[inline]
     pub const fn swizzle<const SWIZZ_ROWS: usize, const SWIZZ_COLS: usize>(
         &self,
-        swizzle_matrix: &[[(usize, usize); SWIZZ_COLS]; SWIZZ_ROWS],
+        swizzle_matrix: &Matrix<(usize, usize), SWIZZ_ROWS, SWIZZ_COLS>,
     ) -> Matrix<T, SWIZZ_ROWS, SWIZZ_COLS> {
         match self.try_swizzle(swizzle_matrix) {
             Some(matrix) => matrix,
@@ -1723,7 +1768,7 @@ impl<T, const N: usize> Matrix<T, N, N> {
     ///
     /// ```
     /// # use vectral::matrix::Matrix;
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_columns([
     ///     [1, 0, 0],
     ///     [0, 2, 0],
     ///     [0, 0, 3],
@@ -1794,7 +1839,7 @@ impl<T, const N: usize> Matrix<T, N, N> {
         let ptr = self.as_mut_ptr();
         while row < N {
             unsafe {
-                array_get_unchecked_mut(&mut diagonal, row).write(&mut *ptr.add(row * N + col));
+                array_get_unchecked_mut(&mut diagonal, row).write(&mut *ptr.add(col * N + row));
             }
             row += 1;
             col = col.saturating_sub(1);
@@ -1846,12 +1891,12 @@ impl<T, const N: usize> Matrix<T, N, N> {
     ///
     /// matrix.set_leftwards_diagonal([1.0, 2.0, 3.0, 1.0]);
     ///
-    /// assert_eq!(&matrix, &[
+    /// assert_eq!(matrix, Matrix::from_rows([
     ///     [0.0, 0.0, 0.0, 1.0],
     ///     [0.0, 0.0, 2.0, 0.0],
     ///     [0.0, 3.0, 0.0, 0.0],
     ///     [1.0, 0.0, 0.0, 0.0],
-    /// ]);
+    /// ]));
     /// ```
     #[inline]
     pub const fn set_leftwards_diagonal(&mut self, mut new_diagonal: [T; N]) -> [T; N] {
@@ -1879,7 +1924,7 @@ impl<T, const N: usize> Matrix<T, N, N> {
     ///
     /// ```
     /// # use vectral::matrix::Matrix;
-    /// let mut matrix = Matrix::new([
+    /// let mut matrix = Matrix::from_columns([
     ///     [1, 2, 3],
     ///     [4, 5, 6],
     ///     [7, 8, 9],
@@ -1887,7 +1932,7 @@ impl<T, const N: usize> Matrix<T, N, N> {
     ///
     /// matrix.transpose_in_place();
     ///
-    /// let transposed = Matrix::new([
+    /// let transposed = Matrix::from_columns([
     ///     [1, 4, 7],
     ///     [2, 5, 8],
     ///     [3, 6, 9],
@@ -1956,7 +2001,7 @@ impl<T: Copy, const N: usize> Matrix<T, N, N> {
 }
 
 impl<T, const ROWS: usize, const COLS: usize> Index<usize> for Matrix<T, ROWS, COLS> {
-    type Output = [T; COLS];
+    type Output = [T; ROWS];
     #[inline]
     fn index(&self, index: usize) -> &Self::Output {
         &self.data[index]
@@ -1999,7 +2044,7 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     ///
     /// ```
     /// # use vectral::matrix::Matrix;
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_columns([
     ///     [01, 02, 03, 04],
     ///     [05, 06, 07, 08],
     ///     [09, 10, 11, 12],
@@ -2050,28 +2095,32 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[track_caller]
     #[must_use]
     #[inline]
-    pub const fn cofactor_shifted_with(
+    pub const fn minor_shifted_with(
         self,
         value: T,
         removed_row: usize,
         removed_col: usize,
     ) -> Self {
-        let mut return_matrix = Matrix::cofactor_shifted_uninit(self, removed_row, removed_col);
+        let mut return_matrix = Matrix::minor_shifted_uninit(self, removed_row, removed_col);
 
-        let mut row = 0;
-        while row < ROWS {
+        let mut row_idx = 0;
+        while row_idx < ROWS {
             unsafe {
-                return_matrix.get_unchecked_mut(row, COLS - 1).write(value);
+                return_matrix
+                    .get_unchecked_mut(row_idx, COLS - 1)
+                    .write(value);
             }
-            row += 1;
+            row_idx += 1;
         }
 
-        let mut col = 0;
-        while col < COLS {
+        let mut col_idx = 0;
+        while col_idx < COLS {
             unsafe {
-                return_matrix.get_unchecked_mut(ROWS - 1, col).write(value);
+                return_matrix
+                    .get_unchecked_mut(ROWS - 1, col_idx)
+                    .write(value);
             }
-            col += 1;
+            col_idx += 1;
         }
 
         unsafe { Matrix::assume_init(return_matrix) }
@@ -2079,7 +2128,7 @@ impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
 }
 
 impl<T: Copy + Zero, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
-    /// Returns the cofactor of this matrix, where the retained elements are shifted to
+    /// Returns the minor of this matrix, where the retained elements are shifted to
     /// the top-left of the matrix, and the edges are zero-filled.
     ///
     /// The cofactor matrix is the matrix calculated by removing the given `removed_row` and
@@ -2093,32 +2142,32 @@ impl<T: Copy + Zero, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS>
     ///
     /// ```
     /// # use vectral::matrix::Matrix;
-    /// let matrix = Matrix::new([
+    /// let matrix = Matrix::from_columns([
     ///     [01, 02, 03, 04],
     ///     [05, 06, 07, 08],
     ///     [09, 10, 11, 12],
     ///     [13, 14, 15, 16],
     /// ]);
     ///
-    /// let cofactor = matrix.cofactor_shifted(1, 2);
+    /// let minor = matrix.minor_shifted(2, 1);
     ///
-    /// assert_eq!(cofactor, [
+    /// assert_eq!(minor, Matrix::from_columns([
     ///     [01, 02, 04, 00],
     ///     [09, 10, 12, 00],
     ///     [13, 14, 16, 00],
     ///     [00, 00, 00, 00],
-    /// ]);
+    /// ]));
     /// ```
     #[track_caller]
     #[must_use]
     #[inline]
-    pub const fn cofactor_shifted(self, removed_row: usize, removed_col: usize) -> Self {
-        self.cofactor_shifted_with(Zero::ZERO, removed_row, removed_col)
+    pub const fn minor_shifted(self, removed_row: usize, removed_col: usize) -> Self {
+        self.minor_shifted_with(Zero::ZERO, removed_row, removed_col)
     }
 }
 
 impl<T: Zero, const ROWS: usize, const COLS: usize> Zero for Matrix<T, ROWS, COLS> {
-    const ZERO: Self = Matrix::new(Zero::ZERO);
+    const ZERO: Self = Matrix::from_columns(Zero::ZERO);
 }
 
 impl<T: Zero + One, const N: usize> Matrix<T, N, N> {
@@ -2130,12 +2179,12 @@ impl<T: Zero + One, const N: usize> Matrix<T, N, N> {
     /// # use vectral::matrix::Matrix;
     /// let matrix = Matrix::<f64, 4, 4>::identity();
     ///
-    /// assert_eq!(matrix, [
+    /// assert_eq!(matrix, Matrix::from_rows([
     ///     [1.0, 0.0, 0.0, 0.0],
     ///     [0.0, 1.0, 0.0, 0.0],
     ///     [0.0, 0.0, 1.0, 0.0],
     ///     [0.0, 0.0, 0.0, 1.0],
-    /// ]);
+    /// ]));
     /// ```
     #[must_use]
     #[inline]
@@ -2182,14 +2231,14 @@ where
     }
 }
 
-impl<T, const ROWS: usize, const COLS: usize> From<[[T; COLS]; ROWS]> for Matrix<T, ROWS, COLS> {
+impl<T, const ROWS: usize, const COLS: usize> From<[[T; ROWS]; COLS]> for Matrix<T, ROWS, COLS> {
     #[inline]
-    fn from(value: [[T; COLS]; ROWS]) -> Self {
-        Self::new(value)
+    fn from(value: [[T; ROWS]; COLS]) -> Self {
+        Self::from_columns(value)
     }
 }
 
-impl<T, const ROWS: usize, const COLS: usize> From<Matrix<T, ROWS, COLS>> for [[T; COLS]; ROWS] {
+impl<T, const ROWS: usize, const COLS: usize> From<Matrix<T, ROWS, COLS>> for [[T; ROWS]; COLS] {
     #[inline]
     fn from(value: Matrix<T, ROWS, COLS>) -> Self {
         value.data
@@ -2342,7 +2391,7 @@ where
         let simd = Simd::splat(rhs);
         let this = Simd::from_array(self.into_flattened());
         let result = this * simd;
-        Matrix::new([result.to_array()]).resize::<ROWS, COLS>()
+        Matrix::from_columns([result.to_array()]).resize::<ROWS, COLS>()
     }
 }
 
@@ -2403,15 +2452,15 @@ where
     fn det_inner(self, n: usize) -> T {
         match n {
             0 => Zero::ZERO,
-            1 => self[0][0],
-            2 => (self[0][0] * self[1][1]) - (self[0][1] * self[1][0]),
+            1 => *self.elem(0, 0),
+            2 => (*self.elem(0, 0) * *self.elem(1, 1)) - (*self.elem(0, 1) * *self.elem(1, 0)),
             _ => {
                 let mut result = Zero::ZERO;
                 let top_row = self.row(0);
 
                 let mut should_sub = false;
                 for (col_idx, col_elem) in top_row.iter().enumerate() {
-                    let cofactor = self.cofactor_shifted(0, col_idx);
+                    let cofactor = self.minor_shifted(0, col_idx);
 
                     let value = *col_elem * cofactor.det_inner(n - 1);
                     if should_sub {
@@ -2462,14 +2511,14 @@ where
             return Matrix::splat(T::ONE);
         }
 
-        let mut adjoint_mat = Matrix::splat(MaybeUninit::uninit());
+        let mut adjoint_mat = Matrix::uninit();
 
         let mut is_neg = false;
-        for row in 0..N {
-            for col in 0..N {
-                let cofactor_matrix: Matrix<T, N, N> = self.cofactor_shifted(row, col);
+        for row_idx in 0..N {
+            for col_idx in 0..N {
+                let cofactor_matrix: Matrix<T, N, N> = self.minor_shifted(row_idx, col_idx);
                 let cofactor_scalar = cofactor_matrix.det_inner(N - 1);
-                let adjoint_slot = unsafe { adjoint_mat.get_unchecked_mut(row, col) };
+                let adjoint_slot = unsafe { adjoint_mat.get_unchecked_mut(row_idx, col_idx) };
 
                 if is_neg {
                     adjoint_slot.write(cofactor_scalar.neg());
@@ -2487,15 +2536,6 @@ where
 
         adjoint_mat.transpose_in_place();
         unsafe { Matrix::assume_init(adjoint_mat) }
-    }
-}
-
-impl<T: PartialEq, const ROWS: usize, const COLS: usize> PartialEq<[[T; COLS]; ROWS]>
-    for Matrix<T, ROWS, COLS>
-{
-    #[inline]
-    fn eq(&self, other: &[[T; COLS]; ROWS]) -> bool {
-        PartialEq::eq(&self.data, other)
     }
 }
 
@@ -2527,32 +2567,32 @@ impl<T, const ROWS: usize, const COLS: usize> BorrowMut<[T]> for Matrix<T, ROWS,
     }
 }
 
-impl<T, const ROWS: usize, const COLS: usize> AsRef<[[T; COLS]; ROWS]> for Matrix<T, ROWS, COLS> {
+impl<T, const ROWS: usize, const COLS: usize> AsRef<[[T; ROWS]; COLS]> for Matrix<T, ROWS, COLS> {
     #[inline]
-    fn as_ref(&self) -> &[[T; COLS]; ROWS] {
+    fn as_ref(&self) -> &[[T; ROWS]; COLS] {
         self.as_array()
     }
 }
 
-impl<T, const ROWS: usize, const COLS: usize> AsMut<[[T; COLS]; ROWS]> for Matrix<T, ROWS, COLS> {
+impl<T, const ROWS: usize, const COLS: usize> AsMut<[[T; ROWS]; COLS]> for Matrix<T, ROWS, COLS> {
     #[inline]
-    fn as_mut(&mut self) -> &mut [[T; COLS]; ROWS] {
+    fn as_mut(&mut self) -> &mut [[T; ROWS]; COLS] {
         self.as_array_mut()
     }
 }
 
-impl<T, const ROWS: usize, const COLS: usize> Borrow<[[T; COLS]; ROWS]> for Matrix<T, ROWS, COLS> {
+impl<T, const ROWS: usize, const COLS: usize> Borrow<[[T; ROWS]; COLS]> for Matrix<T, ROWS, COLS> {
     #[inline]
-    fn borrow(&self) -> &[[T; COLS]; ROWS] {
+    fn borrow(&self) -> &[[T; ROWS]; COLS] {
         self.as_array()
     }
 }
 
-impl<T, const ROWS: usize, const COLS: usize> BorrowMut<[[T; COLS]; ROWS]>
+impl<T, const ROWS: usize, const COLS: usize> BorrowMut<[[T; ROWS]; COLS]>
     for Matrix<T, ROWS, COLS>
 {
     #[inline]
-    fn borrow_mut(&mut self) -> &mut [[T; COLS]; ROWS] {
+    fn borrow_mut(&mut self) -> &mut [[T; ROWS]; COLS] {
         self.as_array_mut()
     }
 }
@@ -2716,10 +2756,10 @@ impl<T: Zero + One + Trig + Copy + ClosedNeg> Matrix4<T> {
         let (sin_t, cos_t) = T::sin_cos(angle.in_radians());
 
         let mut result = Matrix::identity();
-        result[1][1] = cos_t;
-        result[1][2] = -sin_t;
-        result[2][1] = sin_t;
-        result[2][2] = cos_t;
+        *result.elem_mut(1, 1) = cos_t;
+        *result.elem_mut(1, 2) = -sin_t;
+        *result.elem_mut(2, 1) = sin_t;
+        *result.elem_mut(2, 2) = cos_t;
 
         result
     }
@@ -2732,10 +2772,10 @@ impl<T: Zero + One + Trig + Copy + ClosedNeg> Matrix4<T> {
         let (sin_t, cos_t) = T::sin_cos(angle.in_radians());
 
         let mut result = Matrix::identity();
-        result[0][0] = cos_t;
-        result[0][2] = sin_t;
-        result[2][0] = -sin_t;
-        result[2][2] = cos_t;
+        *result.elem_mut(0, 0) = cos_t;
+        *result.elem_mut(0, 2) = sin_t;
+        *result.elem_mut(2, 0) = -sin_t;
+        *result.elem_mut(2, 2) = cos_t;
 
         result
     }
@@ -2748,10 +2788,10 @@ impl<T: Zero + One + Trig + Copy + ClosedNeg> Matrix4<T> {
         let (sin_t, cos_t) = T::sin_cos(angle.in_radians());
 
         let mut result = Matrix::identity();
-        result[0][0] = cos_t;
-        result[0][1] = -sin_t;
-        result[1][0] = sin_t;
-        result[1][1] = cos_t;
+        *result.elem_mut(0, 0) = cos_t;
+        *result.elem_mut(0, 1) = -sin_t;
+        *result.elem_mut(1, 0) = sin_t;
+        *result.elem_mut(1, 1) = cos_t;
 
         result
     }
@@ -2959,15 +2999,15 @@ where
 
         let mut matrix = Matrix::ZERO;
 
-        matrix[0][0] = two * n / (r - l);
-        matrix[1][1] = two * n / (t - b);
+        *matrix.elem_mut(0, 0) = two * n / (r - l);
+        *matrix.elem_mut(1, 1) = two * n / (t - b);
 
-        matrix[2][0] = (r + l) / (r - l);
-        matrix[2][1] = (t + b) / (t - b);
-        matrix[2][2] = -(f + n) / (f - n);
-        matrix[2][3] = two.neg() * f * n / (f - n);
+        *matrix.elem_mut(2, 0) = (r + l) / (r - l);
+        *matrix.elem_mut(2, 1) = (t + b) / (t - b);
+        *matrix.elem_mut(2, 2) = -(f + n) / (f - n);
+        *matrix.elem_mut(2, 3) = two.neg() * f * n / (f - n);
 
-        matrix[3][2] = T::ONE.neg();
+        *matrix.elem_mut(3, 2) = T::ONE.neg();
 
         matrix
     }
@@ -3064,7 +3104,7 @@ where
         mut self,
     ) -> (Vector<T, 3>, Vector<T, 3>, Matrix<T, 4>, T) {
         let translation = Vector::new(self.col(3)).shrink_to();
-        let w = self[3][3];
+        let w = *self.elem(3, 3);
 
         // Remove the translation part from the matrix.
         {
@@ -3123,12 +3163,18 @@ where
     type Output = Vector<T, ROWS>;
     #[inline]
     fn mul(self, rhs: Vector<T, COLS>) -> Self::Output {
-        let result = self.data.map(|row| {
-            zip_map(row, rhs.to_array(), Mul::mul)
-                .into_iter()
-                .fold(T::ZERO, Add::add)
-        });
-        Vector::from(result)
+        let mut vector: Vector<T, ROWS> = Vector::ZERO;
+
+        for (i, row) in self.rows().enumerate() {
+            unsafe {
+                let elem = vector.get_unchecked_mut(i);
+                *elem = zip_map(row, rhs.to_array(), |x, y| *x * y)
+                    .into_iter()
+                    .fold(T::ZERO, Add::add)
+            }
+        }
+
+        vector
     }
 }
 
@@ -3317,9 +3363,9 @@ impl<'a, T, const ROWS: usize, const COLS: usize> Iterator for Columns<'a, T, RO
     type Item = [&'a T; ROWS];
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        let row = self.matrix.get_column_ref(self.front)?;
+        let col = self.matrix.get_column_ref(self.front)?;
         self.front += 1;
-        Some(row)
+        Some(col)
     }
 }
 
@@ -3354,9 +3400,9 @@ macro_rules! impl_matrix_conversion {
         impl<T> From<mint:: $matrix_name <T>> for Matrix<T, $rows, $cols> {
             #[inline]
             fn from(value: mint:: $matrix_name<T>) -> Self {
-                Matrix::new([
+                Matrix::from_columns([
                     $( value. $row_vecs .into(), )*
-                ])
+                ]).transpose()
             }
         }
 
@@ -3364,7 +3410,7 @@ macro_rules! impl_matrix_conversion {
         impl<T> From<Matrix<T, $rows, $cols>> for mint:: $matrix_name<T> {
             #[inline]
             fn from(value: Matrix<T, $rows, $cols>) -> Self {
-                mint::$matrix_name::from(value.to_array())
+                mint::$matrix_name::from(value.transpose().to_array())
             }
         }
 
@@ -3529,7 +3575,7 @@ macro_rules! impl_matrix_conversion {
         impl<T> From<mint:: $matrix_name <T>> for Matrix<T, $rows, $cols> {
             #[inline]
             fn from(value: mint:: $matrix_name<T>) -> Self {
-                Matrix::new([$( value. $row_vecs .into(), )*]).transpose()
+                Matrix::from_columns([$( value. $row_vecs .into(), )*])
             }
         }
 
@@ -3537,7 +3583,7 @@ macro_rules! impl_matrix_conversion {
         impl<T> From<Matrix<T, $rows, $cols>> for mint:: $matrix_name<T> {
             #[inline]
             fn from(value: Matrix<T, $rows, $cols>) -> Self {
-                mint::$matrix_name::from(value.transpose().to_array())
+                mint::$matrix_name::from(value.to_array())
             }
         }
 
@@ -3892,11 +3938,11 @@ impl<T: serde_core::Serialize, const ROWS: usize, const COLS: usize> serde_core:
         if serializer.is_human_readable() {
             let mut s = serializer.serialize_seq(Some(ROWS))?;
 
-            for i in 0..ROWS {
+            for i in 0..COLS {
                 use serde_core::ser::SerializeSeq;
 
-                let row = &self[i];
-                s.serialize_element(&row[..])?;
+                let col = &self[i];
+                s.serialize_element(&col[..])?;
             }
 
             s.end()
@@ -3955,27 +4001,27 @@ impl<'de, T: de::Deserialize<'de> + Default, const ROWS: usize, const COLS: usiz
 
                     Ok(matrix)
                 } else {
-                    struct Row<T, const COLS: usize>([T; COLS]);
+                    struct Col<T, const ROWS: usize>([T; ROWS]);
 
-                    impl<'de, T: Default + Deserialize<'de>, const COLS: usize> de::Deserialize<'de> for Row<T, COLS> {
+                    impl<'de, T: Default + Deserialize<'de>, const ROWS: usize> de::Deserialize<'de> for Col<T, ROWS> {
                         #[inline]
                         fn deserialize<D: de::Deserializer<'de>>(
                             deserializer: D,
                         ) -> Result<Self, D::Error> {
-                            deserializer.deserialize_seq(RowDeserializer(PhantomData))
+                            deserializer.deserialize_seq(ColDeserializer(PhantomData))
                         }
                     }
 
-                    struct RowDeserializer<T, const COLS: usize>(PhantomData<[T; COLS]>);
+                    struct ColDeserializer<T, const ROWS: usize>(PhantomData<[T; ROWS]>);
 
-                    impl<'de, T: Default + de::Deserialize<'de>, const COLS: usize> de::Visitor<'de>
-                        for RowDeserializer<T, COLS>
+                    impl<'de, T: Default + de::Deserialize<'de>, const ROWS: usize> de::Visitor<'de>
+                        for ColDeserializer<T, ROWS>
                     {
-                        type Value = Row<T, COLS>;
+                        type Value = Col<T, ROWS>;
 
                         #[inline]
                         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                            write!(formatter, "an array of size {}", COLS)
+                            write!(formatter, "an array of size {}", ROWS)
                         }
 
                         #[inline]
@@ -3985,30 +4031,30 @@ impl<'de, T: de::Deserialize<'de> + Default, const ROWS: usize, const COLS: usiz
                         ) -> Result<Self::Value, A::Error> {
                             let mut result = core::array::from_fn(|_| Default::default());
 
-                            for i in 0..COLS {
+                            for i in 0..ROWS {
                                 result[i] = seq
                                     .next_element::<T>()?
                                     .ok_or_else(|| de::Error::invalid_length(i, &self))?;
                             }
 
-                            Ok(Row(result))
+                            Ok(Col(result))
                         }
                     }
 
-                    for row in 0..ROWS {
-                        struct MissingRow<const ROWS: usize>;
-                        impl<const ROWS: usize> de::Expected for MissingRow<ROWS> {
+                    for col in 0..COLS {
+                        struct MissingCol<const ROWS: usize>;
+                        impl<const ROWS: usize> de::Expected for MissingCol<ROWS> {
                             #[inline]
                             fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                                write!(formatter, "a row of length {}", ROWS)
+                                write!(formatter, "a column of length {}", ROWS)
                             }
                         }
 
-                        let row_data = seq
-                            .next_element::<Row<T, COLS>>()?
-                            .ok_or_else(|| de::Error::invalid_length(row, &MissingRow::<ROWS>))?;
+                        let col_data = seq
+                            .next_element::<Col<T, ROWS>>()?
+                            .ok_or_else(|| de::Error::invalid_length(col, &MissingCol::<ROWS>))?;
 
-                        matrix.set_row(row, row_data.0);
+                        matrix.set_col(col, col_data.0);
                     }
 
                     Ok(matrix)
