@@ -2922,8 +2922,6 @@ where
         up: Vector<T>,
         forwards: Vector<T>,
     ) -> Self {
-        let mut matrix = Matrix::identity();
-
         let origin_vector = Vector::new([
             -Vector::dot(side, origin.to_vector()),
             -Vector::dot(up, origin.to_vector()),
@@ -2931,12 +2929,12 @@ where
             T::ONE,
         ]);
 
-        matrix.set_col(0, side.expand_to::<4>(T::ZERO).to_array());
-        matrix.set_col(1, up.expand_to::<4>(T::ZERO).to_array());
-        matrix.set_col(2, forwards.expand_to::<4>(T::ZERO).to_array());
-        matrix.set_col(3, origin_vector.to_array());
-
-        matrix
+        Matrix::from_columns([
+            side.expand_to::<4>(T::ZERO).to_array(),
+            up.expand_to::<4>(T::ZERO).to_array(),
+            forwards.expand_to::<4>(T::ZERO).to_array(),
+            origin_vector.to_array(),
+        ])
     }
 }
 
