@@ -2,11 +2,7 @@
 
 #[cfg(feature = "nightly")]
 use crate::matrix::Matrix;
-use crate::{
-    num::{ClosedAdd, ClosedDiv, ClosedMul, ClosedSub, Zero},
-    point::Point,
-    vector::Vector,
-};
+use crate::vector::Vector;
 
 pub mod angle;
 pub mod quaternion {
@@ -39,19 +35,4 @@ pub trait HomogenousRotation<const DIM: usize>: Rotation<DIM> {
 
     #[must_use]
     fn get_homogeneous(&self) -> Matrix<Self::Scalar, { DIM + 1 }, { DIM + 1 }>;
-}
-
-#[deprecated(note = "use `Point::rotated_around()`")]
-#[must_use]
-#[inline]
-pub fn rotate_point_around<T, R, const N: usize>(
-    point_to_rotate: Point<T, N>,
-    center_of_rotation: Point<T, N>,
-    rotation: R,
-) -> Point<T, N>
-where
-    R: Rotation<N, Scalar = T>,
-    T: Copy + ClosedDiv + ClosedSub + ClosedMul + ClosedAdd + Zero,
-{
-    point_to_rotate.rotated_around(center_of_rotation, rotation)
 }

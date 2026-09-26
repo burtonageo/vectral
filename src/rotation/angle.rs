@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::utils::num::{
-    Bounded, ClosedAdd, ClosedSub, One, Trig, Zero, checked::CheckedAddAssign, n,
-};
+use crate::num::{Bounded, ClosedAdd, ClosedSub, One, Trig, Zero, checked::CheckedAddAssign, n};
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
 use core::{
@@ -89,7 +87,7 @@ impl<T: Div<U>, U> Div<U> for Angle<T> {
 
 impl<T: DivAssign<U>, U> DivAssign<U> for Angle<T> {
     #[inline]
-    fn div_assign(&mut self, rhs: U){
+    fn div_assign(&mut self, rhs: U) {
         match *self {
             Self::Degrees(ref mut ang) => ang.div_assign(rhs),
             Self::Radians(ref mut ang) => ang.div_assign(rhs),
@@ -110,7 +108,7 @@ impl<T: Mul<U>, U> Mul<U> for Angle<T> {
 
 impl<T: MulAssign<U>, U> MulAssign<U> for Angle<T> {
     #[inline]
-    fn mul_assign(&mut self, rhs: U){
+    fn mul_assign(&mut self, rhs: U) {
         match *self {
             Self::Degrees(ref mut ang) => ang.mul_assign(rhs),
             Self::Radians(ref mut ang) => ang.mul_assign(rhs),

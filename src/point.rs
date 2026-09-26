@@ -9,15 +9,15 @@ use crate::{
     utils::concat,
 };
 use crate::{
+    num::{
+        ClosedAdd, ClosedDiv, ClosedMul, ClosedSub, One, Sqrt, Zero,
+        checked::{CheckedDiv, CheckedMul},
+    },
     rotation::Rotation,
     utils::{
         array_assume_init, array_get_checked, array_get_mut_checked, array_get_unchecked,
-        array_get_unchecked_mut, expand_to_copy,
-        num::{
-            ClosedAdd, ClosedDiv, ClosedMul, ClosedSub, One, Sqrt, Zero,
-            checked::{CheckedDiv, CheckedMul},
-        },
-        shrink_to, swizzle_or, try_swizzle, zip_map,
+        array_get_unchecked_mut, arrays::zip::zip_map, expand_to_copy, shrink_to, swizzle_or,
+        try_swizzle,
     },
     vector::Vector,
 };
@@ -419,15 +419,6 @@ impl<T, const N: usize> Point<T, N> {
         unsafe { slice::from_raw_parts_mut(self.as_mut_ptr(), N) }
     }
 
-    #[deprecated(note = "use Vector::to_array instead")]
-    #[must_use]
-    #[inline]
-    pub const fn into_array(self) -> [T; N] {
-        let array = unsafe { ptr::read(&self.data) };
-        let _self = ManuallyDrop::new(self);
-        array
-    }
-
     /// Convert the given `point` into a fixed size array.
     ///
     /// # Examples
@@ -541,13 +532,6 @@ impl<T, const N: usize> Point<T, N> {
     #[must_use]
     #[inline]
     pub const fn to_vector(self) -> Vector<T, N> {
-        Vector::new(self.to_array())
-    }
-
-    #[deprecated = "use Point::to_vector instead"]
-    #[must_use]
-    #[inline]
-    pub const fn into_vector(self) -> Vector<T, N> {
         Vector::new(self.to_array())
     }
 

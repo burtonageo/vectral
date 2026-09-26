@@ -94,7 +94,7 @@ macro_rules! unzip_impl {
 /// # Examples
 ///
 /// ```
-/// use vectral::utils::zip_map;
+/// use vectral::utils::arrays::zip::zip_map;
 ///
 /// let array_1 = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"].map(String::from);
 /// let array_2 = [1, 2, 3, 4, 5];
@@ -131,7 +131,7 @@ where
 /// # Examples
 ///
 /// ```
-/// use vectral::utils::zip_map3;
+/// use vectral::utils::arrays::zip::zip_map3;
 ///
 /// let array_1 = [0, 1, 2, 3, 4];
 /// let array_2 = [1, 2, 3, 4, 5];
@@ -240,7 +240,7 @@ where
 /// # Examples
 ///
 /// ```
-/// use vectral::utils::zip;
+/// use vectral::utils::arrays::zip::zip;
 ///
 /// let nums = [1, 2, 3];
 /// let chars = ['a', 'b', 'c'];
@@ -262,7 +262,7 @@ pub const fn zip<T, U, const N: usize>(lhs: [T; N], rhs: [U; N]) -> [(T, U); N] 
 /// Zips three fixed-size arrays together, returning a fixed size array of tuples.
 ///
 /// ```
-/// use vectral::utils::zip3;
+/// use vectral::utils::arrays::zip::zip3;
 ///
 /// let nums = [1, 2, 3];
 /// let chars = ['a', 'b', 'c'];
@@ -340,7 +340,7 @@ pub const fn zip7<T, U, V, W, X, Y, Z, const N: usize>(
 /// # Examples
 ///
 /// ```
-/// use vectral::utils::arrays::unzip;
+/// use vectral::utils::arrays::zip::unzip;
 ///
 /// let mixed_data = [(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd')];
 ///
@@ -359,7 +359,7 @@ pub const fn unzip<T, U, const N: usize>(array: [(T, U); N]) -> ([T; N], [U; N])
 /// # Examples
 ///
 /// ```
-/// use vectral::utils::arrays::unzip3;
+/// use vectral::utils::arrays::zip::unzip3;
 ///
 /// let mixed_data = [(1, 'a', false), (2, 'b', true), (3, 'c', false), (4, 'd', true)];
 ///

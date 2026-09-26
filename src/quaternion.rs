@@ -6,19 +6,18 @@ use crate::rotation::HomogenousRotation;
 use crate::simd::SimdSub;
 #[cfg(feature = "simd")]
 use crate::simd::{SimdAdd, SimdMul};
-use crate::utils::{
-    array_assume_init, array_get_unchecked,
+use crate::{
+    matrix::Matrix4,
+    rotation::{Rotation, angle::Angle},
+    vector::{Vector, Vector3, Vector4},
+};
+use crate::{
     num::{
         Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
         checked::{CheckedAddAssign, CheckedDiv, CheckedMul},
         lerp, rat,
     },
-    shrink_to, zip::zip,
-};
-use crate::{
-    matrix::Matrix4,
-    rotation::{Rotation, angle::Angle},
-    vector::{Vector, Vector3, Vector4},
+    utils::{array_assume_init, array_get_unchecked, arrays::zip::zip, shrink_to},
 };
 #[cfg(feature = "serde")]
 use core::marker::PhantomData;
@@ -73,13 +72,6 @@ impl<T> Quaternion<T> {
 
         let _self = ManuallyDrop::new((self, arr));
         Vector4::new([x, y, z, w])
-    }
-
-    #[deprecated = "use Quaternion::to_vector()"]
-    #[must_use]
-    #[inline]
-    pub const fn into_vector(self) -> Vector4<T> {
-        Self::to_vector(self)
     }
 
     #[must_use]

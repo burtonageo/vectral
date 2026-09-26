@@ -5,18 +5,15 @@ use crate::simd::{SimdAdd, SimdMul, SimdSub};
 #[cfg(feature = "nightly")]
 use crate::utils::{flatten, shrink_to_copy};
 use crate::{
+    num::{
+        Abs, Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig, Zero,
+        checked::{CheckedAddAssign, CheckedDiv},
+    },
     point::Point3,
     rotation::{angle::Angle, quaternion::Quaternion},
-    utils::shrink_to,
     utils::{
         array_assume_init, array_get_checked, array_get_mut_checked, array_get_unchecked,
-        array_get_unchecked_mut,
-        num::{
-            Abs, Bounded, ClosedAdd, ClosedDiv, ClosedMul, ClosedNeg, ClosedSub, One, Sqrt, Trig,
-            Zero,
-            checked::{CheckedAddAssign, CheckedDiv},
-        },
-        zip_map,
+        array_get_unchecked_mut, arrays::zip::zip_map, shrink_to,
     },
     vector::{Vector, Vector3},
 };
@@ -168,13 +165,6 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     #[inline]
     pub const fn as_array(&self) -> &[[T; ROWS]; COLS] {
         &self.data
-    }
-
-    #[deprecated(note = "use Matrix::to_array instead")]
-    #[must_use]
-    #[inline]
-    pub const fn into_array(self) -> [[T; ROWS]; COLS] {
-        self.to_array()
     }
 
     /// Converts the `Matrix` into its native array representation.
@@ -939,22 +929,6 @@ impl<T, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
             Some(row) => row,
             None => panic!("column index out of bounds"),
         }
-    }
-
-    #[deprecated]
-    #[track_caller]
-    #[must_use]
-    #[inline]
-    pub const fn col_mut(&mut self, col_idx: usize) -> [&mut T; ROWS] {
-        self.column_mut(col_idx)
-    }
-
-    #[deprecated]
-    #[track_caller]
-    #[must_use]
-    #[inline]
-    pub const fn col_ref(&self, col_idx: usize) -> [&T; ROWS] {
-        self.column_ref(col_idx)
     }
 
     /// Applies the given function `f` to every element of the `Matrix`, returning

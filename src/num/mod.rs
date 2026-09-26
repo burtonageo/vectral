@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::utils::num::checked::{CheckedAddAssign, CheckedDiv};
+use crate::num::checked::{CheckedAddAssign, CheckedDiv};
 use core::{
     cmp::Ordering,
     num::{
@@ -148,10 +148,10 @@ pub trait AbsDiff<Rhs = Self>: Sub<Rhs> {
     /// ```
     #[must_use]
     fn abs_diff(self, rhs: Rhs) -> Self::Output;
-} 
+}
 
 /// Provides the absolute value.
-/// 
+///
 /// The absolute value is the positive value of a given value. For example,
 /// the absolute value of -12 is 12. The absolute value of 12 is also 12.
 pub trait Abs: Copy + Neg {
@@ -161,7 +161,7 @@ pub trait Abs: Copy + Neg {
     ///
     /// ```
     /// use vectral::num::Abs;
-    /// 
+    ///
     /// let num = 14.0;
     /// assert_eq!(Abs::abs(num), 14.0);
     ///

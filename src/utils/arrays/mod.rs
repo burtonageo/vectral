@@ -11,13 +11,6 @@ use core::{
 
 pub mod zip;
 
-#[doc(hidden)]
-#[deprecated(note = "use the zip module directly")]
-pub use self::zip::{
-    unzip, unzip3, unzip4, unzip5, unzip6, unzip7, zip, zip_map, zip_map3, zip_map4, zip_map5,
-    zip_map6, zip_map7, zip3, zip4, zip5, zip6, zip7,
-};
-
 /// Shrinks an array, returning a new array with `NEW_LEN` elements.
 ///
 /// # Examples

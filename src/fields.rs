@@ -5,7 +5,7 @@
 //! [`Vector`]: ../vector/struct.Vector.html
 //! [`Point`]: ../point/struct.Point.html
 
-use crate::utils::num::Zero;
+use crate::num::Zero;
 
 macro_rules! decl_fields {
     (

@@ -78,10 +78,4 @@ pub mod assertions {
 }
 
 pub mod arrays;
-
-#[deprecated = "use the top-level `vectral::num` module"]
-pub mod num {
-    pub use crate::num::*;
-}
-
 pub use self::arrays::*;

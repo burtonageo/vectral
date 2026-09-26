@@ -8,9 +8,9 @@ use crate::simd::{SimdMul, SimdValue};
 use crate::{matrix::TransformHomogeneous, point::Point3};
 use crate::{
     matrix::{Matrix, Matrix4},
+    num::Zero,
     point::Point,
     rotation::{angle::Angle::Degrees, quaternion::Quaternion},
-    utils::num::Zero,
     vector::{Vector, Vector3},
 };
 use approx::assert_relative_eq;
