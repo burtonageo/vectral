@@ -177,6 +177,11 @@ fn test_matrix_multiply() {
         assert_eq!(SimdValue(m1) * SimdValue(m2), SimdValue(result));
     }
 
+    let m3 = result * 2;
+    for (e1, e2) in m3.into_elems().zip(result.into_elems()) {
+        assert_eq!(e2 * 2, e1);
+    }
+
     assert_eq!(
         Matrix4::<f32>::identity() * Matrix4::identity(),
         Matrix4::identity()
@@ -199,6 +204,21 @@ fn test_matrix_multiply() {
     #[cfg(feature = "simd")]
     {
         assert_eq!(m1.simd_mul(m0), m1_by_m0_result);
+    }
+
+    let translation_vec = [1.0, 2.0, 3.0, 1.0];
+    let translation = {
+        let mut m = Matrix4::identity();
+        m.set_col(3, translation_vec);
+        m
+    };
+
+    let v = Vector::new([1.0, 3.0, 5.0, 1.0]);
+
+    {
+        let v1 = (v * translation).swizzle(&[0, 1, 2]);
+        let v2 = (v + Vector::from(translation_vec)).swizzle(&[0, 1, 2]);
+        approx::assert_relative_eq!(v1, v2)
     }
 }
 
@@ -812,7 +832,11 @@ fn test_perspective() {
     };
 
     let perspective = Matrix::perspective_3d(aspect, fov, near, far);
-    assert_relative_eq!(&perspective, &expected_perspective_matrix, epsilon = epsilon);
+    assert_relative_eq!(
+        &perspective,
+        &expected_perspective_matrix,
+        epsilon = epsilon
+    );
 
     let ortho = Matrix::orthographic_projection_3d_from_fov(aspect, fov, near, far);
     assert_relative_eq!(&ortho, &expected_orthographic_matrix, epsilon = epsilon);
