@@ -190,7 +190,7 @@ fn test_matrix_multiply() {
     let m0 = Matrix::from_row_vector(From::from([1, 2, 3]));
     let m1 = Matrix::from_column_vector(From::from([4, 5, 6]));
 
-    assert_eq!(m0 * m1, Matrix::from_columns([[32]]));
+    assert_eq!(m0 * m1, Matrix::singleton(32));
 
     #[rustfmt::skip]
     let m1_by_m0_result = Matrix::from_rows([

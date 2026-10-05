@@ -1457,6 +1457,24 @@ impl<T, const ROWS: usize> Matrix<T, ROWS, 1> {
     }
 }
 
+impl<T> Matrix<T, 1, 1> {
+    /// Constructs a new `Matrix` containing only the given value.
+    #[must_use]
+    #[inline]
+    pub const fn singleton(value: T) -> Self {
+        Self { data: [[value]], }
+    }
+
+    /// Retrieve the inner value from the singleton `Matrix`.
+    #[must_use]
+    #[inline]
+    pub const fn into_value(self) -> T {
+        let value: T = unsafe { mem::transmute_copy(&self.data) };
+        mem::forget(self);
+        value
+    }
+}
+
 impl<T: Copy, const ROWS: usize, const COLS: usize> Matrix<T, ROWS, COLS> {
     /// Creates a new matrix, where every element of `Matrix` is set to `value`.
     ///
