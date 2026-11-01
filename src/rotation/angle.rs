@@ -63,6 +63,40 @@ impl<T: One + CheckedAddAssign + Bounded> Angle<T> {
     }
 }
 
+impl<T: Zero + One + CheckedAddAssign + Bounded + PartialOrd> Angle<T>
+where
+    Angle<T>: PartialOrd,
+{
+    #[inline]
+    pub fn clamped_to_positive_circle(self) -> Self {
+        if self < Self::zero() {
+            Angle::ZERO
+        } else {
+            let full = Self::full();
+            if self > full { full } else { self }
+        }
+    }
+}
+
+impl<T: Neg<Output = T> + Clone + One + CheckedAddAssign + Bounded + PartialOrd> Angle<T>
+where
+    Angle<T>: PartialOrd,
+{
+    #[inline]
+    pub fn clamped_to_circle(self) -> Self {
+        let full = Self::full();
+        let neg_full = full.clone().neg();
+
+        if self < neg_full {
+            neg_full
+        } else if self > full {
+            full
+        } else {
+            self
+        }
+    }
+}
+
 impl<T: Neg> Neg for Angle<T> {
     type Output = Angle<T::Output>;
     #[inline]
@@ -499,3 +533,27 @@ impl<T: approx::UlpsEq<U> + Trig, U: Trig> approx::UlpsEq<Angle<U>> for Angle<T>
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_angle_clamp() {
+        let bigger_than_circle = Angle::Degrees(720.0);
+        let within_circle = Angle::Degrees(138.0);
+        let within_neg_circle = Angle::Degrees(-68.0);
+        let smaller_than_neg_circle = Angle::Degrees(-1283.0);
+
+        assert_eq!(bigger_than_circle.clamped_to_positive_circle(), Angle::<f32>::full());
+        assert_eq!(within_circle.clamped_to_positive_circle(), within_circle);
+        assert_eq!(within_neg_circle.clamped_to_positive_circle(), Angle::<f32>::ZERO);
+        assert_eq!(smaller_than_neg_circle.clamped_to_positive_circle(), Angle::<f32>::ZERO);
+
+        assert_eq!(bigger_than_circle.clamped_to_circle(), Angle::<f32>::full());
+        assert_eq!(within_circle.clamped_to_circle(), within_circle);
+        assert_eq!(within_neg_circle.clamped_to_circle(), within_neg_circle);
+        assert_eq!(smaller_than_neg_circle.clamped_to_circle(), Angle::<f32>::full().neg());
+    }
+}
+
