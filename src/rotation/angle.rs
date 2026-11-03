@@ -67,6 +67,22 @@ impl<T: Zero + One + CheckedAddAssign + Bounded + PartialOrd> Angle<T>
 where
     Angle<T>: PartialOrd,
 {
+    /// Clamps the given `Angle` to within a full clockwise circle (From 0º to 360º).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::rotation::angle::Angle;
+    ///
+    /// let within_circle = Angle::Degrees(270.0);
+    /// assert_eq!(within_circle.clamped_to_positive_circle(), Angle::Degrees(270.0));
+    ///
+    /// let outside_circle = Angle::Degrees(450.0);
+    /// assert_eq!(outside_circle.clamped_to_positive_circle(), Angle::full());
+    ///
+    /// let within_neg_circle = Angle::Degrees(-230.0);
+    /// assert_eq!(within_neg_circle.clamped_to_positive_circle(), Angle::zero());
+    /// ```
     #[inline]
     pub fn clamped_to_positive_circle(self) -> Self {
         if self < Self::zero() {
@@ -82,6 +98,26 @@ impl<T: Neg<Output = T> + Clone + One + CheckedAddAssign + Bounded + PartialOrd>
 where
     Angle<T>: PartialOrd,
 {
+    /// Clamps the given `Angle` to within a full circle both clockwise
+    /// and counterclockwise (From -360º to 360º).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use vectral::rotation::angle::Angle;
+    ///
+    /// let within_circle = Angle::Degrees(270.0);
+    /// assert_eq!(within_circle.clamped_to_circle(), Angle::Degrees(270.0));
+    ///
+    /// let outside_circle = Angle::Degrees(450.0);
+    /// assert_eq!(outside_circle.clamped_to_circle(), Angle::full());
+    ///
+    /// let within_neg_circle = Angle::Degrees(-230.);
+    /// assert_eq!(within_neg_circle.clamped_to_circle(), Angle::Degrees(-230.0));
+    /// 
+    /// let outside_neg_circle = Angle::Degrees(-1230.);
+    /// assert_eq!(outside_neg_circle.clamped_to_circle(), -Angle::<f64>::full());
+    /// ```
     #[inline]
     pub fn clamped_to_circle(self) -> Self {
         let full = Self::full();
